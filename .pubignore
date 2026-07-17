@@ -1,0 +1,13 @@
+# Generated Dart and Flutter state.
+.dart_tool/
+.packages
+build/
+coverage/
+
+# Golden-test diagnostics are local failure artifacts, not fixtures.
+test/goldens/failures/
+
+# Editor and operating-system metadata.
+.DS_Store
+.idea/
+*.iml
