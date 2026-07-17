@@ -42,8 +42,7 @@ class _InlineUiLocalizationsDelegate
   Future<UiLocalizations> load(Locale locale) async => value;
 
   @override
-  bool shouldReload(_InlineUiLocalizationsDelegate old) =>
-      old.value != value;
+  bool shouldReload(_InlineUiLocalizationsDelegate old) => old.value != value;
 }
 
 void main() {

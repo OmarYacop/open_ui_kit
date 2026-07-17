@@ -35,8 +35,7 @@ void main() {
 
       await tester.pumpWidget(build(TextDirection.ltr));
       await tester.pumpAndSettle();
-      final ltrLoadingX =
-          tester.getTopLeft(find.text('Loading…')).dx;
+      final ltrLoadingX = tester.getTopLeft(find.text('Loading…')).dx;
       final ltrFirstChipX = tester.getTopLeft(find.text('1')).dx;
       expect(
         ltrLoadingX,
@@ -46,8 +45,7 @@ void main() {
 
       await tester.pumpWidget(build(TextDirection.rtl));
       await tester.pumpAndSettle();
-      final rtlLoadingX =
-          tester.getTopLeft(find.text('Loading…')).dx;
+      final rtlLoadingX = tester.getTopLeft(find.text('Loading…')).dx;
       final rtlFirstChipX = tester.getTopLeft(find.text('1')).dx;
       expect(
         rtlLoadingX,

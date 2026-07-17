@@ -76,8 +76,8 @@ class UiToast extends StatelessWidget {
       border: Border.all(color: borderColor, width: 1),
       borderRadius: tokens.radius.lgAll,
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.x4,
-        vertical: tokens.spacing.x3,
+        horizontal: tokens.spacing.x5,
+        vertical: tokens.spacing.x4,
       ),
       boxShadow: tokens.shadows.lg,
       child: ConstrainedBox(

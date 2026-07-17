@@ -4,7 +4,8 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 void main() {
   group('UiLocalizations', () {
-    testWidgets('of(context) returns English defaults when no delegate '
+    testWidgets(
+        'of(context) returns English defaults when no delegate '
         'is installed', (tester) async {
       late UiLocalizations strings;
       await tester.pumpWidget(
@@ -24,8 +25,7 @@ void main() {
       expect(strings.opensMonthPicker, 'opens month picker');
     });
 
-    test('delegate.load returns Arabic strings for an Arabic Locale',
-        () async {
+    test('delegate.load returns Arabic strings for an Arabic Locale', () async {
       const delegate = UiLocalizations.delegate;
       final strings = await delegate.load(const Locale('ar'));
       expect(strings, isA<UiLocalizationsAr>());
@@ -41,8 +41,7 @@ void main() {
       expect(strings.back, 'Back');
     });
 
-    testWidgets('isSupported honours the declared locale set',
-        (tester) async {
+    testWidgets('isSupported honours the declared locale set', (tester) async {
       const delegate = UiLocalizations.delegate;
       expect(delegate.isSupported(const Locale('en')), isTrue);
       expect(delegate.isSupported(const Locale('ar')), isTrue);

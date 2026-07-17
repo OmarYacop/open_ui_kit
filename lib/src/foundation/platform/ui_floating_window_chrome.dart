@@ -24,13 +24,21 @@ double resolveUiFloatingWindowChromeLeadingInset(
   if (windowMode == UiWindowMode.windowed) {
     return _chromeLeadingInset(context);
   }
-  if (windowMode == UiWindowMode.fullscreen ||
-      windowMode == UiWindowMode.notApplicable) {
+  if (windowMode == UiWindowMode.notApplicable) {
     return 0;
   }
 
   final viewPadding = MediaQuery.viewPaddingOf(context);
   final appHasTopSystemInset = viewPadding.top > 8;
+  if (windowMode == UiWindowMode.fullscreen) {
+    // On the first iOS frame the native window can briefly report fullscreen
+    // before its effective scene geometry settles. A real fullscreen iPhone or
+    // iPad supplies a top safe inset; zero inset is the windowed-chrome shape.
+    if (defaultTargetPlatform == TargetPlatform.iOS && !appHasTopSystemInset) {
+      return _chromeLeadingInset(context);
+    }
+    return 0;
+  }
   if (appHasTopSystemInset) return 0;
 
   return _chromeLeadingInset(context);

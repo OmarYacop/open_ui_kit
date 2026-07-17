@@ -73,6 +73,7 @@ class UiAlertDialog extends StatelessWidget {
 
     return Semantics(
       container: true,
+      explicitChildNodes: true,
       namesRoute: true,
       scopesRoute: true,
       label: 'Alert. $title${description == null ? '' : '. $description'}',
@@ -82,8 +83,12 @@ class UiAlertDialog extends StatelessWidget {
           child: UiBox(
             background: c.card,
             border: Border.all(color: c.border),
-            borderRadius: tokens.radius.lgAll,
-            padding: EdgeInsets.all(tokens.spacing.x6),
+            borderRadius: tokens.radius.xlAll,
+            padding: EdgeInsetsDirectional.only(
+                top: tokens.spacing.x5,
+                start: tokens.spacing.x5,
+                bottom: tokens.spacing.x3,
+                end: tokens.spacing.x3),
             boxShadow: tokens.shadows.lg,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -100,6 +105,7 @@ class UiAlertDialog extends StatelessWidget {
                 ],
                 SizedBox(height: tokens.spacing.x6),
                 Row(
+                  key: const ValueKey('ui-alert-dialog-actions'),
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     UiButton(
@@ -107,7 +113,7 @@ class UiAlertDialog extends StatelessWidget {
                       intent: UiIntent.ghost,
                       onPressed: onCancel,
                     ),
-                    SizedBox(width: tokens.spacing.x2),
+                    SizedBox(width: tokens.spacing.x3),
                     UiButton(
                       label: confirmLabel,
                       intent: confirmIntent,

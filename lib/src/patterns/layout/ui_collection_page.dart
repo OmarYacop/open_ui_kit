@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../components/feedback/async_states.dart';
+import '../../components/feedback/refresher.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'ui_page_layout.dart';
@@ -49,7 +50,11 @@ class UiCollectionPage<T> extends StatelessWidget {
     this.gridMainAxisSpacing,
     this.gridCrossAxisSpacing,
     this.gridChildAspectRatio = 1,
+    this.gridMainAxisExtent,
     this.physics,
+    this.onRefresh,
+    this.refreshController,
+    this.refreshIndicatorBuilder,
     this.safeViewportMode = UiSafeViewportMode.none,
     this.breakpoints = UiBreakpoints.standard,
   });
@@ -82,7 +87,19 @@ class UiCollectionPage<T> extends StatelessWidget {
   final double? gridMainAxisSpacing;
   final double? gridCrossAxisSpacing;
   final double gridChildAspectRatio;
+
+  /// Optional fixed height for grid rows. When set, this takes precedence over
+  /// [gridChildAspectRatio].
+  final double? gridMainAxisExtent;
   final ScrollPhysics? physics;
+
+  /// Optional pull-to-refresh callback for the loaded collection.
+  ///
+  /// When supplied, the generated list/grid is wrapped in [UiRefresher] and
+  /// remains refreshable even when its content is shorter than the viewport.
+  final Future<void> Function()? onRefresh;
+  final UiRefresherController? refreshController;
+  final UiRefreshIndicatorBuilder? refreshIndicatorBuilder;
   final UiSafeViewportMode safeViewportMode;
   final UiBreakpoints breakpoints;
 
@@ -128,7 +145,7 @@ class UiCollectionPage<T> extends StatelessWidget {
       );
     }
 
-    return LayoutBuilder(
+    final collection = LayoutBuilder(
       builder: (context, constraints) {
         final resolvedLayout = _resolveLayout(constraints.maxWidth);
         switch (resolvedLayout) {
@@ -150,10 +167,20 @@ class UiCollectionPage<T> extends StatelessWidget {
               mainAxisSpacing: gridMainAxisSpacing,
               crossAxisSpacing: gridCrossAxisSpacing,
               childAspectRatio: gridChildAspectRatio,
+              mainAxisExtent: gridMainAxisExtent,
               physics: physics,
             );
         }
       },
+    );
+
+    final refresh = onRefresh;
+    if (refresh == null) return collection;
+    return UiRefresher(
+      onRefresh: refresh,
+      controller: refreshController,
+      indicatorBuilder: refreshIndicatorBuilder,
+      child: collection,
     );
   }
 
@@ -208,6 +235,7 @@ class _CollectionGrid<T> extends StatelessWidget {
     required this.mainAxisSpacing,
     required this.crossAxisSpacing,
     required this.childAspectRatio,
+    required this.mainAxisExtent,
     required this.physics,
   });
 
@@ -218,6 +246,7 @@ class _CollectionGrid<T> extends StatelessWidget {
   final double? mainAxisSpacing;
   final double? crossAxisSpacing;
   final double childAspectRatio;
+  final double? mainAxisExtent;
   final ScrollPhysics? physics;
 
   @override
@@ -236,6 +265,7 @@ class _CollectionGrid<T> extends StatelessWidget {
         mainAxisSpacing: mainAxisSpacing ?? gap,
         crossAxisSpacing: crossAxisSpacing ?? gap,
         childAspectRatio: childAspectRatio,
+        mainAxisExtent: mainAxisExtent,
       ),
       itemBuilder: (context, index) {
         return itemBuilder(context, items[index], index);

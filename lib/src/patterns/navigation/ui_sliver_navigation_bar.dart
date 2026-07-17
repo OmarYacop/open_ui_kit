@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
+import '../../foundation/layout/ui_form_factor.dart';
+import '../../foundation/layout/ui_navigation_chrome_scope.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../layout/ui_system_bars.dart';
@@ -16,7 +18,12 @@ import 'ui_route_entry.dart';
 
 /// Sliver-based navigation bar with large-title collapse behavior.
 ///
-/// Drop into any `CustomScrollView` slivers list. Height budgets:
+/// Drop into any `CustomScrollView` slivers list. Keep body spacing in the
+/// following content sliver (for example, with [SliverPadding] or a
+/// [SliverToBoxAdapter]). The navigation bar deliberately owns one sliver so
+/// its pinned extent is not bounded by a short [SliverMainAxisGroup].
+///
+/// Height budgets:
 ///
 /// - Collapsed: [collapsedHeight] + ambient `MediaQuery.padding.top`.
 /// - Expanded: [expandedHeight] + ambient `MediaQuery.padding.top`.
@@ -33,10 +40,10 @@ class UiSliverNavigationBar extends StatelessWidget {
     required this.spec,
     this.expandedHeight = 88,
     this.collapsedHeight = 52,
-    this.bodyTopPadding = 12,
     this.pinned = true,
     this.floating = false,
     this.stretch = false,
+    this.adaptToPersistentRail = true,
   });
 
   final UiNavigationSpec spec;
@@ -49,45 +56,127 @@ class UiSliverNavigationBar extends StatelessWidget {
   /// inset).
   final double collapsedHeight;
 
-  /// Default gap inserted after the navigation bar before body slivers.
-  ///
-  /// This prevents first content from sitting directly under the translucent
-  /// blur surface at rest, which can otherwise make the bar look activated
-  /// before the page has meaningfully scrolled.
-  final double bodyTopPadding;
-
   final bool pinned;
   final bool floating;
   final bool stretch;
 
+  /// Replaces the mobile glass treatment with a non-pinned content header
+  /// when the page is hosted next to a persistent navigation rail.
+  final bool adaptToPersistentRail;
+
   @override
   Widget build(BuildContext context) {
+    final hasPersistentRail = adaptToPersistentRail &&
+        UiNavigationChromeScope.hasPersistentRailOf(context);
+    final formFactor = uiFormFactorOf(context);
+    final isDesktop = formFactor == UiFormFactor.desktop;
+    final useQuietPageHeader = spec.largeTitle &&
+        spec.back == null &&
+        (hasPersistentRail || isDesktop);
+    if (useQuietPageHeader) {
+      return SliverToBoxAdapter(child: _RailPageHeader(spec: spec));
+    }
+
+    final effectiveSpec = (hasPersistentRail || isDesktop)
+        ? spec.copyWith(
+            surface: UiNavigationSurface.solid,
+            blurSigma: 0,
+            showDivider: false,
+          )
+        : spec;
     final topInset = MediaQuery.paddingOf(context).top;
     // Back-button pages skip the expanded form entirely: the bar pins at
     // collapsed height so back + title + actions sit together on a
     // single row, with no large-title reveal on overscroll.
-    final useLarge = spec.largeTitle && spec.back == null;
+    final useLarge = effectiveSpec.largeTitle && effectiveSpec.back == null;
     final maxH = (useLarge ? expandedHeight : collapsedHeight) + topInset;
     final minH = collapsedHeight + topInset;
 
-    final header = SliverPersistentHeader(
+    return SliverPersistentHeader(
       pinned: pinned,
       floating: floating,
       delegate: _UiNavHeaderDelegate(
-        spec: spec,
+        spec: effectiveSpec,
         topInset: topInset,
         expandedHeight: maxH,
         collapsedHeight: minH,
       ),
     );
+  }
+}
 
-    if (bodyTopPadding <= 0) return header;
+class _RailPageHeader extends StatelessWidget {
+  const _RailPageHeader({required this.spec});
 
-    return SliverMainAxisGroup(
-      slivers: [
-        header,
-        SliverToBoxAdapter(child: SizedBox(height: bodyTopPadding)),
-      ],
+  final UiNavigationSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+
+    return SafeArea(
+      bottom: false,
+      left: false,
+      right: false,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compactPane = constraints.maxWidth < 520;
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.x4,
+              compactPane ? tokens.spacing.x4 : tokens.spacing.x6,
+              tokens.spacing.x4,
+              tokens.spacing.x4,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (spec.leading != null) ...[
+                  spec.leading!,
+                  SizedBox(width: tokens.spacing.x3),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      UiText(
+                        spec.title,
+                        variant: compactPane
+                            ? UiTextVariant.heading
+                            : UiTextVariant.displayMd,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (spec.subtitle != null &&
+                          spec.subtitle!.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.x1),
+                        UiText(
+                          spec.subtitle!,
+                          variant: UiTextVariant.bodySm,
+                          tone: UiTextTone.muted,
+                          maxLines: compactPane ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (spec.actions.isNotEmpty) ...[
+                  SizedBox(width: tokens.spacing.x3),
+                  Wrap(
+                    spacing: tokens.spacing.x2,
+                    runSpacing: tokens.spacing.x2,
+                    alignment: WrapAlignment.end,
+                    children: spec.actions,
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

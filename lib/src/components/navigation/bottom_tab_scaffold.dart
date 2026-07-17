@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -90,6 +91,8 @@ class UiBottomTabScaffold extends StatelessWidget {
   final double tabBarFloatingBottomMargin;
 
   /// When true, wide layouts render [railBuilder] instead of the bottom bar.
+  /// Compact Android and iOS devices retain the bottom bar in landscape even
+  /// when their long edge crosses [railBreakpoint].
   final bool convertToRailOnWideScreens;
 
   final double railBreakpoint;
@@ -136,7 +139,8 @@ class UiBottomTabScaffold extends StatelessWidget {
       return LayoutBuilder(
         builder: (context, constraints) {
           final useRail = constraints.maxWidth.isFinite &&
-              constraints.maxWidth >= railBreakpoint;
+              constraints.maxWidth >= railBreakpoint &&
+              !_isCompactMobileDevice(context, railBreakpoint);
           if (useRail) {
             return UiResponsiveNavigationScaffold(
               phoneBreakpoint: railBreakpoint,
@@ -192,6 +196,16 @@ class UiBottomTabScaffold extends StatelessWidget {
       floatingBottomMargin: tabBarFloatingBottomMargin,
       overflowDrawerBuilder: overflowDrawerBuilder,
     );
+  }
+
+  bool _isCompactMobileDevice(BuildContext context, double breakpoint) {
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
+      return false;
+    }
+
+    return MediaQuery.sizeOf(context).shortestSide < breakpoint;
   }
 }
 
@@ -466,6 +480,7 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
                 ? widget.canonicalItems[index].activeIcon ??
                     widget.canonicalItems[index].icon
                 : widget.canonicalItems[index].icon,
+            badgeCount: widget.canonicalItems[index].badge,
             selected: widget.canonicalCurrentIndex == index,
             onPressed: () {
               controller.dismiss();

@@ -71,8 +71,7 @@ class _UiTimePickerState extends State<UiTimePicker> {
     final v = widget.value ?? const UiTimeValue(hour: 9, minute: 0);
     final minute = v.minute - (v.minute % widget.minuteStep);
     _hourNotifier = ValueNotifier<int>(v.hour);
-    _minuteIndexNotifier =
-        ValueNotifier<int>(minute ~/ widget.minuteStep);
+    _minuteIndexNotifier = ValueNotifier<int>(minute ~/ widget.minuteStep);
     _hourCtrl = FixedExtentScrollController(initialItem: v.hour);
     _minuteCtrl = FixedExtentScrollController(
       initialItem: minute ~/ widget.minuteStep,

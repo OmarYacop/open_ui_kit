@@ -9,3 +9,4 @@ export 'ui_route_spec.dart';
 export 'ui_navigation_stack.dart';
 export 'ui_navigation_transition.dart';
 export 'ui_sliver_navigation_bar.dart';
+export 'ui_sliver_sticky_region.dart';

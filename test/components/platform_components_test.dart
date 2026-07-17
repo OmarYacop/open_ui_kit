@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -406,7 +407,7 @@ void main() {
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Schedule'),
                 UiBottomTabItem(label: 'Chat'),
-                UiBottomTabItem(label: 'Library'),
+                UiBottomTabItem(label: 'Library', badge: 7),
                 UiBottomTabItem(label: 'Account'),
               ],
               pages: const [
@@ -451,6 +452,8 @@ void main() {
 
       expect(find.text('Library'), findsOneWidget);
       expect(find.text('Account'), findsOneWidget);
+      expect(find.byType(UiNavigationCountBadge), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
 
       await tester.tap(find.text('Account'));
       await tester.pumpAndSettle();
@@ -496,6 +499,43 @@ void main() {
       expect(find.byKey(const Key('rail')), findsOneWidget);
       expect(find.text('rail-2'), findsOneWidget);
       expect(find.byKey(const Key('ui_bottom_tab_dock')), findsNothing);
+    });
+
+    testWidgets('landscape phones retain bottom navigation', (tester) async {
+      tester.view.physicalSize = const Size(844, 390);
+      tester.view.devicePixelRatio = 1;
+      final previousPlatform = debugDefaultTargetPlatformOverride;
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(
+          _host(
+            UiBottomTabScaffold(
+              items: const [
+                UiBottomTabItem(label: 'Home'),
+                UiBottomTabItem(label: 'Chat'),
+              ],
+              pages: const [
+                Center(child: Text('home-page')),
+                Center(child: Text('chat-page')),
+              ],
+              currentIndex: 0,
+              onChanged: (_) {},
+              convertToRailOnWideScreens: true,
+              railBreakpoint: 600,
+              railBuilder: (context, config) => const SizedBox(
+                key: Key('rail'),
+                width: 96,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byKey(const Key('ui_bottom_tab_dock')), findsOneWidget);
+        expect(find.byKey(const Key('rail')), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = previousPlatform;
+        tester.view.reset();
+      }
     });
 
     testWidgets('automatic bottom overflow is bypassed in rail mode',

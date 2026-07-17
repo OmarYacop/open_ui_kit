@@ -32,7 +32,7 @@ class UiDialog extends StatelessWidget {
         child: UiBox(
           background: c.card,
           border: Border.all(color: c.border),
-          borderRadius: tokens.radius.lgAll,
+          borderRadius: tokens.radius.xlAll,
           padding: EdgeInsets.all(tokens.spacing.x6),
           boxShadow: tokens.shadows.lg,
           child: Column(
@@ -55,10 +55,11 @@ class UiDialog extends StatelessWidget {
               if (actions.isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.x6),
                 Row(
+                  key: const ValueKey('ui-dialog-actions'),
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     for (var i = 0; i < actions.length; i++) ...[
-                      if (i > 0) SizedBox(width: tokens.spacing.x2),
+                      if (i > 0) SizedBox(width: tokens.spacing.x3),
                       actions[i],
                     ],
                   ],

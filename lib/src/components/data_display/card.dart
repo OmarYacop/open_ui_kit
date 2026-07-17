@@ -35,7 +35,7 @@ class UiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
-    final resolvedPadding = padding ?? EdgeInsets.all(tokens.spacing.x4);
+    final resolvedPadding = padding ?? EdgeInsets.all(tokens.spacing.x6);
 
     Widget surface(UiPressableState? state) {
       final pressed = state?.pressed ?? false;
@@ -70,7 +70,7 @@ class UiCard extends StatelessWidget {
       return UiBox(
         background: bg,
         border: Border.all(color: border, width: 1),
-        borderRadius: tokens.radius.lgAll,
+        borderRadius: tokens.radius.xlAll,
         boxShadow: shadow,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -79,8 +79,8 @@ class UiCard extends StatelessWidget {
             if (header != null)
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.x4,
-                  vertical: tokens.spacing.x3,
+                  horizontal: tokens.spacing.x6,
+                  vertical: tokens.spacing.x4,
                 ),
                 child: header,
               ),
@@ -90,8 +90,8 @@ class UiCard extends StatelessWidget {
             if (footer != null)
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.x4,
-                  vertical: tokens.spacing.x3,
+                  horizontal: tokens.spacing.x6,
+                  vertical: tokens.spacing.x4,
                 ),
                 child: footer,
               ),

@@ -79,8 +79,7 @@ void main() {
   group('UiDatePicker month/year direct selection (PR-D)', () {
     testWidgets(
         'header trigger cycles days → months → years → days; '
-        'arrow visibility tracks view',
-        (tester) async {
+        'arrow visibility tracks view', (tester) async {
       await tester.pumpWidget(
         _host(
           UiDatePicker(
@@ -305,8 +304,7 @@ void main() {
       expect(
         outerBuilds,
         initialBuilds,
-        reason:
-            'Wheel selection changes must not trigger parent subtree '
+        reason: 'Wheel selection changes must not trigger parent subtree '
             'rebuilds — the per-wheel ValueListenableBuilder is '
             'supposed to isolate them.',
       );

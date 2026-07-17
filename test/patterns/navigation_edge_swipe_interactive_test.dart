@@ -134,8 +134,7 @@ void main() {
         await gesture.up();
         await tester.pumpAndSettle();
 
-        expect(progress.value, 0.0,
-            reason: 'cancel returns progress to 0');
+        expect(progress.value, 0.0, reason: 'cancel returns progress to 0');
         expect(find.text('detail-1'), findsOneWidget,
             reason: 'stack untouched when the drag cancels');
         expect(controller.canPop, isTrue);
@@ -184,8 +183,8 @@ void main() {
       });
     });
 
-    testWidgets(
-        'fast fling past both thresholds completes the pop', (tester) async {
+    testWidgets('fast fling past both thresholds completes the pop',
+        (tester) async {
       // VelocityTracker smoothing in the widget-test pointer stream
       // makes a pure "velocity-only" assertion flaky. This test
       // exercises the combined OR-threshold: a 120pt flick delivered
@@ -249,7 +248,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(progress.value, 0.0,
-            reason: 'no edge-swipe region installed at root, so progress stays at 0');
+            reason:
+                'no edge-swipe region installed at root, so progress stays at 0');
         expect(controller.canPop, isFalse);
         expect(find.text('home'), findsOneWidget);
       });

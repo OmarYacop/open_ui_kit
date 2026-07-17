@@ -173,12 +173,8 @@ class UiDrawer extends StatelessWidget {
                     ? BorderSide.none
                     : BorderSide(color: c.border),
               );
-    final content = child ??
-        _UiDrawerRegions(
-          header: header,
-          body: body,
-          footer: footer,
-        );
+    final content =
+        child ?? _UiDrawerRegions(header: header, body: body, footer: footer);
     Widget drawer = Padding(
       padding: floating ? resolvedMargin : EdgeInsets.zero,
       child: SizedBox(
@@ -236,6 +232,39 @@ class UiDrawer extends StatelessWidget {
       adaptive: adaptive,
     );
   }
+
+  /// Returns a radius that remains concentric with the drawer surface when an
+  /// item is inset from its edge.
+  ///
+  /// Navigation rows and other nested surfaces should use this instead of a
+  /// fixed token radius so floating drawers keep the same visual curvature as
+  /// their outer edge.
+  static BorderRadius concentricContentBorderRadiusOf(
+    BuildContext context, {
+    required UiDrawerSide side,
+    required UiDrawerVariant variant,
+    required double inset,
+    bool adaptive = true,
+  }) {
+    final outer = adaptiveBorderRadiusOf(
+      context,
+      side: side,
+      variant: variant,
+      adaptive: adaptive,
+    ).resolve(Directionality.of(context));
+
+    Radius inner(Radius radius) => Radius.elliptical(
+          (radius.x - inset).clamp(0.0, double.infinity),
+          (radius.y - inset).clamp(0.0, double.infinity),
+        );
+
+    return BorderRadius.only(
+      topLeft: inner(outer.topLeft),
+      topRight: inner(outer.topRight),
+      bottomLeft: inner(outer.bottomLeft),
+      bottomRight: inner(outer.bottomRight),
+    );
+  }
 }
 
 /// Standard header content for a structured [UiDrawer].
@@ -262,10 +291,10 @@ class UiDrawerHeader extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.spacing.x6,
+        tokens.spacing.x5,
         tokens.spacing.x4,
         tokens.spacing.x4,
-        tokens.spacing.x3,
-        tokens.spacing.x3,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -298,10 +327,7 @@ class UiDrawerHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (action != null) ...[
-            SizedBox(width: tokens.spacing.x2),
-            action!,
-          ],
+          if (action != null) ...[SizedBox(width: tokens.spacing.x2), action!],
         ],
       ),
     );
@@ -327,10 +353,10 @@ class UiDrawerSection extends StatelessWidget {
     return Padding(
       padding: padding ??
           EdgeInsetsDirectional.fromSTEB(
-            tokens.spacing.x2,
-            tokens.spacing.x2,
-            tokens.spacing.x2,
-            tokens.spacing.x2,
+            tokens.spacing.x3,
+            tokens.spacing.x3,
+            tokens.spacing.x3,
+            tokens.spacing.x3,
           ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -338,9 +364,9 @@ class UiDrawerSection extends StatelessWidget {
           if (title != null && title!.isNotEmpty) ...[
             Padding(
               padding: EdgeInsetsDirectional.fromSTEB(
-                tokens.spacing.x2,
+                tokens.spacing.x3,
                 tokens.spacing.x1,
-                tokens.spacing.x2,
+                tokens.spacing.x3,
                 tokens.spacing.x1,
               ),
               child: UiText(
@@ -370,7 +396,7 @@ class UiDrawerFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     return Padding(
-      padding: padding ?? EdgeInsets.all(tokens.spacing.x2),
+      padding: padding ?? EdgeInsets.all(tokens.spacing.x3),
       child: child,
     );
   }
@@ -391,12 +417,7 @@ class _UiDrawerRegions extends StatelessWidget {
         if (header != null) header!,
         if (header != null && body != null) const UiDivider(),
         if (body != null)
-          Expanded(
-            child: SingleChildScrollView(
-              primary: false,
-              child: body,
-            ),
-          )
+          Expanded(child: SingleChildScrollView(primary: false, child: body))
         else
           const Spacer(),
         if (footer != null && (header != null || body != null))
@@ -414,9 +435,11 @@ BorderRadius _resolveAdaptiveRadius(
   required bool adaptive,
 }) {
   final tokens = UiThemeTokens.of(context);
-  final base = floating ? tokens.radius.lg.x : 0.0;
+  // Floating drawers are inset by x3. Add that inset to the largest standard
+  // surface radius so the visible curvature still matches the app window.
+  final base = floating ? tokens.radius.xl.x + tokens.spacing.x3 : 0.0;
   final inferred = adaptive ? _inferDeviceCornerRadius(context) : 0.0;
-  final value = inferred > 0 ? inferred : base;
+  final value = inferred > base ? inferred : base;
   final radius = Radius.circular(value);
 
   if (floating) return BorderRadius.all(radius);
@@ -434,7 +457,7 @@ double _inferDeviceCornerRadius(BuildContext context) {
     padding.right,
   ].reduce((a, b) => a > b ? a : b);
   if (signal <= 0) return 0;
-  return signal.clamp(14.0, 28.0);
+  return signal.clamp(14.0, 36.0);
 }
 
 bool _hasVisibleRadius(BorderRadius radius) {
@@ -467,9 +490,7 @@ class UiDrawerController<T> {
 }
 
 typedef UiControlledDrawerBuilder<T> = Widget Function(
-  BuildContext context,
-  UiDrawerController<T> controller,
-);
+    BuildContext context, UiDrawerController<T> controller);
 
 /// Imperative helpers for showing a [UiDrawer] overlay.
 class UiDrawerScope {
@@ -563,18 +584,12 @@ class _DrawerStackSnapshot {
   final Set<int> closing;
 
   _DrawerStackSnapshot push(int id) {
-    return _DrawerStackSnapshot(
-      open: [...open, id],
-      closing: closing,
-    );
+    return _DrawerStackSnapshot(open: [...open, id], closing: closing);
   }
 
   _DrawerStackSnapshot markClosing(int id) {
     if (!open.contains(id) || closing.contains(id)) return this;
-    return _DrawerStackSnapshot(
-      open: open,
-      closing: {...closing, id},
-    );
+    return _DrawerStackSnapshot(open: open, closing: {...closing, id});
   }
 
   _DrawerStackSnapshot remove(int id) {
@@ -777,10 +792,7 @@ class _DrawerBackdrop extends StatelessWidget {
     }
     return IgnorePointer(
       child: RepaintBoundary(
-        child: FadeTransition(
-          opacity: animation,
-          child: backdrop,
-        ),
+        child: FadeTransition(opacity: animation, child: backdrop),
       ),
     );
   }

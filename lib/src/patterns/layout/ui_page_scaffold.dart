@@ -41,9 +41,11 @@ class UiPageScaffold extends StatelessWidget {
     this.paintTopInsetWithTopBar = false,
     this.topInsetColor,
     this.scrollFade = true,
-    this.scrollFadeExtent = 36,
+    this.scrollFadeTop = true,
+    this.scrollFadeBottom = true,
+    this.scrollFadeExtent = 48,
     this.scrollFadeHorizontalInset = 18,
-    this.scrollFadeMaxOpacity = 0.66,
+    this.scrollFadeMaxOpacity = 0.74,
     this.scrollFadeUsesSafeArea = true,
   });
 
@@ -92,6 +94,13 @@ class UiPageScaffold extends StatelessWidget {
   /// This is intended for pages whose scrollable content moves below floating
   /// chrome. Top/bottom bars are not masked.
   final bool scrollFade;
+
+  /// Paint the fade at the top edge of [body]. Disable this when an in-scroll
+  /// sticky region owns the transition into scrolling content.
+  final bool scrollFadeTop;
+
+  /// Paint the fade at the bottom edge of [body].
+  final bool scrollFadeBottom;
 
   /// Physical fade distance in logical pixels.
   final double scrollFadeExtent;
@@ -162,6 +171,8 @@ class UiPageScaffold extends StatelessWidget {
                     horizontalInset: scrollFadeHorizontalInset,
                     maxOpacity: scrollFadeMaxOpacity,
                     backgroundColor: bg,
+                    showTop: scrollFadeTop,
+                    showBottom: scrollFadeBottom,
                     child: body,
                   )
                 : body,
@@ -311,6 +322,8 @@ class _UiScrollFade extends StatelessWidget {
     required this.horizontalInset,
     required this.maxOpacity,
     required this.backgroundColor,
+    required this.showTop,
+    required this.showBottom,
   });
 
   final Widget child;
@@ -318,6 +331,8 @@ class _UiScrollFade extends StatelessWidget {
   final double horizontalInset;
   final double maxOpacity;
   final Color backgroundColor;
+  final bool showTop;
+  final bool showBottom;
 
   @override
   Widget build(BuildContext context) {
@@ -330,40 +345,42 @@ class _UiScrollFade extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         child,
-        PositionedDirectional(
-          start: horizontalInset,
-          end: horizontalInset,
-          top: 0,
-          height: extent,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [edgeColor, transparentEdgeColor],
+        if (showTop)
+          PositionedDirectional(
+            start: horizontalInset,
+            end: horizontalInset,
+            top: 0,
+            height: extent,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [edgeColor, transparentEdgeColor],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        PositionedDirectional(
-          start: horizontalInset,
-          end: horizontalInset,
-          bottom: 0,
-          height: extent,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [edgeColor, transparentEdgeColor],
+        if (showBottom)
+          PositionedDirectional(
+            start: horizontalInset,
+            end: horizontalInset,
+            bottom: 0,
+            height: extent,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [edgeColor, transparentEdgeColor],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

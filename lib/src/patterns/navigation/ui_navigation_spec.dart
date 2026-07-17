@@ -86,7 +86,8 @@ class UiNavigationSpec {
   final double blurSigma;
 
   /// Whether to paint a bottom divider under the bar once content scrolls
-  /// behind it.
+  /// behind it. Set this to `false` when blur and tint provide enough
+  /// separation from scrolling content.
   final bool showDivider;
 
   /// Default transition used when a [UiNavigationStack] swaps children

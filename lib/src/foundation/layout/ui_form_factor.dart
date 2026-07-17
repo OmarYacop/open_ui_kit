@@ -171,8 +171,7 @@ class UiAdaptive extends StatelessWidget {
             return phone;
         }
       },
-      variantBuilder: (context, value) =>
-          builder(context, value as T),
+      variantBuilder: (context, value) => builder(context, value as T),
       breakpoints: breakpoints,
     );
   }

@@ -25,10 +25,9 @@ Future<void> pumpGoldenFrame(
     )
     ..devicePixelRatio = kGoldenDevicePixelRatio;
   addTearDown(view.reset);
-  final theme = (brightness == Brightness.dark
-          ? UiThemeData.dark()
-          : UiThemeData.light())
-      .copyWith(platform: kGoldenTargetPlatform);
+  final theme =
+      (brightness == Brightness.dark ? UiThemeData.dark() : UiThemeData.light())
+          .copyWith(platform: kGoldenTargetPlatform);
 
   await tester.pumpWidget(
     MaterialApp(

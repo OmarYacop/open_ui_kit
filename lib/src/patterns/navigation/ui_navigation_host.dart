@@ -99,8 +99,7 @@ class UiNavigationHost extends StatelessWidget {
     final forced = enableEdgeSwipePop;
     if (forced != null) return forced;
     final platform = defaultTargetPlatform;
-    return platform == TargetPlatform.iOS ||
-        platform == TargetPlatform.macOS;
+    return platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
   }
 
   UiBackSwipeTransition _resolveBackSwipeStyle() {
@@ -108,8 +107,7 @@ class UiNavigationHost extends StatelessWidget {
       return backSwipeTransition;
     }
     final platform = defaultTargetPlatform;
-    return (platform == TargetPlatform.iOS ||
-            platform == TargetPlatform.macOS)
+    return (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS)
         ? UiBackSwipeTransition.cupertino
         : UiBackSwipeTransition.slide;
   }
@@ -129,12 +127,10 @@ class UiNavigationHost extends StatelessWidget {
         );
         if (!_shouldEnableSwipe(context, stack.length)) return host;
         final style = _resolveBackSwipeStyle();
-        final parallaxCurrent = stack.isNotEmpty
-            ? _build(context, stack[stack.length - 1])
-            : null;
-        final parallaxPrevious = stack.length >= 2
-            ? _build(context, stack[stack.length - 2])
-            : null;
+        final parallaxCurrent =
+            stack.isNotEmpty ? _build(context, stack[stack.length - 1]) : null;
+        final parallaxPrevious =
+            stack.length >= 2 ? _build(context, stack[stack.length - 2]) : null;
         return _EdgeSwipePopRegion(
           onTriggered: () => controller.pop(),
           edgeWidth: edgeSwipeWidth,
@@ -432,9 +428,8 @@ class _CupertinoBackSwipeStack extends StatelessWidget {
     final scrimAlpha =
         UiBackSwipeParallaxMetrics.incomingScrimOpacity * (1.0 - progress);
     // Shadow peaks at mid-gesture for a Cupertino-like elevation cue.
-    final shadowAlpha =
-        UiBackSwipeParallaxMetrics.outgoingShadowOpacity *
-            (1.0 - (progress - 0.5).abs() * 2);
+    final shadowAlpha = UiBackSwipeParallaxMetrics.outgoingShadowOpacity *
+        (1.0 - (progress - 0.5).abs() * 2);
 
     // Page-background fallback. Pages that don't install their own
     // opaque background (raw widget trees without `UiPageScaffold` /
@@ -525,9 +520,8 @@ class _RawEdgeRecognizer extends StatelessWidget {
     return RawGestureDetector(
       behavior: HitTestBehavior.translucent,
       gestures: <Type, GestureRecognizerFactory>{
-        HorizontalDragGestureRecognizer:
-            GestureRecognizerFactoryWithHandlers<
-                HorizontalDragGestureRecognizer>(
+        HorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+            HorizontalDragGestureRecognizer>(
           () => HorizontalDragGestureRecognizer(),
           (instance) {
             instance

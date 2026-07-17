@@ -122,21 +122,19 @@ class UiBadge extends StatelessWidget {
     );
   }
 
-  /// Tight padding in the shadcn style. Height-equivalent:
-  /// - `sm` → ~20pt tall (px-2, py-0.5)
-  /// - `md` → ~24pt tall (px-2.5, py-1)
-  /// - `lg` → ~28pt tall (px-3, py-1)
+  /// Compact padding with enough vertical breathing room for the badge to
+  /// read as a pill rather than highlighted inline text.
   ///
   /// Horizontal padding uses the same 4pt-step scale as the button, so
   /// a small badge next to a small button reads as a related pair.
   static EdgeInsets _paddingFor(UiSize size, UiThemeTokens t) {
     switch (size) {
       case UiSize.sm:
-        return const EdgeInsets.symmetric(horizontal: 8, vertical: 2);
+        return const EdgeInsets.symmetric(horizontal: 8, vertical: 4);
       case UiSize.md:
-        return const EdgeInsets.symmetric(horizontal: 10, vertical: 3);
+        return const EdgeInsets.symmetric(horizontal: 10, vertical: 5);
       case UiSize.lg:
-        return const EdgeInsets.symmetric(horizontal: 12, vertical: 4);
+        return const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
     }
   }
 

@@ -25,6 +25,10 @@ void main() {
 
     test('radius tokens expose BorderRadius helpers', () {
       const r = UiRadiusTokens.standard;
+      expect(r.sm, const Radius.circular(10));
+      expect(r.md, const Radius.circular(12));
+      expect(r.lg, const Radius.circular(16));
+      expect(r.xl, const Radius.circular(24));
       expect(r.mdAll, isA<BorderRadius>());
       expect(r.mdAll.topLeft, r.md);
     });

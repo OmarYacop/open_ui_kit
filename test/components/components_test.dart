@@ -1123,6 +1123,105 @@ void main() {
       );
       expect(find.text('content'), findsOneWidget);
     });
+
+    testWidgets('uses roomier large-surface padding by default',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(const UiCard(child: Text('content'))),
+      );
+
+      final paddings = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(UiCard),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((padding) => padding.padding)
+          .toList();
+
+      expect(
+        paddings,
+        contains(const EdgeInsets.all(24)),
+      );
+    });
+
+    testWidgets('uses the extra-large theme radius by default', (tester) async {
+      await tester.pumpWidget(
+        _host(const UiCard(child: Text('content'))),
+      );
+
+      final decorations = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(UiCard),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>();
+
+      expect(
+        decorations.any(
+          (decoration) =>
+              decoration.borderRadius == UiRadiusTokens.standard.xlAll,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('UiAlert', () {
+    testWidgets('uses padding that matches the large radius scale',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const UiAlert(
+            title: 'Warning',
+            description: 'Proceed carefully.',
+          ),
+        ),
+      );
+
+      final paddings = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(UiAlert),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((padding) => padding.padding)
+          .toList();
+
+      expect(
+        paddings,
+        contains(const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
+      );
+    });
+  });
+
+  group('UiToast', () {
+    testWidgets('uses padding that matches the large radius scale',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(const UiToast(message: 'Saved')),
+      );
+
+      final paddings = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(UiToast),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((padding) => padding.padding)
+          .toList();
+
+      expect(
+        paddings,
+        contains(const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
+      );
+    });
   });
 
   group('UiSelect', () {

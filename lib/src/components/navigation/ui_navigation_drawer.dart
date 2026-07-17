@@ -6,6 +6,7 @@ import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../surfaces/ui_drawer.dart';
+import 'ui_navigation_badge.dart';
 
 /// Selectable destination rendered by [UiNavigationDrawer].
 class UiNavigationDrawerDestination {
@@ -15,6 +16,7 @@ class UiNavigationDrawerDestination {
     this.icon,
     this.selected = false,
     this.badge,
+    this.badgeCount,
   });
 
   final String label;
@@ -22,6 +24,7 @@ class UiNavigationDrawerDestination {
   final bool selected;
   final VoidCallback onPressed;
   final Widget? badge;
+  final int? badgeCount;
 }
 
 /// Non-selectable command rendered by [UiNavigationDrawer].
@@ -31,12 +34,14 @@ class UiNavigationDrawerAction {
     required this.onPressed,
     this.icon,
     this.badge,
+    this.badgeCount,
   });
 
   final String label;
   final Widget? icon;
   final VoidCallback onPressed;
   final Widget? badge;
+  final int? badgeCount;
 }
 
 /// Navigation-specific drawer composition with the same region model as
@@ -75,6 +80,12 @@ class UiNavigationDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasFooter = footerActions.isNotEmpty || footerDestinations.isNotEmpty;
+    final itemRadius = UiDrawer.concentricContentBorderRadiusOf(
+      context,
+      side: side,
+      variant: variant,
+      inset: UiThemeTokens.of(context).spacing.x2,
+    );
 
     return UiDrawer(
       side: side,
@@ -95,16 +106,18 @@ class UiNavigationDrawer extends StatelessWidget {
               _NavigationDrawerRow(
                 label: action.label,
                 icon: action.icon,
-                badge: action.badge,
+                badge: action.badge ?? _badgeFor(action.badgeCount),
                 onPressed: action.onPressed,
+                borderRadius: itemRadius,
               ),
             for (final destination in destinations)
               _NavigationDrawerRow(
                 label: destination.label,
                 icon: destination.icon,
-                badge: destination.badge,
+                badge: destination.badge ?? _badgeFor(destination.badgeCount),
                 selected: destination.selected,
                 onPressed: destination.onPressed,
+                borderRadius: itemRadius,
               ),
           ],
         ),
@@ -119,16 +132,19 @@ class UiNavigationDrawer extends StatelessWidget {
                     _NavigationDrawerRow(
                       label: action.label,
                       icon: action.icon,
-                      badge: action.badge,
+                      badge: action.badge ?? _badgeFor(action.badgeCount),
                       onPressed: action.onPressed,
+                      borderRadius: itemRadius,
                     ),
                   for (final destination in footerDestinations)
                     _NavigationDrawerRow(
                       label: destination.label,
                       icon: destination.icon,
-                      badge: destination.badge,
+                      badge: destination.badge ??
+                          _badgeFor(destination.badgeCount),
                       selected: destination.selected,
                       onPressed: destination.onPressed,
+                      borderRadius: itemRadius,
                     ),
                 ],
               ),
@@ -136,6 +152,9 @@ class UiNavigationDrawer extends StatelessWidget {
           : null,
     );
   }
+
+  Widget? _badgeFor(int? count) =>
+      count == null || count <= 0 ? null : UiNavigationCountBadge(count: count);
 }
 
 class _NavigationDrawerRow extends StatelessWidget {
@@ -145,6 +164,7 @@ class _NavigationDrawerRow extends StatelessWidget {
     this.icon,
     this.badge,
     this.selected = false,
+    required this.borderRadius,
   });
 
   final String label;
@@ -152,6 +172,7 @@ class _NavigationDrawerRow extends StatelessWidget {
   final Widget? badge;
   final bool selected;
   final VoidCallback onPressed;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +180,7 @@ class _NavigationDrawerRow extends StatelessWidget {
     final colors = tokens.colors;
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.x1 / 2),
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.x1),
       child: UiPressable(
         onPressed: onPressed,
         semanticsLabel: label,
@@ -173,12 +194,12 @@ class _NavigationDrawerRow extends StatelessWidget {
 
           return UiFocusRing(
             visible: state.focused,
-            borderRadius: tokens.radius.mdAll,
+            borderRadius: borderRadius,
             child: UiBox(
               background: background,
-              borderRadius: tokens.radius.mdAll,
+              borderRadius: borderRadius,
               padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.x3,
+                horizontal: tokens.spacing.x4,
                 vertical: tokens.spacing.x2,
               ),
               child: Row(

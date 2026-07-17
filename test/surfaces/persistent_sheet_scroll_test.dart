@@ -205,8 +205,7 @@ void main() {
       // at max extent). Overscroll in the forward direction maps to
       // "expand sheet"; since sheet is already at max snap, it stays.
       final listRect = tester.getRect(find.byType(ListView));
-      final start =
-          Offset(listRect.center.dx, listRect.bottom - 20);
+      final start = Offset(listRect.center.dx, listRect.bottom - 20);
       final gesture = await tester.startGesture(start);
       for (var i = 0; i < 10; i++) {
         await gesture.moveBy(const Offset(0, -20));
@@ -226,8 +225,7 @@ void main() {
       // Regression guard — PR-5 adds a scroll listener that touches
       // `_anim.value` directly. This test proves the controller →
       // animation channel is still wired up after the change.
-      final sheetController =
-          UiPersistentSheetController(initialIndex: 0);
+      final sheetController = UiPersistentSheetController(initialIndex: 0);
       addTearDown(sheetController.dispose);
       final listController = ScrollController();
       addTearDown(listController.dispose);

@@ -2,7 +2,7 @@ name: open_ui_kit
 description: >-
   Shadcn-inspired Flutter UI kit with token-driven, composable, and responsive
   components.
-version: 0.1.0
+version: 0.2.0
 homepage: https://github.com/OmarYacop/open_ui_kit
 repository: https://github.com/OmarYacop/open_ui_kit
 issue_tracker: https://github.com/OmarYacop/open_ui_kit/issues

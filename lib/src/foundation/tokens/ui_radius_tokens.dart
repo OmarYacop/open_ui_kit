@@ -6,10 +6,10 @@ import 'package:flutter/painting.dart';
 class UiRadiusTokens {
   const UiRadiusTokens({
     this.none = Radius.zero,
-    this.sm = const Radius.circular(8),
-    this.md = const Radius.circular(10),
-    this.lg = const Radius.circular(12),
-    this.xl = const Radius.circular(18),
+    this.sm = const Radius.circular(10),
+    this.md = const Radius.circular(12),
+    this.lg = const Radius.circular(16),
+    this.xl = const Radius.circular(24),
     this.pill = const Radius.circular(999),
   });
 

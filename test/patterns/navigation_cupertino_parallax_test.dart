@@ -82,8 +82,7 @@ double _firstHorizontalTranslationAncestor(
 
 void main() {
   group('Cupertino parallax back transition (PR-7)', () {
-    testWidgets(
-        'gesture progress updates both `from` and `to` transforms',
+    testWidgets('gesture progress updates both `from` and `to` transforms',
         (tester) async {
       await _runWith(TargetPlatform.iOS, () async {
         final controller = _controllerAtDetail();
@@ -222,12 +221,10 @@ void main() {
       });
     });
 
-    testWidgets(
-        'root stack does not install the edge region (no-op swipe)',
+    testWidgets('root stack does not install the edge region (no-op swipe)',
         (tester) async {
       await _runWith(TargetPlatform.iOS, () async {
-        final controller =
-            UiNavigationController(routes: [_home, _detail]);
+        final controller = UiNavigationController(routes: [_home, _detail]);
         addTearDown(controller.dispose);
         final progress = ValueNotifier<double>(0);
         addTearDown(progress.dispose);
@@ -437,8 +434,7 @@ void main() {
         }
 
         expect(hasOpaqueAncestor(find.text('bare-detail')), isTrue,
-            reason:
-                'outgoing page must be wrapped in an opaque backdrop '
+            reason: 'outgoing page must be wrapped in an opaque backdrop '
                 'so it does not read as transparent during the swipe');
         expect(hasOpaqueAncestor(find.text('bare-home')), isTrue,
             reason: 'incoming page also renders on an opaque backdrop');

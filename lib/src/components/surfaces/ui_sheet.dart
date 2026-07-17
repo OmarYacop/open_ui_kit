@@ -69,7 +69,7 @@ class UiSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
-    final bodyPadding = padding ?? EdgeInsets.all(tokens.spacing.x4);
+    final bodyPadding = padding ?? EdgeInsets.all(tokens.spacing.x6);
 
     return UiBox(
       background: c.card,
@@ -133,7 +133,7 @@ class UiSheetHeader extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.x4,
+        horizontal: tokens.spacing.x6,
         vertical: tokens.spacing.x2,
       ),
       child: Row(
@@ -189,10 +189,10 @@ class UiSheetFooter extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     return Padding(
       padding: EdgeInsets.only(
-        left: tokens.spacing.x4,
-        right: tokens.spacing.x4,
+        left: tokens.spacing.x6,
+        right: tokens.spacing.x6,
         top: tokens.spacing.x2,
-        bottom: tokens.spacing.x4,
+        bottom: tokens.spacing.x6,
       ),
       child: Row(
         mainAxisAlignment: alignment,

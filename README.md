@@ -351,9 +351,7 @@ chrome and collection placement.
 ```dart
 UiCollectionPage<SessionCard>(
   title: 'Sessions',
-  actions: [
-    UiButton(label: 'Refresh', onPressed: refresh),
-  ],
+  onRefresh: refresh,
   items: sessions,
   loading: loading,
   loadingTitle: 'Loading sessions',
@@ -367,7 +365,51 @@ UiCollectionPage<SessionCard>(
 )
 ```
 
-### 7e. Semantic settings list
+### 7e. Pull to refresh
+
+`UiRefresher` wraps any vertical scrollable, works with short content, and
+uses the kit's color, radius, shadow, typography, and motion tokens. The
+default indicator exposes pull, armed, refreshing, success, and failure
+feedback; replace it through `indicatorBuilder` when a product needs a custom
+visual. A controller makes the same refresh path available to buttons and
+keyboard shortcuts.
+
+```dart
+final refreshController = UiRefresherController();
+
+UiRefresher(
+  controller: refreshController,
+  onRefresh: repository.reload,
+  child: ListView.builder(
+    itemCount: items.length,
+    itemBuilder: (_, index) => ItemTile(item: items[index]),
+  ),
+)
+
+// Optional programmatic entry point; concurrent calls are coalesced.
+await refreshController.refresh();
+```
+
+For sliver layouts, put `UiSliverRefresher` first and opt into the portable
+refresh physics:
+
+```dart
+CustomScrollView(
+  physics: UiRefresher.sliverPhysics,
+  slivers: [
+    UiSliverRefresher(onRefresh: repository.reload),
+    const UiSliverNavigationBar(
+      spec: UiNavigationSpec(title: 'Library'),
+    ),
+    SliverList.builder(
+      itemCount: items.length,
+      itemBuilder: (_, index) => ItemTile(item: items[index]),
+    ),
+  ],
+)
+```
+
+### 7f. Semantic settings list
 
 Use `UiSettingsList` for grouped settings or account action menus. The
 pattern owns section labels, row spacing, selected state for split-view
@@ -401,7 +443,7 @@ UiSettingsList(
 )
 ```
 
-### 7f. Profile summary
+### 7g. Profile summary
 
 Use `UiProfileSummary` for account headers, profile drawers, and person
 detail summaries. It owns the tokenized avatar surface, image fallback,

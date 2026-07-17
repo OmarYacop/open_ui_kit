@@ -11,8 +11,43 @@ Widget _host(Widget child) {
 }
 
 void main() {
-  testWidgets('sheet opens and returns typed result on controller dismiss',
-      (tester) async {
+  testWidgets('sheet slots use roomier large-surface padding by default', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const UiSheet(
+          header: UiSheetHeader(title: 'Sheet title'),
+          footer: UiSheetFooter(children: [Text('Action')]),
+          child: Text('Body'),
+        ),
+      ),
+    );
+
+    final paddings = tester
+        .widgetList<Padding>(
+          find.descendant(
+            of: find.byType(UiSheet),
+            matching: find.byType(Padding),
+          ),
+        )
+        .map((padding) => padding.padding)
+        .toList();
+
+    expect(paddings, contains(const EdgeInsets.all(24)));
+    expect(
+      paddings,
+      contains(const EdgeInsets.symmetric(horizontal: 24, vertical: 8)),
+    );
+    expect(
+      paddings,
+      contains(const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 24)),
+    );
+  });
+
+  testWidgets('sheet opens and returns typed result on controller dismiss', (
+    tester,
+  ) async {
     Future<String?>? pending;
     await tester.pumpWidget(
       _host(
@@ -78,8 +113,9 @@ void main() {
     expect(find.text('Modal body'), findsNothing);
   });
 
-  testWidgets('sheet snap variants respect different max-height envelopes',
-      (tester) async {
+  testWidgets('sheet snap variants respect different max-height envelopes', (
+    tester,
+  ) async {
     Future<void> openWithSnap(UiSheetSnap snap) async {
       await tester.pumpWidget(
         _host(
@@ -167,8 +203,9 @@ void main() {
       expect(hostTaps, 1);
     });
 
-    testWidgets('controller.expand / collapse moves the sheet between snaps',
-        (tester) async {
+    testWidgets('controller.expand / collapse moves the sheet between snaps', (
+      tester,
+    ) async {
       final controller = UiPersistentSheetController(initialIndex: 0);
       addTearDown(controller.dispose);
 
@@ -183,10 +220,7 @@ void main() {
                 UiSheetSnap.fraction(0.8),
               ],
               child: const UiSheet(
-                child: SizedBox(
-                  height: 2000,
-                  child: Text('Body'),
-                ),
+                child: SizedBox(height: 2000, child: Text('Body')),
               ),
             ),
           ),
@@ -213,8 +247,9 @@ void main() {
       expect(controller.isExpanded, isFalse);
     });
 
-    testWidgets('upward drag past midpoint snaps to the larger snap',
-        (tester) async {
+    testWidgets('upward drag past midpoint snaps to the larger snap', (
+      tester,
+    ) async {
       final controller = UiPersistentSheetController(initialIndex: 0);
       addTearDown(controller.dispose);
 
@@ -229,10 +264,7 @@ void main() {
                 UiSheetSnap.fraction(0.8),
               ],
               child: const UiSheet(
-                child: SizedBox(
-                  height: 2000,
-                  child: Text('Body'),
-                ),
+                child: SizedBox(height: 2000, child: Text('Body')),
               ),
             ),
           ),
@@ -256,8 +288,9 @@ void main() {
       expect(controller.snapIndex, 1);
     });
 
-    testWidgets('allowClose + onClose fire only on strong downward swipe',
-        (tester) async {
+    testWidgets('allowClose + onClose fire only on strong downward swipe', (
+      tester,
+    ) async {
       var closed = 0;
       final controller = UiPersistentSheetController(initialIndex: 1);
       addTearDown(controller.dispose);
@@ -275,10 +308,7 @@ void main() {
                 UiSheetSnap.fraction(0.8),
               ],
               child: const UiSheet(
-                child: SizedBox(
-                  height: 2000,
-                  child: Text('Body'),
-                ),
+                child: SizedBox(height: 2000, child: Text('Body')),
               ),
             ),
           ),
@@ -305,8 +335,9 @@ void main() {
       expect(closed, 1);
     });
 
-    testWidgets('internal controller lifecycle does not throw on unmount',
-        (tester) async {
+    testWidgets('internal controller lifecycle does not throw on unmount', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SizedBox(
@@ -324,17 +355,16 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('sheet body is exposed as a semantics container',
-        (tester) async {
+    testWidgets('sheet body is exposed as a semantics container', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SizedBox(
             height: 400,
             child: UiPersistentSheet(
               snaps: const [UiSheetSnap.fraction(0.5)],
-              child: const UiSheet(
-                child: Text('Body'),
-              ),
+              child: const UiSheet(child: Text('Body')),
             ),
           ),
         ),
@@ -357,9 +387,7 @@ void main() {
               onPressed: () {
                 UiDrawerScope.show<void>(
                   context,
-                  builder: (_) => const UiDrawer(
-                    child: Text('Drawer content'),
-                  ),
+                  builder: (_) => const UiDrawer(child: Text('Drawer content')),
                 );
               },
             );
@@ -426,9 +454,8 @@ void main() {
                   context,
                   variant: UiDrawerVariant.floating,
                   blurBackdrop: false,
-                  builder: (_) => const UiDrawer(
-                    child: Text('Floating drawer content'),
-                  ),
+                  builder: (_) =>
+                      const UiDrawer(child: Text('Floating drawer content')),
                 );
               },
             );
@@ -461,10 +488,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: UiDrawer(
-                width: 200,
-                child: Text('Safe drawer content'),
-              ),
+              child: UiDrawer(width: 200, child: Text('Safe drawer content')),
             ),
           ),
         ),
@@ -493,10 +517,7 @@ void main() {
                 body: Column(
                   children: [
                     for (var index = 0; index < 30; index++)
-                      SizedBox(
-                        height: 40,
-                        child: Text('Body item $index'),
-                      ),
+                      SizedBox(height: 40, child: Text('Body item $index')),
                   ],
                 ),
                 footer: const UiDrawerFooter(child: Text('Drawer footer')),
@@ -516,8 +537,74 @@ void main() {
 
     expect(tester.getTopLeft(find.text('Drawer title')), headerBefore);
     expect(tester.getTopLeft(find.text('Drawer footer')), footerBefore);
-    expect(tester.getTopLeft(find.text('Body item 3')).dy,
-        lessThan(bodyBefore.dy));
+    expect(
+      tester.getTopLeft(find.text('Body item 3')).dy,
+      lessThan(bodyBefore.dy),
+    );
+  });
+
+  testWidgets('structured drawer regions use roomier default padding', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UiThemeData.light(),
+        home: const Directionality(
+          textDirection: TextDirection.ltr,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: UiDrawer(
+              header: UiDrawerHeader(title: 'Drawer title'),
+              body: UiDrawerSection(
+                title: 'Section title',
+                child: Text('Drawer body'),
+              ),
+              footer: UiDrawerFooter(child: Text('Drawer footer')),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final headerPadding = tester.widget<Padding>(
+      find
+          .descendant(
+            of: find.byType(UiDrawerHeader),
+            matching: find.byType(Padding),
+          )
+          .first,
+    );
+    final sectionPaddings = tester
+        .widgetList<Padding>(
+          find.descendant(
+            of: find.byType(UiDrawerSection),
+            matching: find.byType(Padding),
+          ),
+        )
+        .map((padding) => padding.padding)
+        .toList();
+    final footerPadding = tester.widget<Padding>(
+      find
+          .descendant(
+            of: find.byType(UiDrawerFooter),
+            matching: find.byType(Padding),
+          )
+          .first,
+    );
+
+    expect(
+      headerPadding.padding,
+      const EdgeInsetsDirectional.fromSTEB(24, 20, 16, 16),
+    );
+    expect(
+      sectionPaddings,
+      contains(const EdgeInsetsDirectional.fromSTEB(12, 12, 12, 12)),
+    );
+    expect(
+      sectionPaddings,
+      contains(const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 4)),
+    );
+    expect(footerPadding.padding, const EdgeInsets.all(12));
   });
 
   testWidgets('floating drawer reduces bottom safe-area gap near device edge', (
@@ -564,6 +651,119 @@ void main() {
     expect(clipRect.bottom, greaterThan(820));
   });
 
+  testWidgets('floating drawer and navigation rows use concentric radii', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UiThemeData.light(),
+        home: const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox(
+            height: 640,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: UiNavigationDrawer(
+                title: 'More',
+                variant: UiDrawerVariant.stacked,
+                destinations: [
+                  UiNavigationDrawerDestination(
+                    label: 'Home',
+                    selected: true,
+                    onPressed: _noop,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final clip = tester.widget<ClipRRect>(
+      find.descendant(
+        of: find.byType(UiDrawer),
+        matching: find.byType(ClipRRect),
+      ),
+    );
+    final outer = clip.borderRadius.resolve(TextDirection.ltr);
+    final focus = tester.widget<UiFocusRing>(find.byType(UiFocusRing));
+    final inner = focus.borderRadius!.resolve(TextDirection.ltr);
+
+    expect(outer.topLeft.x, greaterThan(24));
+    expect(inner.topLeft.x, closeTo(outer.topLeft.x - 8, 0.1));
+  });
+
+  testWidgets('navigation drawer renders numeric destination badges', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UiThemeData.light(),
+        home: const Directionality(
+          textDirection: TextDirection.ltr,
+          child: UiNavigationDrawer(
+            title: 'More',
+            destinations: [
+              UiNavigationDrawerDestination(
+                label: 'Alerts',
+                badgeCount: 5,
+                onPressed: _noop,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(UiNavigationCountBadge), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+  });
+
+  testWidgets('navigation drawer rows use comfortable content padding', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UiThemeData.light(),
+        home: const Directionality(
+          textDirection: TextDirection.ltr,
+          child: UiNavigationDrawer(
+            title: 'More',
+            destinations: [
+              UiNavigationDrawerDestination(
+                label: 'Home',
+                onPressed: _noop,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final rowBox = tester.widget<UiBox>(
+      find.ancestor(of: find.text('Home'), matching: find.byType(UiBox)).first,
+    );
+    final rowAncestorPaddings = tester
+        .widgetList<Padding>(
+          find.ancestor(
+            of: find.text('Home'),
+            matching: find.byType(Padding),
+          ),
+        )
+        .map((padding) => padding.padding)
+        .toList();
+
+    expect(
+      rowBox.padding,
+      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    );
+    expect(
+      rowAncestorPaddings,
+      contains(const EdgeInsets.symmetric(vertical: 4)),
+    );
+  });
+
   testWidgets('drawer infers edge radius from device safe-area signals', (
     tester,
   ) async {
@@ -603,93 +803,95 @@ void main() {
     expect(radius.bottomRight.x, 0);
   });
 
-  testWidgets('stacked nested drawers push older drawers behind the front one',
-      (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        Builder(
-          builder: (context) {
-            return UiButton(
-              label: 'Open stack',
-              onPressed: () {
-                UiDrawerScope.show<void>(
-                  context,
-                  side: UiDrawerSide.right,
-                  variant: UiDrawerVariant.stacked,
-                  blurBackdrop: false,
-                  builder: (outerContext) => UiDrawer(
-                    width: 280,
-                    child: Column(
-                      children: [
-                        const Text('First stacked drawer'),
-                        UiButton(
-                          label: 'Open nested drawer',
-                          onPressed: () {
-                            UiDrawerScope.show<void>(
-                              outerContext,
-                              side: UiDrawerSide.right,
-                              variant: UiDrawerVariant.stacked,
-                              blurBackdrop: false,
-                              builder: (_) => const UiDrawer(
-                                width: 280,
-                                child: Text('Second stacked drawer'),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+  testWidgets(
+    'stacked nested drawers push older drawers behind the front one',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          Builder(
+            builder: (context) {
+              return UiButton(
+                label: 'Open stack',
+                onPressed: () {
+                  UiDrawerScope.show<void>(
+                    context,
+                    side: UiDrawerSide.right,
+                    variant: UiDrawerVariant.stacked,
+                    blurBackdrop: false,
+                    builder: (outerContext) => UiDrawer(
+                      width: 280,
+                      child: Column(
+                        children: [
+                          const Text('First stacked drawer'),
+                          UiButton(
+                            label: 'Open nested drawer',
+                            onPressed: () {
+                              UiDrawerScope.show<void>(
+                                outerContext,
+                                side: UiDrawerSide.right,
+                                variant: UiDrawerVariant.stacked,
+                                blurBackdrop: false,
+                                builder: (_) => const UiDrawer(
+                                  width: 280,
+                                  child: Text('Second stacked drawer'),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            );
-          },
+                  );
+                },
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Open stack'));
-    await tester.pumpAndSettle();
-    final firstBefore = tester.getRect(find.text('First stacked drawer'));
+      await tester.tap(find.text('Open stack'));
+      await tester.pumpAndSettle();
+      final firstBefore = tester.getRect(find.text('First stacked drawer'));
 
-    await tester.tap(find.text('Open nested drawer'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 160));
+      await tester.tap(find.text('Open nested drawer'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 160));
 
-    final firstDuringOpen = tester.getRect(find.text('First stacked drawer'));
-    final secondDuringOpen = tester.getRect(find.text('Second stacked drawer'));
+      final firstDuringOpen = tester.getRect(find.text('First stacked drawer'));
+      final secondDuringOpen = tester.getRect(
+        find.text('Second stacked drawer'),
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    final firstAfter = tester.getRect(find.text('First stacked drawer'));
-    final second = tester.getRect(find.text('Second stacked drawer'));
+      final firstAfter = tester.getRect(find.text('First stacked drawer'));
+      final second = tester.getRect(find.text('Second stacked drawer'));
 
-    expect(firstDuringOpen.left, greaterThan(firstAfter.left));
-    expect(secondDuringOpen.left, greaterThan(second.left));
-    expect(firstAfter.left, lessThan(firstBefore.left));
-    expect(second.left, greaterThan(firstAfter.left));
+      expect(firstDuringOpen.left, greaterThan(firstAfter.left));
+      expect(secondDuringOpen.left, greaterThan(second.left));
+      expect(firstAfter.left, lessThan(firstBefore.left));
+      expect(second.left, greaterThan(firstAfter.left));
 
-    await tester.tapAt(const Offset(20, 20));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 160));
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 160));
 
-    final firstDuringClose = tester.getRect(
-      find.text('First stacked drawer'),
-    );
-    final secondDuringClose = tester.getRect(
-      find.text('Second stacked drawer'),
-    );
-    expect(find.text('Second stacked drawer'), findsOneWidget);
-    expect(firstDuringClose.left, greaterThan(firstAfter.left));
-    expect(secondDuringClose.left, greaterThan(second.left + 80));
+      final firstDuringClose = tester.getRect(
+        find.text('First stacked drawer'),
+      );
+      final secondDuringClose = tester.getRect(
+        find.text('Second stacked drawer'),
+      );
+      expect(find.text('Second stacked drawer'), findsOneWidget);
+      expect(firstDuringClose.left, greaterThan(firstAfter.left));
+      expect(secondDuringClose.left, greaterThan(second.left + 80));
 
-    await tester.pumpAndSettle();
-    expect(find.text('Second stacked drawer'), findsNothing);
-    await tester.tapAt(const Offset(20, 20));
-    await tester.pumpAndSettle();
-  });
+      await tester.pumpAndSettle();
+      expect(find.text('Second stacked drawer'), findsNothing);
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('stacked nested left drawers share backdrop and expose depth', (
     tester,
@@ -799,9 +1001,7 @@ void main() {
     await tester.pumpWidget(
       _host(
         UiSidebar(
-          items: [
-            UiSidebarItem(label: 'Courses', onPressed: () => presses++),
-          ],
+          items: [UiSidebarItem(label: 'Courses', onPressed: () => presses++)],
         ),
       ),
     );
@@ -821,3 +1021,5 @@ void main() {
     expect(activated, isTrue);
   });
 }
+
+void _noop() {}

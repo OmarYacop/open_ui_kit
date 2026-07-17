@@ -365,7 +365,9 @@ class _Header extends StatelessWidget {
     final next = onNextMonth ?? onNext;
     return Row(
       children: [
-        if (prev != null) _NavArrow(onPressed: prev, glyph: '‹') else
+        if (prev != null)
+          _NavArrow(onPressed: prev, glyph: '‹')
+        else
           const SizedBox(width: 32),
         Expanded(
           child: Center(
@@ -376,7 +378,9 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
-        if (next != null) _NavArrow(onPressed: next, glyph: '›') else
+        if (next != null)
+          _NavArrow(onPressed: next, glyph: '›')
+        else
           const SizedBox(width: 32),
       ],
     );
@@ -408,9 +412,7 @@ class _HeaderLabelTrigger extends StatelessWidget {
         excludeFromSemantics: true,
         minTapSize: 32,
         builder: (context, state, _) => UiBox(
-          background: state.hovered
-              ? c.surfaceMuted
-              : const Color(0x00000000),
+          background: state.hovered ? c.surfaceMuted : const Color(0x00000000),
           borderRadius: tokens.radius.smAll,
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.x2,
@@ -731,8 +733,7 @@ class _GridCell extends StatelessWidget {
                   variant: UiTextVariant.bodySm,
                   style: TextStyle(
                     color: fg,
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ),

@@ -64,6 +64,24 @@ abstract class UiLocalizations {
   /// Default label for a "loading" caption.
   String get loading;
 
+  /// Pull-to-refresh prompt shown before the trigger distance is reached.
+  ///
+  /// The concrete default keeps this addition backward-compatible for custom
+  /// localization implementations that predate the refresher component.
+  String get pullToRefresh => 'Pull to refresh';
+
+  /// Pull-to-refresh prompt shown after the gesture is armed.
+  String get releaseToRefresh => 'Release to refresh';
+
+  /// Live-region label while a refresh callback is running.
+  String get refreshing => 'Refreshing…';
+
+  /// Live-region label after a successful refresh.
+  String get refreshComplete => 'Refresh complete';
+
+  /// Live-region label after a failed refresh.
+  String get refreshFailed => 'Refresh failed';
+
   /// Default spoken-state suffix: "selected".
   String get selected;
 
@@ -160,6 +178,21 @@ class UiLocalizationsEn extends UiLocalizations {
   String get loading => 'Loading…';
 
   @override
+  String get pullToRefresh => 'Pull to refresh';
+
+  @override
+  String get releaseToRefresh => 'Release to refresh';
+
+  @override
+  String get refreshing => 'Refreshing…';
+
+  @override
+  String get refreshComplete => 'Refresh complete';
+
+  @override
+  String get refreshFailed => 'Refresh failed';
+
+  @override
   String get selected => 'selected';
 
   @override
@@ -237,6 +270,21 @@ class UiLocalizationsAr extends UiLocalizations {
 
   @override
   String get loading => 'جارٍ التحميل…';
+
+  @override
+  String get pullToRefresh => 'اسحب للتحديث';
+
+  @override
+  String get releaseToRefresh => 'حرّر للتحديث';
+
+  @override
+  String get refreshing => 'جارٍ التحديث…';
+
+  @override
+  String get refreshComplete => 'اكتمل التحديث';
+
+  @override
+  String get refreshFailed => 'فشل التحديث';
 
   @override
   String get selected => 'محدد';

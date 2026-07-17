@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/layout/ui_navigation_chrome_scope.dart';
+
 /// Breakpoint form factors surfaced by [UiResponsiveNavigationScaffold].
 enum UiNavigationFormFactor { phone, tablet, desktop }
 
@@ -81,10 +83,15 @@ class UiResponsiveNavigationScaffold extends StatelessWidget {
                 body: _BodyWithFloatingChrome(
                   body: body,
                   bottomBar: bottomBar,
+                  hasPersistentRail: true,
                 ),
               );
             }
-            return _BodyWithFloatingChrome(body: body, bottomBar: bottomBar);
+            return _BodyWithFloatingChrome(
+              body: body,
+              bottomBar: bottomBar,
+              hasPersistentRail: false,
+            );
           case UiNavigationFormFactor.tablet:
             final resolvedTabletSecondary = tabletSecondary ?? secondary;
             return _SideChromeLayout(
@@ -92,6 +99,7 @@ class UiResponsiveNavigationScaffold extends StatelessWidget {
               body: _BodyWithFloatingChrome(
                 body: body,
                 bottomBar: showBottomBarOnTablet ? bottomBar : null,
+                hasPersistentRail: showSidebarOnTablet && sidebar != null,
               ),
               secondary: showSecondaryOnTablet ? resolvedTabletSecondary : null,
             );
@@ -101,6 +109,7 @@ class UiResponsiveNavigationScaffold extends StatelessWidget {
               body: _BodyWithFloatingChrome(
                 body: body,
                 bottomBar: showBottomBarOnDesktop ? bottomBar : null,
+                hasPersistentRail: showSidebarOnDesktop && sidebar != null,
               ),
               secondary: showSecondaryOnDesktop ? secondary : null,
             );
@@ -188,26 +197,38 @@ class _SideChromeLayoutDelegate extends MultiChildLayoutDelegate {
 }
 
 class _BodyWithFloatingChrome extends StatelessWidget {
-  const _BodyWithFloatingChrome({required this.body, required this.bottomBar});
+  const _BodyWithFloatingChrome({
+    required this.body,
+    required this.bottomBar,
+    required this.hasPersistentRail,
+  });
 
   final Widget body;
   final Widget? bottomBar;
+  final bool hasPersistentRail;
 
   @override
   Widget build(BuildContext context) {
-    if (bottomBar == null) return body;
+    Widget content = body;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Positioned.fill(child: body),
-        PositionedDirectional(
-          start: 0,
-          end: 0,
-          bottom: 0,
-          child: bottomBar!,
-        ),
-      ],
+    if (bottomBar != null) {
+      content = Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(child: body),
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            bottom: 0,
+            child: bottomBar!,
+          ),
+        ],
+      );
+    }
+
+    return UiNavigationChromeScope(
+      hasPersistentRail: hasPersistentRail,
+      child: content,
     );
   }
 }

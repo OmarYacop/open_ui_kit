@@ -11,6 +11,7 @@ import '../../foundation/ui_app.dart';
 import '../data_display/avatar.dart';
 import '../feedback/tooltip.dart';
 import '../surfaces/ui_drawer.dart';
+import 'ui_navigation_badge.dart';
 
 typedef UiNavigationRailLeadingBuilder = Widget Function(
     BuildContext context, Color foreground);
@@ -22,6 +23,7 @@ class UiNavigationRailDestination {
     this.icon,
     this.activeIcon,
     this.selected = false,
+    this.badge,
     this.leadingBuilder,
     this.leadingSize = 20,
     this.leadingInset,
@@ -31,6 +33,7 @@ class UiNavigationRailDestination {
   final IconData? icon;
   final IconData? activeIcon;
   final bool selected;
+  final int? badge;
   final VoidCallback onPressed;
   final UiNavigationRailLeadingBuilder? leadingBuilder;
   final double leadingSize;
@@ -62,7 +65,7 @@ class UiNavigationRailGeometry {
     this.itemPadding = 8,
     this.headerHeight = 40,
     this.destinationHeight = 34,
-    this.maxPanelHeight = 315,
+    this.maxPanelHeight = double.infinity,
     this.minVisibleDestinations = 3,
     this.expandedHeaderTopPadding = 4,
     this.collapsedHeaderTopPadding = 4,
@@ -90,6 +93,10 @@ class UiNavigationRailGeometry {
   final double headerToggleIconSize;
   final double collapsedChromeTopPadding;
   final double collapsedChromeMaxHeightExtra;
+
+  /// Layout extent of a destination including its accessible tap target.
+  double get destinationExtent =>
+      destinationHeight < 44 ? 44 : destinationHeight;
 
   double panelWidthFor(double outerWidth) {
     return (outerWidth - outerMargin * 2)
@@ -173,7 +180,7 @@ class UiNavigationRail extends StatefulWidget {
   static const collapsedOuterWidth = 84.0;
   static const expandedPanelWidth = 236.0;
   static const collapsedPanelWidth = 60.0;
-  static const maxPanelHeight = 315.0;
+  static const maxPanelHeight = double.infinity;
 
   @override
   State<UiNavigationRail> createState() => _UiNavigationRailState();
@@ -282,9 +289,16 @@ class _UiNavigationRailState extends State<UiNavigationRail>
         : tokens.colors.surface;
     final shadowColor = tokens.brightness == Brightness.dark
         ? const Color(0x66000000)
-        : const Color(0x16000000);
+        : const Color(0x0D000000);
     final itemLeadingInset = geometry.collapsedItemLeadingInset;
     final headerTitleInset = geometry.itemPadding + itemLeadingInset;
+    // Resolve before SafeArea rewrites the descendant MediaQuery. The original
+    // top inset is what distinguishes real fullscreen iOS from provisional
+    // first-frame window geometry.
+    final chromeLeadingInset = resolveUiFloatingWindowChromeLeadingInset(
+      context,
+      _windowMode,
+    );
 
     return TweenAnimationBuilder<double>(
       duration: tokens.motion.slow,
@@ -304,146 +318,186 @@ class _UiNavigationRailState extends State<UiNavigationRail>
                 duration: tokens.motion.slow,
                 curve: tokens.motion.standardCurve,
                 padding: EdgeInsets.fromLTRB(margin, 0, margin, margin),
-                child: Align(
-                  alignment: AlignmentDirectional.topStart,
-                  child: SizedBox(
-                    width: animatedPanelWidth,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final railProgress = geometry.railProgressForPanelWidth(
-                          constraints.maxWidth,
-                        );
-                        final labelProgress =
-                            geometry.labelProgressForRailProgress(
-                          railProgress,
-                          collapsed: widget.collapsed,
-                        );
-                        final radius = _resolveRailRadius(context);
-                        final chromeLeadingInset =
-                            resolveUiFloatingWindowChromeLeadingInset(
-                          context,
-                          _windowMode,
-                        );
-                        final hasFloatingWindowChrome = chromeLeadingInset > 0;
-                        final metrics = _RailLayoutMetrics.resolve(
-                          geometry: geometry,
-                          collapsed: widget.collapsed,
-                          hasFloatingWindowChrome: hasFloatingWindowChrome,
-                          destinationCount: widget.destinations.length,
-                        );
+                child: LayoutBuilder(
+                  builder: (context, viewportConstraints) {
+                    return Align(
+                      alignment: AlignmentDirectional.topStart,
+                      child: SizedBox(
+                        width: animatedPanelWidth,
+                        height: viewportConstraints.maxHeight.isFinite
+                            ? viewportConstraints.maxHeight
+                            : null,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final railProgress =
+                                geometry.railProgressForPanelWidth(
+                              constraints.maxWidth,
+                            );
+                            final labelProgress =
+                                geometry.labelProgressForRailProgress(
+                              railProgress,
+                              collapsed: widget.collapsed,
+                            );
+                            final radius = _resolveRailRadius(context);
+                            final hasFloatingWindowChrome =
+                                chromeLeadingInset > 0;
+                            final footerItemCount =
+                                widget.footerActions.length +
+                                    widget.footerDestinations.length;
+                            final footerHeight = footerItemCount == 0
+                                ? 0.0
+                                : geometry.itemPadding * 2 +
+                                    footerItemCount *
+                                        geometry.destinationExtent;
+                            final availableMainHeight =
+                                constraints.maxHeight.isFinite
+                                    ? (constraints.maxHeight - footerHeight)
+                                        .clamp(0.0, double.infinity)
+                                        .toDouble()
+                                    : null;
+                            final targetHeaderTopPadding =
+                                geometry.headerTopPadding(
+                              collapsed: widget.collapsed,
+                              hasFloatingWindowChrome: hasFloatingWindowChrome,
+                            );
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AnimatedContainer(
+                            return TweenAnimationBuilder<double>(
                               duration: tokens.motion.slow,
                               curve: tokens.motion.standardCurve,
-                              height: metrics.mainPanelHeight,
-                              constraints: BoxConstraints(
-                                minHeight: metrics.mainPanelMinHeight,
-                                maxHeight: metrics.mainPanelMaxHeight,
+                              tween: Tween<double>(
+                                end: targetHeaderTopPadding,
                               ),
-                              child: _RailSurface(
-                                key: const Key(
-                                    'ui_navigation_rail_main_surface'),
-                                background: panelColor,
-                                borderRadius: radius,
-                                shadowColor: shadowColor,
-                                child: Column(
+                              builder: (context, headerTopPadding, child) {
+                                final metrics = _RailLayoutMetrics.resolve(
+                                  geometry: geometry,
+                                  collapsed: widget.collapsed,
+                                  hasFloatingWindowChrome:
+                                      hasFloatingWindowChrome,
+                                  headerTopPadding: headerTopPadding,
+                                  destinationCount: widget.destinations.length,
+                                  availableHeight: availableMainHeight,
+                                );
+
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    AnimatedPadding(
-                                      duration: tokens.motion.slow,
-                                      curve: tokens.motion.standardCurve,
-                                      padding: EdgeInsets.only(
-                                        top: metrics.headerTopPadding,
-                                      ),
-                                      child: _RailHeader(
-                                        collapsed: widget.collapsed,
-                                        geometry: geometry,
-                                        railProgress: railProgress,
-                                        labelProgress: labelProgress,
-                                        chromeLeadingInset: chromeLeadingInset,
-                                        itemLeadingInset: headerTitleInset,
-                                        title: widget.title ??
-                                            UiAppContext.titleOf(context),
-                                        onToggleCollapsed:
-                                            widget.onToggleCollapsed,
-                                      ),
-                                    ),
                                     SizedBox(
-                                      height: metrics.destinationsHeight,
-                                      child: SingleChildScrollView(
-                                        padding: EdgeInsets.only(
-                                          right: geometry.itemPadding,
-                                          left: geometry.itemPadding,
-                                          bottom: geometry.itemPadding,
-                                        ),
+                                      height: metrics.mainPanelHeight,
+                                      child: _RailSurface(
+                                        key: const Key(
+                                            'ui_navigation_rail_main_surface'),
+                                        background: panelColor,
+                                        borderRadius: radius,
+                                        shadowColor: shadowColor,
                                         child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
                                           children: [
-                                            for (final destination
-                                                in widget.destinations)
-                                              _RailDestinationButton(
-                                                destination: destination,
-                                                geometry: geometry,
-                                                labelProgress: labelProgress,
-                                                itemLeadingInset:
-                                                    itemLeadingInset,
+                                            Padding(
+                                              padding: EdgeInsets.only(
+                                                top: metrics.headerTopPadding,
                                               ),
+                                              child: _RailHeader(
+                                                collapsed: widget.collapsed,
+                                                geometry: geometry,
+                                                railProgress: railProgress,
+                                                labelProgress: labelProgress,
+                                                chromeLeadingInset:
+                                                    chromeLeadingInset,
+                                                itemLeadingInset:
+                                                    headerTitleInset,
+                                                title: widget.title ??
+                                                    UiAppContext.titleOf(
+                                                        context),
+                                                onToggleCollapsed:
+                                                    widget.onToggleCollapsed,
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height:
+                                                  metrics.destinationsHeight,
+                                              child: SingleChildScrollView(
+                                                padding: EdgeInsets.only(
+                                                  right: geometry.itemPadding,
+                                                  left: geometry.itemPadding,
+                                                  bottom: geometry.itemPadding,
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .stretch,
+                                                  children: [
+                                                    for (final destination
+                                                        in widget.destinations)
+                                                      _RailDestinationButton(
+                                                        destination:
+                                                            destination,
+                                                        geometry: geometry,
+                                                        labelProgress:
+                                                            labelProgress,
+                                                        itemLeadingInset:
+                                                            itemLeadingInset,
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            if (widget.footerActions.isNotEmpty ||
-                                widget.footerDestinations.isNotEmpty)
-                              _RailSurface(
-                                key: const Key(
-                                    'ui_navigation_rail_footer_surface'),
-                                background: panelColor,
-                                borderRadius: radius,
-                                shadowColor: shadowColor,
-                                child: Padding(
-                                  padding: EdgeInsets.all(geometry.itemPadding),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      for (final button in widget.footerActions)
-                                        _RailDestinationButton(
-                                          destination:
-                                              UiNavigationRailDestination(
-                                            label: button.label,
-                                            icon: button.icon,
-                                            onPressed: button.onPressed,
+                                    const Spacer(),
+                                    if (widget.footerActions.isNotEmpty ||
+                                        widget.footerDestinations.isNotEmpty)
+                                      _RailSurface(
+                                        key: const Key(
+                                            'ui_navigation_rail_footer_surface'),
+                                        background: panelColor,
+                                        borderRadius: radius,
+                                        shadowColor: shadowColor,
+                                        child: Padding(
+                                          padding: EdgeInsets.all(
+                                              geometry.itemPadding),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              for (final button
+                                                  in widget.footerActions)
+                                                _RailDestinationButton(
+                                                  destination:
+                                                      UiNavigationRailDestination(
+                                                    label: button.label,
+                                                    icon: button.icon,
+                                                    onPressed: button.onPressed,
+                                                  ),
+                                                  geometry: geometry,
+                                                  labelProgress: labelProgress,
+                                                  itemLeadingInset:
+                                                      itemLeadingInset,
+                                                ),
+                                              for (final destination
+                                                  in widget.footerDestinations)
+                                                _RailDestinationButton(
+                                                  destination: destination,
+                                                  geometry: geometry,
+                                                  labelProgress: labelProgress,
+                                                  itemLeadingInset:
+                                                      itemLeadingInset,
+                                                ),
+                                            ],
                                           ),
-                                          geometry: geometry,
-                                          labelProgress: labelProgress,
-                                          itemLeadingInset: itemLeadingInset,
                                         ),
-                                      for (final destination
-                                          in widget.footerDestinations)
-                                        _RailDestinationButton(
-                                          destination: destination,
-                                          geometry: geometry,
-                                          labelProgress: labelProgress,
-                                          itemLeadingInset: itemLeadingInset,
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -457,15 +511,11 @@ class _UiNavigationRailState extends State<UiNavigationRail>
 class _RailLayoutMetrics {
   const _RailLayoutMetrics({
     required this.headerTopPadding,
-    required this.mainPanelMinHeight,
-    required this.mainPanelMaxHeight,
     required this.mainPanelHeight,
     required this.destinationsHeight,
   });
 
   final double headerTopPadding;
-  final double mainPanelMinHeight;
-  final double mainPanelMaxHeight;
   final double mainPanelHeight;
   final double destinationsHeight;
 
@@ -473,29 +523,34 @@ class _RailLayoutMetrics {
     required UiNavigationRailGeometry geometry,
     required bool collapsed,
     required bool hasFloatingWindowChrome,
+    required double headerTopPadding,
     required int destinationCount,
+    double? availableHeight,
   }) {
-    final headerTopPadding = geometry.headerTopPadding(
-      collapsed: collapsed,
-      hasFloatingWindowChrome: hasFloatingWindowChrome,
-    );
     final visibleDestinationCount =
         destinationCount < geometry.minVisibleDestinations
             ? destinationCount
             : geometry.minVisibleDestinations;
     final headerBlockHeight = headerTopPadding + geometry.headerHeight;
     final mainPanelMinHeight = headerBlockHeight +
-        visibleDestinationCount * geometry.destinationHeight +
+        visibleDestinationCount * geometry.destinationExtent +
         geometry.itemPadding;
     final mainPanelNaturalHeight = headerBlockHeight +
-        destinationCount * geometry.destinationHeight +
+        destinationCount * geometry.destinationExtent +
         geometry.itemPadding;
-    final mainPanelMaxHeight = geometry.maxPanelHeight +
+    final configuredMaxHeight = geometry.maxPanelHeight +
         (collapsed && hasFloatingWindowChrome
             ? geometry.collapsedChromeMaxHeightExtra
             : 0);
+    final mainPanelMaxHeight =
+        availableHeight == null || availableHeight > configuredMaxHeight
+            ? configuredMaxHeight
+            : availableHeight;
+    final resolvedMinHeight = mainPanelMinHeight > mainPanelMaxHeight
+        ? mainPanelMaxHeight
+        : mainPanelMinHeight;
     final mainPanelHeight = mainPanelNaturalHeight
-        .clamp(mainPanelMinHeight, mainPanelMaxHeight)
+        .clamp(resolvedMinHeight, mainPanelMaxHeight)
         .toDouble();
     final destinationsHeight = (mainPanelHeight - headerBlockHeight)
         .clamp(0.0, double.infinity)
@@ -503,8 +558,6 @@ class _RailLayoutMetrics {
 
     return _RailLayoutMetrics(
       headerTopPadding: headerTopPadding,
-      mainPanelMinHeight: mainPanelMinHeight,
-      mainPanelMaxHeight: mainPanelMaxHeight,
       mainPanelHeight: mainPanelHeight,
       destinationsHeight: destinationsHeight,
     );
@@ -600,14 +653,14 @@ BorderRadius _resolveRailRadius(BuildContext context) {
     side: UiDrawerSide.start,
     variant: UiDrawerVariant.floating,
   ).resolve(Directionality.of(context));
-  final desired = tokens.radius.xl.x + tokens.spacing.x2;
+  final desired = tokens.radius.lg.x + tokens.spacing.x1;
   final adaptive = [
     drawerRadius.topLeft.x,
     drawerRadius.topRight.x,
     drawerRadius.bottomLeft.x,
     drawerRadius.bottomRight.x,
   ].reduce((a, b) => a > b ? a : b);
-  final value = (adaptive > desired ? adaptive : desired).clamp(22.0, 32.0);
+  final value = (adaptive < desired ? adaptive : desired).clamp(20.0, 32.0);
   return BorderRadius.circular(value);
 }
 
@@ -861,27 +914,46 @@ class _RailDestinationButton extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      UiBox(
+                      SizedBox(
                         width: segmentExtent,
                         height: segmentExtent,
-                        background: background,
-                        borderRadius: iconRadius,
-                        clipBehavior: Clip.antiAlias,
-                        alignment: Alignment.center,
-                        child: SizedBox(
-                          width: leadingSize,
-                          height: leadingSize,
-                          child: Center(
-                            child: destination.leadingBuilder?.call(
-                                  context,
-                                  foreground,
-                                ) ??
-                                Icon(
-                                  resolvedIcon,
-                                  size: 20,
-                                  color: foreground,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            UiBox(
+                              width: segmentExtent,
+                              height: segmentExtent,
+                              background: background,
+                              borderRadius: iconRadius,
+                              clipBehavior: Clip.antiAlias,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: leadingSize,
+                                height: leadingSize,
+                                child: Center(
+                                  child: destination.leadingBuilder?.call(
+                                        context,
+                                        foreground,
+                                      ) ??
+                                      Icon(
+                                        resolvedIcon,
+                                        size: 20,
+                                        color: foreground,
+                                      ),
                                 ),
-                          ),
+                              ),
+                            ),
+                            if ((destination.badge ?? 0) > 0 &&
+                                labelProgress < 0.5)
+                              PositionedDirectional(
+                                top: -3,
+                                end: -3,
+                                child: UiNavigationCountBadge(
+                                  count: destination.badge!,
+                                  compact: true,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       if (labelWidth > 0)
@@ -900,18 +972,31 @@ class _RailDestinationButton extends StatelessWidget {
                             child: ClipRect(
                               child: Opacity(
                                 opacity: labelProgress,
-                                child: UiText(
-                                  destination.label,
-                                  variant: UiTextVariant.body,
-                                  style: TextStyle(
-                                    color: foreground,
-                                    fontWeight: destination.selected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.fade,
-                                  softWrap: false,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: UiText(
+                                        destination.label,
+                                        variant: UiTextVariant.body,
+                                        style: TextStyle(
+                                          color: foreground,
+                                          fontWeight: destination.selected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.fade,
+                                        softWrap: false,
+                                      ),
+                                    ),
+                                    if ((destination.badge ?? 0) > 0 &&
+                                        labelWidth >= 54) ...[
+                                      SizedBox(width: tokens.spacing.x1),
+                                      UiNavigationCountBadge(
+                                        count: destination.badge!,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ),

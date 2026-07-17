@@ -9,6 +9,113 @@ Widget _host(Widget child) => MaterialApp(
 
 void main() {
   group('UiDialog backdrop', () {
+    testWidgets('dialog surface uses modal radius and padding tokens', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const UiDialog(
+            title: 'Confirm',
+            actions: [Text('Cancel'), Text('Save')],
+          ),
+        ),
+      );
+
+      final decorations = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(UiDialog),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .toList();
+      final paddings = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(UiDialog),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((padding) => padding.padding)
+          .toList();
+      final actionsRow = tester.widget<Row>(
+        find.byKey(const ValueKey('ui-dialog-actions')),
+      );
+
+      expect(
+        decorations.any((d) => d.borderRadius == UiRadiusTokens.standard.xlAll),
+        isTrue,
+      );
+      expect(paddings, contains(const EdgeInsets.all(24)));
+      expect(actionsRow.mainAxisAlignment, MainAxisAlignment.end);
+      expect(
+        tester.getTopLeft(find.text('Cancel')).dy,
+        tester.getTopLeft(find.text('Save')).dy,
+      );
+    });
+
+    testWidgets('alert dialog surface uses modal radius and padding tokens', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          UiAlertDialog(
+            title: 'Delete account',
+            description: 'This cannot be undone.',
+            confirmLabel: 'Delete',
+            onConfirm: () {},
+            onCancel: () {},
+          ),
+        ),
+      );
+
+      final decorations = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(UiAlertDialog),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .toList();
+      final paddings = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(UiAlertDialog),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((padding) => padding.padding)
+          .toList();
+      final actionsRow = tester.widget<Row>(
+        find.byKey(const ValueKey('ui-alert-dialog-actions')),
+      );
+
+      expect(
+        decorations.any((d) => d.borderRadius == UiRadiusTokens.standard.xlAll),
+        isTrue,
+      );
+      expect(
+        paddings,
+        contains(
+          const EdgeInsetsDirectional.only(
+            top: 20,
+            start: 20,
+            bottom: 12,
+            end: 12,
+          ),
+        ),
+      );
+      expect(actionsRow.mainAxisAlignment, MainAxisAlignment.end);
+      expect(
+        tester.getTopLeft(find.text('Cancel')).dy,
+        tester.getTopLeft(find.text('Delete')).dy,
+      );
+    });
+
     testWidgets(
       'mounts a BackdropFilter while visible and removes it on close',
       (tester) async {

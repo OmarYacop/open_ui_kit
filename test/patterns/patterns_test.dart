@@ -380,6 +380,30 @@ void main() {
       expect((first.dy - second.dy).abs(), lessThan(24));
       expect(first.dx, lessThan(second.dx));
     });
+
+    testWidgets('grid accepts a fixed main-axis extent', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 900,
+            height: 700,
+            child: UiCollectionPage<String>(
+              layout: UiCollectionLayout.grid,
+              gridMaxCrossAxisExtent: 300,
+              gridMainAxisExtent: 180,
+              items: const ['One', 'Two'],
+              itemBuilder: (context, item, index) => SizedBox.expand(
+                key: ValueKey(item),
+                child: Text(item),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byKey(const ValueKey('One'))).height, 180);
+      expect(tester.getSize(find.byKey(const ValueKey('Two'))).height, 180);
+    });
   });
 
   group('UiSettingsList', () {
@@ -1088,6 +1112,192 @@ void main() {
         lessThan(restSize),
         reason: 'Large title should collapse down to compact title size.',
       );
+    });
+
+    testWidgets('UiSliverNavigationBar stays pinned for the full scroll view',
+        (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            controller: controller,
+            slivers: const [
+              UiSliverNavigationBar(spec: spec),
+              SliverToBoxAdapter(child: SizedBox(height: 2000)),
+            ],
+          ),
+        ),
+      );
+
+      controller.jumpTo(600);
+      await tester.pump();
+
+      final titleRect = tester.getRect(find.text('Inbox'));
+      expect(titleRect.bottom, greaterThan(0));
+      expect(titleRect.top, lessThan(tester.view.physicalSize.height));
+    });
+
+    testWidgets(
+        'UiSliverNavigationBar becomes a quiet page header beside a rail',
+        (tester) async {
+      tester.view.physicalSize = const Size(900, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      Widget host() {
+        return _host(
+          const UiResponsiveNavigationScaffold(
+            sidebar: SizedBox(width: 96, child: Text('rail')),
+            body: CustomScrollView(
+              slivers: [
+                UiSliverNavigationBar(
+                  spec: UiNavigationSpec(
+                    title: 'Library',
+                    subtitle: 'Browse resources',
+                    surface: UiNavigationSurface.blurred,
+                  ),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 1200)),
+              ],
+            ),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(host());
+
+      expect(find.text('Library'), findsOneWidget);
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byType(SliverPersistentHeader), findsNothing);
+
+      tester.view.physicalSize = const Size(390, 700);
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      expect(find.byType(BackdropFilter), findsOneWidget);
+      expect(find.byType(SliverPersistentHeader), findsOneWidget);
+    });
+
+    testWidgets(
+        'UiSliverNavigationBar becomes a quiet page header on large screens',
+        (tester) async {
+      tester.view.physicalSize = const Size(1000, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _host(
+          const CustomScrollView(
+            slivers: [
+              UiSliverNavigationBar(
+                spec: UiNavigationSpec(
+                  title: 'Library',
+                  subtitle: 'Browse resources',
+                  surface: UiNavigationSurface.blurred,
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 1200)),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Library'), findsOneWidget);
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byType(SliverPersistentHeader), findsNothing);
+    });
+
+    testWidgets('UiSliverStickyRegion stacks below the collapsed phone bar',
+        (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            controller: controller,
+            slivers: const [
+              UiSliverNavigationBar(
+                spec: UiNavigationSpec(
+                  title: 'Library',
+                  surface: UiNavigationSurface.solid,
+                ),
+              ),
+              UiSliverStickyRegion(
+                extent: 52,
+                child: Text('Search'),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 1600)),
+            ],
+          ),
+        ),
+      );
+
+      controller.jumpTo(600);
+      await tester.pumpAndSettle();
+
+      final stickyRect = tester.getRect(
+        find.byKey(const Key('ui_sliver_sticky_region_surface')),
+      );
+      expect(stickyRect.top, closeTo(52, 0.1));
+      expect(find.byType(BackdropFilter), findsOneWidget);
+      final fade = tester.widget<AnimatedOpacity>(
+        find.descendant(
+          of: find.byKey(const Key('ui_sliver_sticky_region_fade')),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(fade.opacity, 1);
+    });
+
+    testWidgets('UiSliverStickyRegion pins solid at the top beside a rail',
+        (tester) async {
+      tester.view.physicalSize = const Size(900, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          UiResponsiveNavigationScaffold(
+            sidebar: const SizedBox(width: 96, child: Text('rail')),
+            body: CustomScrollView(
+              controller: controller,
+              slivers: const [
+                UiSliverNavigationBar(
+                  spec: UiNavigationSpec(
+                    title: 'Library',
+                    surface: UiNavigationSurface.blurred,
+                  ),
+                ),
+                UiSliverStickyRegion(
+                  extent: 52,
+                  child: Text('Search'),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 1600)),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      controller.jumpTo(600);
+      await tester.pumpAndSettle();
+
+      final stickyRect = tester.getRect(
+        find.byKey(const Key('ui_sliver_sticky_region_surface')),
+      );
+      expect(stickyRect.top, closeTo(0, 0.1));
+      expect(find.byType(BackdropFilter), findsNothing);
+
+      final surface = tester.widget<AnimatedContainer>(
+        find.byKey(const Key('ui_sliver_sticky_region_surface')),
+      );
+      final decoration = surface.decoration! as BoxDecoration;
+      expect(decoration.border!.bottom.color.a, 0);
     });
 
     testWidgets('subtitle renders for both large and compact configurations',
