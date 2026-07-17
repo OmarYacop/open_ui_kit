@@ -14,7 +14,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 ### Navigation
 
 | Component | Phone | Tablet/Desktop | Status | Strategy |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UiBottomTabBar` | Full-width bottom bar | Adaptive floating dock | Updated | Mode switch + visual variant |
 | `UiBottomTabScaffold` | Tabs + page body | Tabs can use floating dock via pass-through config | Updated | Mode switch |
 | `UiTabs` | Fill segmented control | Adaptive intrinsic-width segmented control | Updated | Mode switch |
@@ -25,7 +25,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 ### Forms
 
 | Component | Phone | Tablet/Desktop | Status | Strategy |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UiButton` | Good | Good | Good | No change |
 | `UiInput` | Good | Good (host controls width) | Good | Host composition |
 | `UiSelect` | Good | Good (overlay width capped) | Good | Host composition |
@@ -36,7 +36,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 ### Data Display
 
 | Component | Phone | Tablet/Desktop | Status | Strategy |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UiCard` | Good | Good | Good | No change |
 | `UiPagination` | Good | Good (better with centered layouts) | Good | Host composition |
 | `UiDataTable` | Good baseline | Good baseline | Good | Future: column features |
@@ -44,7 +44,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 ### Surfaces / Overlay
 
 | Component | Phone | Tablet/Desktop | Status | Strategy |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UiSheet` modal | Edge-to-edge | Adaptive max-width centering | Updated | Visual variant |
 | `UiPersistentSheet` | Good | Good | Good | Host composition |
 | `UiDrawer` | Good | Good | Good | Host composition |
@@ -55,7 +55,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 ### Pickers
 
 | Component | Phone | Tablet/Desktop | Status | Strategy |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UiDatePicker` | Good | Good | Good | No change |
 | `UiTimePicker` | Good | Good | Good | No change |
 | `UiDateTime*` / `Range*` | Good | Good | Good | No change |
@@ -63,7 +63,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 ### Pattern Components
 
 | Component | Phone | Tablet/Desktop | Status | Strategy |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `UiAppShell` / `UiAppBar` | Good | Good | Good | Host composition |
 | `UiPageScaffold` / `UiSafeViewport` | Good | Good | Good | No change |
 | Chat patterns (`UiChatComposer`, `UiMessageBubble`) | Good | Good with host max-width | Good | Host composition |
@@ -76,6 +76,7 @@ and records adaptive actions for components that can feel awkward on wide layout
 - `UiSheetScope.adaptiveMaxWidth(context)`: returns `null` on
   phone, `560` on tablet, `720` on desktop. Drop-in one-liner for
   form-factor-aware sheets:
+
   ```dart
   UiSheetScope.show<T>(
     context,
@@ -83,6 +84,7 @@ and records adaptive actions for components that can feel awkward on wide layout
     builder: (_, c) => UiSheet(...),
   );
   ```
+
 - `UiBottomTabBar.layout`: `edgeToEdge`, `floatingDock`, `adaptive`
 - `UiBottomTabBar` floating-dock sizing knobs:
   - `adaptiveBreakpoint`

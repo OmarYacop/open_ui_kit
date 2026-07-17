@@ -32,7 +32,7 @@ For a typical component with hard-coded strings:
 ## Status
 
 | Component | Status | Strings | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `UiPagination` | ✅ migrated | `previous`, `next`, `loading`, `pageSemanticsLabel(n)` | Uses direction-aware padding. |
 | `UiSliverNavigationBar` | ✅ migrated, 🌐 audited | `back` (default fallback) | Explicit `spec.back.label` still takes precedence. The hero title uses `PositionedDirectional` for RTL correctness. |
 | `UiDrawer` | ✅ migrated, 🌐 audited | `drawer` (semanticsLabel) | Pass `''` to suppress the optional semantics label. `UiDrawerSide.start` is the direction-aware default; `left` and `right` remain absolute. |
@@ -47,6 +47,7 @@ For a typical component with hard-coded strings:
 | `UiCheckbox` / `UiRadio` / `UiSwitch` | 🚧 follow-up | `disabled` | Trivial swap. |
 
 Legend:
+
 - ✅ migrated — component reads from `UiLocalizations.of(context)`.
 - 🌐 RTL-audited — directional safety is locked by a focused
   regression test. Components carrying both markers have been

@@ -289,7 +289,7 @@ contrast. Prefer them at the page root instead of reaching for a
 keeps the wiring consistent across screens.
 
 | Widget | Use it for |
-|---|---|
+| --- | --- |
 | `UiPageScaffold` | Page root. Background, top/bottom bars, safe viewport, system bars. |
 | `UiSafeViewport` | Embedded page-like subtrees (sheets, cards) that need their own inset policy. |
 | `UiSystemBars` | Scope that wants to control status/navigation icon contrast without a new page. |
@@ -537,7 +537,7 @@ subsystems on top of the foundation + environment layers.
 
 ### Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  UiPageScaffold / UiSafeViewport / UiSystemBars             │  environment
 ├─────────────────────────────────────────────────────────────┤
@@ -643,6 +643,12 @@ final controller = UiNavigationController(routes: [home, detail]);
 
 // In your widget tree:
 UiNavigationHost(controller: controller);
+
+// From anywhere with access to the controller:
+final note = await controller.push(detail, args: 42);
+controller.popUntil('home');
+controller.go(home);
+```
 
 #### Edge-swipe-to-pop
 
@@ -772,12 +778,6 @@ UiResponsiveNavigationScaffold(
 
 Full responsive audit and component-by-component guidance:
 `doc/responsive_component_map.md`.
-
-// From anywhere with access to the controller:
-final note = await controller.push(detail, args: 42);
-controller.popUntil('home');
-controller.go(home);
-```
 
 The controller's stack is a `ValueListenable`, so widgets rebuild
 declaratively. Its `historyItems()` feeds directly into a
@@ -1145,7 +1145,7 @@ are composites of the above and emit typed `UiDateRange` /
 
 Tapping the header label on `UiDatePicker` cycles the visible grid:
 
-```
+```text
 days ──tap──▶ months ──tap──▶ years ──tap──▶ days
 ```
 
@@ -1219,6 +1219,7 @@ flutter test test/goldens/core_components_golden_test.dart --update-goldens
 ```
 
 Host policy:
+
 - Goldens are enabled only on macOS hosts to avoid cross-OS raster/font drift.
 - Non-macOS hosts skip the golden suite by design.
 

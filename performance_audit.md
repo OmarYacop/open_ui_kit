@@ -6,7 +6,7 @@ The Open UI Kit package exhibits generally solid architecture with token-driven 
 
 1. **TextPainter per-frame in tab components** (bottom_tab_bar.dart, tabs.dart): Natural-width measurement rebuilt every single frame when tabs re-render, defeating layout caching.
 2. **BackdropFilter in persistent modal backdrop** (dialog.dart, ui_alert_dialog.dart): Animated blur filter re-rendered every animation frame; should use RepaintBoundary + manual filter update or static backdrop.
-3. **GlobalKey over-use in drag handlers** (_TabRow, _TabStack, _UiDropdownMenuState): Multiple GlobalKey lookups per drag update cause render tree traversal; should cache RenderBox reference or use ValueNotifier.
+3. **GlobalKey over-use in drag handlers** (`_TabRow`, `_TabStack`, `_UiDropdownMenuState`): Multiple GlobalKey lookups per drag update cause render tree traversal; should cache RenderBox reference or use ValueNotifier.
 4. **Per-frame gradient/shadow allocations** (UiBox decorations): Decorations rebuilt constantly despite token-driven structure; should be cached in theme or moved to didChangeDependencies.
 5. **Missing RepaintBoundary on frequently-animated positioned layers** (_BlurredTabSurface, UiTabs indicator): AnimatedPositioned children trigger full repaint of expensive blur filter tree.
 
@@ -17,7 +17,7 @@ The Open UI Kit package exhibits generally solid architecture with token-driven 
 ## Component Inventory
 
 | Component | Area | File | Risk | Notes |
-|-----------|------|------|------|-------|
+| ----------- | ------ | ------ | ------ | ------- |
 | **UiBottomTabBar** | Navigation | bottom_tab_bar.dart | **HIGH** | TextPainter per-frame, BackdropFilter, missing RepaintBoundary, GlobalKey lookups |
 | **UiTabs** | Navigation | tabs.dart | **HIGH** | TextPainter per-frame, GlobalKey lookups, AnimatedPositioned without RepaintBoundary |
 | **UiDialog** | Overlay | dialog.dart | **HIGH** | BackdropFilter rebuilt every animation frame in AnimatedBuilder |
@@ -48,6 +48,7 @@ The Open UI Kit package exhibits generally solid architecture with token-driven 
 **Risk Level:** HIGH
 
 **Code:**
+
 ```dart
 final naturalWidths = [
   for (final item in widget.items)
@@ -67,6 +68,7 @@ final layout = TabLayout.resolve(
 ```
 
 **Problem:**
+
 - `_measureNaturalWidth` creates a new `TextPainter`, calls `layout()`, and reads `width` on **every single frame** the `_TabRow` rebuilds.
 - Happens inside `LayoutBuilder` callback, so it re-runs whenever parent width changes *or* any State change on `_TabRow` fires `setState`.
 - `TextPainter` allocates temporary objects; calling it repeatedly defeats layout caching.
@@ -77,6 +79,7 @@ Tab bars are persistent hot-path UI; they often appear on every screen. Measurin
 
 **Suggested Fix:**
 Cache `naturalWidths` and `layout` in `_TabRowState` as fields. Recompute only when:
+
 - `widget.items` length changes
 - `constraints.maxWidth` changes significantly
 - `tokens.typography.bodySm` changes (theme updates)
@@ -108,6 +111,7 @@ class _TabRowState extends State<_TabRow> {
 **Breaking:** No
 
 **Tests:**
+
 - Add a test that verifies `_recomputeLayout` is called on theme changes.
 - Benchmark: measure frame time for tab bar with 5 items in a fast-scrolling list (should drop from ~8ms to ~1ms per frame once fixed).
 
@@ -120,6 +124,7 @@ class _TabRowState extends State<_TabRow> {
 **Risk Level:** HIGH
 
 **Code:**
+
 ```dart
 return IgnorePointer(
   child: AnimatedBuilder(
@@ -138,6 +143,7 @@ return IgnorePointer(
 ```
 
 **Problem:**
+
 - `AnimatedBuilder` rebuilds the entire `BackdropFilter` widget tree **every frame** during the dialog fade-in/fade-out animation (60 frames).
 - `ImageFilter.blur()` allocates a new filter object each time; the native blur shader is recompiled.
 - `BackdropFilter` is expensive (GPU blur pass); rebuilding it per-frame is the worst possible way to animate blur strength.
@@ -218,6 +224,7 @@ return IgnorePointer(
 **Breaking:** No (internal implementation detail)
 
 **Tests:**
+
 - Benchmark: measure dialog open/close frame time. Should drop from ~45ms (with jank) to ~16ms (smooth 60fps).
 - Visual test: ensure blur looks the same but transition is smoother.
 
@@ -244,6 +251,7 @@ return IgnorePointer(
 **Risk Level:** HIGH
 
 **Code:**
+
 ```dart
 final naturalWidths = [
   for (final tab in widget.tabs)
@@ -278,6 +286,7 @@ Benchmark: tab switching with 10+ tabs should maintain 60fps.
 **Risk Level:** MEDIUM-HIGH
 
 **Code (UiBottomTabBar):**
+
 ```dart
 final GlobalKey _rowKey = GlobalKey();
 
@@ -293,6 +302,7 @@ void _startDrag(DragStartDetails details, TabLayout layout) {
 ```
 
 **Problem:**
+
 - `beginTabDrag()` calls `tabRowLocalPosition(rowKey, ...)` which does `key.currentContext?.findRenderObject()`.
 - This tree traversal happens on **every drag start, update, and end** — potentially dozens per second during a swipe.
 - GlobalKey lookups are slow on deep widget trees; on phones with 100+ layers, this adds measurable cost.
@@ -334,6 +344,7 @@ class _TabRowState extends State<_TabRow> {
 **Breaking:** No
 
 **Tests:**
+
 - Add unit test verifying RenderBox is cached and reused.
 - Benchmark: drag-scrolling tabs should maintain locked 60fps without stutters.
 
@@ -346,6 +357,7 @@ class _TabRowState extends State<_TabRow> {
 **Risk Level:** MEDIUM
 
 **Code:**
+
 ```dart
 return Stack(
   key: _rowKey,
@@ -369,6 +381,7 @@ return Stack(
 ```
 
 **Problem:**
+
 - The `_BlurredTabSurface` parent (which contains a `BackdropFilter`) wraps the entire `_TabRow` stack.
 - When the `AnimatedPositioned` indicator moves (e.g., during drag or tab switch), the entire `BackdropFilter` subtree repaints.
 - Without `RepaintBoundary`, the indicator movement cascades repaint up through the blur filter tree, causing redundant GPU work.
@@ -411,6 +424,7 @@ return Stack(
 **Breaking:** No
 
 **Tests:**
+
 - Visual test: verify indicator movement is smooth during tab drag (no jank).
 - Benchmark: measure GPU memory usage during indicator animation; should drop by ~15–20%.
 
@@ -439,6 +453,7 @@ return Stack(
 **Risk Level:** MEDIUM
 
 **Code:**
+
 ```dart
 return UiFocusRing(
   visible: state.focused,
@@ -462,6 +477,7 @@ return UiFocusRing(
 ```
 
 **Problem:**
+
 - Three nested animated widgets (Scale, Opacity, Container) on every button render.
 - Each animation has its own ticker, triggering rebuilds independently.
 - In a form with 10+ buttons, this stacks to measurable overhead (not severe, but unnecessary).
@@ -506,6 +522,7 @@ Or, simpler: just accept the three animations as-is. The cost is low; only optim
 **Risk Level:** MEDIUM
 
 **Problem:**
+
 ```dart
 final GlobalKey _targetKey = GlobalKey();
 ```
@@ -542,6 +559,7 @@ void _resolveOverlayPlacement() {
 **Risk Level:** LOW-MEDIUM
 
 **Code:**
+
 ```dart
 if (hasDecoration) {
   final decoration = BoxDecoration(
@@ -556,6 +574,7 @@ if (hasDecoration) {
 ```
 
 **Problem:**
+
 - `BoxDecoration` is created every time `UiBox.build()` is called, even if all parameters are identical.
 - Flutter caches `Decoration` equality checks, so redundant allocations don't cause re-paints. However, allocations themselves have a cost.
 - Affects every single component that uses `UiBox` (buttons, badges, cards, etc.).
@@ -600,9 +619,9 @@ Alternatively, accept the allocation cost as negligible (it's small and GC'd qui
 ## Expensive Pattern Index
 
 | Pattern | Files | Risk | Notes |
-|---------|-------|------|-------|
+| --------- | ------- | ------ | ------- |
 | **BackdropFilter (animated blur)** | dialog.dart, ui_alert_dialog.dart | HIGH | Rebuilt per animation frame; wrap in RepaintBoundary or use static blur. |
-| **TextPainter per-frame measurement** | bottom_tab_bar.dart, tabs.dart, chat_composer.dart | HIGH | Cached in _TabRowState / _TabStackState; recompute only on dependency change. |
+| **TextPainter per-frame measurement** | bottom_tab_bar.dart, tabs.dart, chat_composer.dart | HIGH | Cached in `_TabRowState` / `_TabStackState`; recompute only on dependency change. |
 | **GlobalKey lookups in hot gestures** | bottom_tab_bar.dart, tabs.dart, ui_dropdown_menu.dart, select.dart | MEDIUM | Cache RenderBox reference; invalidate only on tree changes. |
 | **AnimatedPositioned without RepaintBoundary** | bottom_tab_bar.dart, tabs.dart | MEDIUM | Wrap moving layers in RepaintBoundary to isolate repaints. |
 | **AnimatedOpacity + AnimatedScale + AnimatedContainer** | button.dart | MEDIUM | Acceptable; consider merging if profiling shows overhead. |
@@ -613,19 +632,23 @@ Alternatively, accept the allocation cost as negligible (it's small and GC'd qui
 
 ## Hot-Path Assessment
 
-**Frequency: Every Frame / Every Interaction**
+### Every Frame / Every Interaction
+
 - **UiBottomTabBar** (TextPainter + GlobalKey + missing RepaintBoundary)
 - **UiTabs** (TextPainter + GlobalKey + missing RepaintBoundary)
 - **UiButton** (AnimatedOpacity/Scale, but safe)
 
-**Frequency: Per 300ms Dialog Transition**
+### Per 300ms Dialog Transition
+
 - **UiDialog** (BackdropFilter)
 - **UiAlertDialog** (BackdropFilter)
 
-**Frequency: Per Dropdown Open (once per interaction)**
+### Per Dropdown Open (Once per Interaction)
+
 - **UiDropdownMenu** (GlobalKey lookup)
 
-**Judgment:**
+### Judgment
+
 Tab bars and buttons are visible on nearly every screen, so even small per-frame inefficiencies multiply. These should be P0.
 
 Dialog transitions are less frequent but full-screen, so impact per transition is high. These should be P1.
@@ -641,6 +664,7 @@ Dropdowns are typically single-interaction, so lower priority (P2).
 **Location:** bottom_tab_bar.dart:172–212
 
 **Blur Usage:**
+
 ```dart
 BackdropFilter(
   filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
@@ -652,6 +676,7 @@ BackdropFilter(
 ```
 
 **Assessment:**
+
 - Blur strength is constant (sigma 16); not animated. ✓
 - Scoped to a small region (dock size: ~360–640pt wide). ✓
 - **ISSUE:** Entire filter tree repaints when the dock's position or size changes (e.g., keyboard open/close, safe-area changes). **FIX:** Wrap children of `BackdropFilter` in `RepaintBoundary` so only the inner layers repaint, not the filter kernel.
@@ -661,6 +686,7 @@ BackdropFilter(
 **Location:** dialog.dart:195–221
 
 **Blur Usage:**
+
 ```dart
 BackdropFilter(
   filter: ImageFilter.blur(sigmaX: 2.5 * value, sigmaY: 2.5 * value),
@@ -669,6 +695,7 @@ BackdropFilter(
 ```
 
 **Assessment:**
+
 - **CRITICAL ISSUE:** `ImageFilter.blur()` is recreated every animation frame (60 frames × 0.3s = 18 times). ✓ See Finding #2 for fix.
 
 ### UiAlertDialog._AlertDialogBackdrop
@@ -676,6 +703,7 @@ BackdropFilter(
 **Location:** ui_alert_dialog.dart:241–266
 
 **Assessment:**
+
 - Identical to UiDialog. ✓ See Finding #3 for fix.
 
 ### UiSliverNavigationBar
@@ -689,7 +717,7 @@ BackdropFilter(
 ## Measurement/Build Audit
 
 | Component | Pattern | Classification | Frequency | Cost | Mitigation |
-|-----------|---------|-----------------|-----------|------|-----------|
+| ----------- | --------- | ----------------- | ----------- | ------ | ----------- |
 | **UiBottomTabBar._TabRow** | TextPainter.layout() in LayoutBuilder | Per-item measurement | **Per frame** | HIGH | Cache in State, recompute on dependency change |
 | **UiTabs._TabStack** | TextPainter.layout() in LayoutBuilder | Per-item measurement | **Per frame** | HIGH | Cache in State, recompute on dependency change |
 | **UiChatComposer** | TextPainter for visual line estimation | Per-update | Per keystroke | MEDIUM | Acceptable (form input, infrequent) |
@@ -730,24 +758,24 @@ BackdropFilter(
 
 ### P1 (High - Fix in Sprint 2)
 
-5. **Add RepaintBoundary to AnimatedPositioned in UiBottomTabBar** (20 min)
+1. **Add RepaintBoundary to AnimatedPositioned in UiBottomTabBar** (20 min)
    - Isolate indicator movement from blur filter repaints.
    - **Impact:** ~15–20% GPU efficiency gain during tab drag.
 
-6. **Add RepaintBoundary to AnimatedPositioned in UiTabs** (20 min)
-   - Same as #5.
+2. **Add RepaintBoundary to AnimatedPositioned in UiTabs** (20 min)
+   - Same as P1 item 1.
    - **Impact:** Tab switching indicator animation is more efficient.
 
-7. **Cache RenderBox in UiBottomTabBar._TabRowState** (1.5 hours)
+3. **Cache RenderBox in UiBottomTabBar._TabRowState** (1.5 hours)
    - Replace GlobalKey lookup with cached RenderBox reference.
    - Refactor drag state machine to use cached reference.
    - **Impact:** Drag gestures are consistently 60fps; remove ~2–3ms per drag update.
 
-8. **Cache RenderBox in UiTabs._TabStackState** (1.5 hours)
-   - Same pattern as #7.
-   - **Impact:** Same as #7.
+4. **Cache RenderBox in UiTabs._TabStackState** (1.5 hours)
+   - Same pattern as P1 item 3.
+   - **Impact:** Same as P1 item 3.
 
-9. **Consider consolidating UiButton animations** (2 hours, optional)
+5. **Consider consolidating UiButton animations** (2 hours, optional)
    - If profiling shows button overhead is >2% of frame time, consolidate Scale + Opacity into single AnimatedBuilder.
    - **Impact:** Minor frame time savings (~1ms per 10 buttons).
 
@@ -755,13 +783,13 @@ BackdropFilter(
 
 ### P2 (Medium - Fix in Sprint 3 or backlog)
 
-10. **Cache GlobalKey lookup in UiDropdownMenu** (45 min)
-    - Cache trigger RenderBox position; invalidate on layout change.
-    - **Impact:** Dropdown opens slightly faster on low-end devices.
+1. **Cache GlobalKey lookup in UiDropdownMenu** (45 min)
+   - Cache trigger RenderBox position; invalidate on layout change.
+   - **Impact:** Dropdown opens slightly faster on low-end devices.
 
-11. **Investigate UiSliverNavigationBar blur** (1 hour)
-    - If custom blur is used, wrap in RepaintBoundary.
-    - **Impact:** App bar scroll performance depends on implementation details.
+2. **Investigate UiSliverNavigationBar blur** (1 hour)
+   - If custom blur is used, wrap in RepaintBoundary.
+   - **Impact:** App bar scroll performance depends on implementation details.
 
 **Total P2 effort:** ~1.5 hours
 
@@ -797,6 +825,7 @@ BackdropFilter(
 ### Unit Tests
 
 1. **TextPainter caching in _TabRowState:**
+
    ```dart
    test('_TabRowState caches naturalWidths across redraws', () {
      final state = _TabRowState();
@@ -808,6 +837,7 @@ BackdropFilter(
    ```
 
 2. **BackdropFilter animation listener attached:**
+
    ```dart
    test('_DialogBackdrop attaches animation listener on init', () {
      final animation = AnimationController(duration: Duration(ms: 300));
@@ -817,6 +847,7 @@ BackdropFilter(
    ```
 
 3. **RenderBox cached and reused:**
+
    ```dart
    test('_TabRowState caches RenderBox and reuses across drag updates', () {
      final state = _TabRowState();
@@ -856,8 +887,6 @@ The Open UI Kit package is well-architected and token-driven. However, **three h
 
 ---
 
-*Audit date: 2026-04-24*
-
-*Auditor: Claude Code*
-
-*Scope: lib (complete), test (referenced)*
+- Audit date: 2026-04-24
+- Auditor: Claude Code
+- Scope: `lib` (complete), `test` (referenced)

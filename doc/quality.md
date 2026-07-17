@@ -12,6 +12,7 @@ flutter test test/goldens/core_components_golden_test.dart --no-pub
 ```
 
 CI parity:
+
 - `quality` job (Ubuntu): `flutter analyze --no-pub` + `flutter test --no-pub`
 - `goldens` job (macOS 14): both golden suites with fixed host
 
@@ -32,10 +33,10 @@ Use this protocol when UI changes are intentional:
 1. Update widgets/tests.
 2. Regenerate only impacted baselines:
 
-```bash
-flutter test test/goldens/async_states_golden_test.dart --update-goldens
-flutter test test/goldens/core_components_golden_test.dart --update-goldens
-```
+   ```bash
+   flutter test test/goldens/async_states_golden_test.dart --update-goldens
+   flutter test test/goldens/core_components_golden_test.dart --update-goldens
+   ```
 
 3. Re-run full parity commands (analyze + test + both golden suites).
 4. Include before/after rationale in PR notes.

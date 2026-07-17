@@ -1,3 +1,5 @@
+# Changelog
+
 ## 0.2.0 - 2026-07-17
 
 - Added pull-to-refresh widgets, programmatic refresh control, and collection
@@ -6,6 +8,8 @@
   and navigation chrome that adapts to persistent rails.
 - Improved navigation rail and drawer sizing, mobile landscape navigation,
   floating-window chrome handling, and component spacing and radii.
+- Corrected navigation examples and Markdown formatting across the package
+  documentation.
 - **Breaking:** Removed `UiSliverNavigationBar.bodyTopPadding`. Add any desired
   gap to the content sliver that follows the navigation bar.
 

@@ -660,7 +660,7 @@ BorderRadius _resolveRailRadius(BuildContext context) {
     drawerRadius.bottomLeft.x,
     drawerRadius.bottomRight.x,
   ].reduce((a, b) => a > b ? a : b);
-  final value = (adaptive < desired ? adaptive : desired).clamp(20.0, 32.0);
+  final value = (adaptive < desired ? adaptive : desired).clamp(24.0, 32.0);
   return BorderRadius.circular(value);
 }
 

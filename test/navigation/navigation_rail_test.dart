@@ -231,10 +231,10 @@ void main() {
 
     expect(surfaces, hasLength(1));
     final radius = surfaces.single.borderRadius! as BorderRadius;
-    expect(radius.topLeft.x, 20);
-    expect(radius.topRight.x, 20);
-    expect(radius.bottomLeft.x, 20);
-    expect(radius.bottomRight.x, 20);
+    expect(radius.topLeft.x, 24);
+    expect(radius.topRight.x, 24);
+    expect(radius.bottomLeft.x, 24);
+    expect(radius.bottomRight.x, 24);
   });
 
   testWidgets(
