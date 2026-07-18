@@ -12,7 +12,10 @@ import '../../foundation/theme/ui_theme_extensions.dart';
 import '../forms/button.dart' show UiIntent;
 
 /// Stack position for toasts.
-enum UiToastPosition { top, bottom }
+///
+/// [adaptive] places toasts at the top on compact/mobile viewports and at the
+/// bottom start corner on wider viewports.
+enum UiToastPosition { adaptive, top, bottom }
 
 /// Optional action button attached to a toast.
 @immutable
@@ -71,97 +74,113 @@ class UiToast extends StatelessWidget {
     };
     final borderColor = c.border.withValues(alpha: 0.92);
 
-    return UiBox(
-      background: bg,
-      border: Border.all(color: borderColor, width: 1),
-      borderRadius: tokens.radius.lgAll,
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.x5,
-        vertical: tokens.spacing.x4,
-      ),
-      boxShadow: tokens.shadows.lg,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420, minHeight: 52),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (leading != null) ...[
-              IconTheme.merge(
-                data: IconThemeData(color: accent, size: 18),
-                child: leading!,
-              ),
-              SizedBox(width: tokens.spacing.x3),
-            ],
-            Flexible(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (title != null) ...[
-                    UiText(
-                      title!,
-                      variant: UiTextVariant.label,
-                      style: TextStyle(color: fg),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.hasBoundedWidth
+            ? math.min(420.0, constraints.maxWidth)
+            : 420.0;
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth, minHeight: 52),
+          child: UiBox(
+            background: bg,
+            border: Border.all(color: borderColor, width: 1),
+            borderRadius: tokens.radius.lgAll,
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.x5,
+              vertical: tokens.spacing.x4,
+            ),
+            boxShadow: tokens.shadows.lg,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (leading != null) ...[
+                  IconTheme.merge(
+                    data: IconThemeData(color: accent, size: 18),
+                    child: leading!,
+                  ),
+                  SizedBox(width: tokens.spacing.x3),
+                ],
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (title != null) ...[
+                        UiText(
+                          title!,
+                          variant: UiTextVariant.label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: fg),
+                        ),
+                        SizedBox(height: tokens.spacing.x1),
+                      ],
+                      UiText(
+                        message,
+                        variant: UiTextVariant.bodySm,
+                        softWrap: true,
+                        style: TextStyle(color: fg),
+                      ),
+                    ],
+                  ),
+                ),
+                if (action != null) ...[
+                  SizedBox(width: tokens.spacing.x3),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 128),
+                    child: UiPressable(
+                      onPressed: action!.onPressed,
+                      minTapSize: 0,
+                      builder: (context, state, _) {
+                        final isDefaultDark =
+                            intent == UiIntent.defaultIntent && isDarkTheme;
+                        final actionBg = isDefaultDark
+                            ? (state.pressed
+                                ? const Color(0xFFE4E4E7)
+                                : state.hovered
+                                    ? const Color(0xFFEDEDF0)
+                                    : const Color(0xFFF4F4F5))
+                            : state.hovered || state.pressed
+                                ? c.accent
+                                : const Color(0x00000000);
+                        final actionFg =
+                            isDefaultDark ? const Color(0xFF18181B) : accent;
+                        return UiBox(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.spacing.x2,
+                            vertical: tokens.spacing.x1,
+                          ),
+                          borderRadius: tokens.radius.smAll,
+                          background: actionBg,
+                          border: Border.all(
+                            color: isDefaultDark
+                                ? const Color(0x00000000)
+                                : accent.withValues(
+                                    alpha: state.hovered ? 0.7 : 0.35,
+                                  ),
+                          ),
+                          child: UiText(
+                            action!.label,
+                            variant: UiTextVariant.caption,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: actionFg,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    SizedBox(height: tokens.spacing.x1),
-                  ],
-                  UiText(
-                    message,
-                    variant: UiTextVariant.bodySm,
-                    style: TextStyle(color: fg),
                   ),
                 ],
-              ),
+              ],
             ),
-            if (action != null) ...[
-              SizedBox(width: tokens.spacing.x3),
-              UiPressable(
-                onPressed: action!.onPressed,
-                minTapSize: 0,
-                builder: (context, state, _) {
-                  final isDefaultDark =
-                      intent == UiIntent.defaultIntent && isDarkTheme;
-                  final actionBg = isDefaultDark
-                      ? (state.pressed
-                          ? const Color(0xFFE4E4E7)
-                          : state.hovered
-                              ? const Color(0xFFEDEDF0)
-                              : const Color(0xFFF4F4F5))
-                      : state.hovered || state.pressed
-                          ? c.accent
-                          : const Color(0x00000000);
-                  final actionFg =
-                      isDefaultDark ? const Color(0xFF18181B) : accent;
-                  return UiBox(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spacing.x2,
-                      vertical: tokens.spacing.x1,
-                    ),
-                    borderRadius: tokens.radius.smAll,
-                    background: actionBg,
-                    border: Border.all(
-                      color: isDefaultDark
-                          ? const Color(0x00000000)
-                          : accent.withValues(
-                              alpha: state.hovered ? 0.7 : 0.35,
-                            ),
-                    ),
-                    child: UiText(
-                      action!.label,
-                      variant: UiTextVariant.caption,
-                      style: TextStyle(
-                        color: actionFg,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -288,7 +307,7 @@ class UiToaster {
     Widget? leading,
     UiToastAction? action,
     Duration duration = const Duration(seconds: 3),
-    UiToastPosition position = UiToastPosition.bottom,
+    UiToastPosition position = UiToastPosition.adaptive,
   }) {
     return showToast(
       context,
@@ -309,7 +328,7 @@ class UiToaster {
     BuildContext context,
     WidgetBuilder builder, {
     Duration duration = const Duration(seconds: 3),
-    UiToastPosition position = UiToastPosition.bottom,
+    UiToastPosition position = UiToastPosition.adaptive,
   }) {
     _installHost(context);
     final id = _ToastController.instance.nextId();
@@ -372,7 +391,7 @@ class UiToastOverlay {
     BuildContext context, {
     required Widget toast,
     Duration duration = const Duration(seconds: 3),
-    UiToastPosition position = UiToastPosition.bottom,
+    UiToastPosition position = UiToastPosition.adaptive,
   }) {
     return UiToaster.showToast(
       context,
@@ -392,10 +411,17 @@ class _ToastHost extends StatelessWidget {
       valueListenable: _ToastController.instance.visibleListenable,
       builder: (context, specs, _) {
         if (specs.isEmpty) return const SizedBox.shrink();
+        final mediaSize = MediaQuery.maybeSizeOf(context);
+        final isCompact = mediaSize == null || mediaSize.shortestSide < 600;
         final topSpecs =
-            specs.where((s) => s.position == UiToastPosition.top).toList();
+            specs.where((s) => _resolvesTop(s.position, isCompact)).toList();
         final bottomSpecs =
             specs.where((s) => s.position == UiToastPosition.bottom).toList();
+        final adaptiveBottomSpecs = specs
+            .where(
+              (s) => s.position == UiToastPosition.adaptive && !isCompact,
+            )
+            .toList();
         return IgnorePointer(
           ignoring: false,
           child: Stack(
@@ -418,18 +444,42 @@ class _ToastHost extends StatelessWidget {
                     position: UiToastPosition.bottom,
                   ),
                 ),
+              if (adaptiveBottomSpecs.isNotEmpty)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _ToastLane(
+                    specs: adaptiveBottomSpecs,
+                    position: UiToastPosition.bottom,
+                    alignEnd: true,
+                  ),
+                ),
             ],
           ),
         );
       },
     );
   }
+
+  bool _resolvesTop(UiToastPosition position, bool isCompact) {
+    return switch (position) {
+      UiToastPosition.top => true,
+      UiToastPosition.bottom => false,
+      UiToastPosition.adaptive => isCompact,
+    };
+  }
 }
 
 class _ToastLane extends StatelessWidget {
-  const _ToastLane({required this.specs, required this.position});
+  const _ToastLane({
+    required this.specs,
+    required this.position,
+    this.alignEnd = false,
+  });
   final List<_ToastSpec> specs;
   final UiToastPosition position;
+  final bool alignEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -452,35 +502,32 @@ class _ToastLane extends StatelessWidget {
         bottom: isBottom ? padding.bottom + tokens.spacing.x4 : 0,
       ),
       child: Align(
-        alignment: isBottom ? Alignment.bottomCenter : Alignment.topCenter,
-        child: SizedBox(
-          child: AnimatedContainer(
-            duration: tokens.motion.standard,
-            curve: tokens.motion.standardCurve,
-            height: _laneHeight(ordered.length),
-            child: Stack(
-              alignment:
-                  isBottom ? Alignment.bottomCenter : Alignment.topCenter,
-              children: [
-                for (var i = 0; i < ordered.length; i++)
-                  _ToastSlot(
-                    key: ValueKey<int>(ordered[i].id),
-                    spec: ordered[i],
-                    depth: ordered.length - 1 - i,
-                    isBottom: isBottom,
-                    dismissing:
-                        _ToastController.instance.isDismissing(ordered[i].id),
-                  ),
-              ],
-            ),
-          ),
+        alignment: _alignment(isBottom),
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: _alignment(isBottom),
+          children: [
+            for (var i = 0; i < ordered.length; i++)
+              _ToastSlot(
+                key: ValueKey<int>(ordered[i].id),
+                spec: ordered[i],
+                depth: ordered.length - 1 - i,
+                isBottom: isBottom,
+                dismissing: _ToastController.instance.isDismissing(
+                  ordered[i].id,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  double _laneHeight(int count) {
-    return 80.0 + math.max(0, count - 1) * UiStackedMotion.offsetStep * 2;
+  AlignmentDirectional _alignment(bool isBottom) {
+    if (isBottom && alignEnd) return AlignmentDirectional.bottomEnd;
+    return isBottom
+        ? AlignmentDirectional.bottomCenter
+        : AlignmentDirectional.topCenter;
   }
 }
 
@@ -503,16 +550,21 @@ class _ToastSlot extends StatefulWidget {
 
 class _ToastSlotState extends State<_ToastSlot>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _enter;
+  late final AnimationController _enter = AnimationController(vsync: this);
+  bool _started = false;
 
   @override
-  void initState() {
-    super.initState();
-    final tokens = UiThemeTokens.light; // safe default; re-read in build
-    _enter = AnimationController(
-      vsync: this,
-      duration: tokens.motion.standard,
-    )..forward();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final motion = UiThemeTokens.of(context).motion;
+    _enter.duration = motion.standard;
+    if (_started) return;
+    _started = true;
+    if (motion.standard == Duration.zero) {
+      _enter.value = 1.0;
+    } else {
+      _enter.forward();
+    }
   }
 
   @override
@@ -523,10 +575,11 @@ class _ToastSlotState extends State<_ToastSlot>
 
   @override
   Widget build(BuildContext context) {
+    final motion = UiThemeTokens.of(context).motion;
     return AnimatedBuilder(
       animation: _enter,
       builder: (context, child) {
-        final t = Curves.easeOutCubic.transform(_enter.value);
+        final t = motion.standardCurve.transform(_enter.value);
         return UiStackedOverlaySurface(
           depth: widget.depth.toDouble(),
           stackDirection:
@@ -536,8 +589,8 @@ class _ToastSlotState extends State<_ToastSlot>
           entranceProgress: t,
           entranceDistance: 20,
           visible: !widget.dismissing,
-          duration: _ToastController.exitDuration,
-          curve: Curves.easeOutCubic,
+          duration: motion.fast,
+          curve: motion.standardCurve,
           child: child!,
         );
       },

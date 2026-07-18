@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_transitions.dart';
+
 /// Transition presets for navigation animations.
 ///
 /// These match the three common patterns used across the kit's demos and
@@ -57,12 +59,10 @@ class UiNavigationTransition extends StatelessWidget {
 
   Widget _slideFade({required double begin}) {
     final dx = reverse ? -begin : begin;
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: Offset(dx, 0),
-        end: Offset.zero,
-      ).animate(animation),
-      child: FadeTransition(opacity: animation, child: child),
+    return UiSlideFadeTransition(
+      animation: animation,
+      beginOffset: Offset(dx, 0),
+      child: child,
     );
   }
 }

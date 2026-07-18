@@ -23,6 +23,13 @@ class UiMotionTokens {
   final Curve linearCurve;
 
   static const UiMotionTokens defaults = UiMotionTokens();
+  static const UiMotionTokens reduced = UiMotionTokens(
+    fast: Duration.zero,
+    standard: Duration.zero,
+    slow: Duration.zero,
+    standardCurve: Curves.linear,
+    emphasizedCurve: Curves.linear,
+  );
 
   UiMotionTokens copyWith({
     Duration? instant,
@@ -41,6 +48,16 @@ class UiMotionTokens {
       standardCurve: standardCurve ?? this.standardCurve,
       emphasizedCurve: emphasizedCurve ?? this.emphasizedCurve,
       linearCurve: linearCurve ?? this.linearCurve,
+    );
+  }
+
+  UiMotionTokens reduce() {
+    return copyWith(
+      fast: instant,
+      standard: instant,
+      slow: instant,
+      standardCurve: linearCurve,
+      emphasizedCurve: linearCurve,
     );
   }
 

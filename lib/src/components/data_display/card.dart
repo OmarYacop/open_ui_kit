@@ -21,6 +21,7 @@ class UiCard extends StatelessWidget {
     this.child,
     this.padding,
     this.variant = UiCardVariant.standard,
+    this.borderRadius,
     this.onPressed,
   });
 
@@ -28,6 +29,7 @@ class UiCard extends StatelessWidget {
   final Widget? footer;
   final Widget? child;
   final EdgeInsetsGeometry? padding;
+  final BorderRadiusGeometry? borderRadius;
   final UiCardVariant variant;
   final VoidCallback? onPressed;
 
@@ -70,7 +72,7 @@ class UiCard extends StatelessWidget {
       return UiBox(
         background: bg,
         border: Border.all(color: border, width: 1),
-        borderRadius: tokens.radius.xlAll,
+        borderRadius: borderRadius ?? tokens.radius.xlAll,
         boxShadow: shadow,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

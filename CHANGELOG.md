@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Fixed page bodies and generated title bars being placed beneath iPhone
+  status-bar and Dynamic Island insets.
+- **Breaking:** `UiPageScaffold`, `UiPageLayout`, `UiCollectionPage`, and
+  `UiAppShell` now apply safe insets by default. Intentional edge-to-edge pages
+  must opt out explicitly.
+- Preserved vertical edge-to-edge page surfaces while independently applying
+  physical left/right protection for landscape display cutouts.
+- Added reduced-motion support, reusable fade-scale and slide-fade transition
+  primitives, and migrated structural transitions in menus, dialogs, drawers,
+  toasts, tabs, app routes, navigation chrome, and sheets to resolve motion
+  from the theme.
+
 ## 0.2.0 - 2026-07-17
 
 - Added pull-to-refresh widgets, programmatic refresh control, and collection

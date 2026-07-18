@@ -12,6 +12,13 @@ Widget _host(Widget child, {TextDirection dir = TextDirection.ltr}) {
   );
 }
 
+void _usePhonePortrait(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   group('UiDrawerSide resolution (PR-2)', () {
     test('left / right are absolute in both directions', () {
@@ -63,6 +70,7 @@ void main() {
       required UiDrawerSide side,
       required TextDirection dir,
     }) async {
+      _usePhonePortrait(tester);
       await tester.pumpWidget(
         _host(
           Builder(

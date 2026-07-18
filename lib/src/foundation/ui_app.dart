@@ -71,7 +71,7 @@ class UiApp extends StatelessWidget {
           settings: settings,
           pageBuilder: (ctx, _, __) => builder(ctx),
           transitionsBuilder: (ctx, animation, _, child) =>
-              FadeTransition(opacity: animation, child: child),
+              _UiAppRouteTransition(animation: animation, child: child),
         );
       },
       builder: (context, child) {
@@ -100,6 +100,31 @@ class UiApp extends StatelessWidget {
         return MediaQuery.maybePlatformBrightnessOf(context) ??
             Brightness.light;
     }
+  }
+}
+
+class _UiAppRouteTransition extends StatelessWidget {
+  const _UiAppRouteTransition({
+    required this.animation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final motion = UiThemeTokens.of(context).motion;
+    if (motion.standard == Duration.zero) {
+      return child;
+    }
+
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: motion.standardCurve,
+      reverseCurve: motion.standardCurve.flipped,
+    );
+    return FadeTransition(opacity: curved, child: child);
   }
 }
 

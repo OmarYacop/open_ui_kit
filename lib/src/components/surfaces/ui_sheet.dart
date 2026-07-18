@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/intl.dart';
 import '../../foundation/layout/ui_form_factor.dart';
+import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -287,17 +288,17 @@ class UiSheetScope {
           );
         },
         transitionsBuilder: (_, animation, __, child) {
-          final slide = Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(
-              parent: animation,
-              curve: tokens.motion.standardCurve,
-              reverseCurve: tokens.motion.standardCurve,
-            ),
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: tokens.motion.standardCurve,
+            reverseCurve: tokens.motion.standardCurve,
           );
-          return SlideTransition(position: slide, child: child);
+          return UiSlideFadeTransition(
+            animation: curved,
+            beginOffset: const Offset(0, 1),
+            fade: false,
+            child: child,
+          );
         },
       ),
     );
@@ -495,6 +496,9 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
   // off to sheet" behaviour for map/filter-style UIs.
   bool _scrollDriveActive = false;
   double _scrollAvailableHeight = 1;
+  bool _dismissed = false;
+  Duration _resolvedDuration = const Duration(milliseconds: 200);
+  Curve _resolvedCurve = Curves.easeOutCubic;
 
   @override
   void initState() {
@@ -504,18 +508,32 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
     _controller._attach(widget.snaps.length);
     _anim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 200),
       value: _fractionFor(_controller.snapIndex),
     );
     _controller.addListener(_handleControllerChange);
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolveMotion();
+  }
+
+  @override
   void didUpdateWidget(covariant UiPersistentSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _resolveMotion();
     if (oldWidget.snaps.length != widget.snaps.length) {
       _controller._attach(widget.snaps.length);
     }
+  }
+
+  void _resolveMotion() {
+    final motion = UiThemeTokens.of(context).motion;
+    _resolvedDuration = widget.duration ?? motion.standard;
+    _resolvedCurve = widget.curve ?? motion.standardCurve;
+    _anim.duration = _resolvedDuration;
   }
 
   @override
@@ -537,16 +555,18 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
 
   void _handleControllerChange() {
     if (!mounted) return;
+    if (_dismissed) {
+      setState(() => _dismissed = false);
+    }
     final target = _fractionFor(_controller.snapIndex);
-    _anim.animateTo(
-      target,
-      duration: widget.duration,
-      curve: widget.curve ?? Curves.easeOutCubic,
-    );
+    _animateTo(target);
   }
 
   void _onDragUpdate(DragUpdateDetails details, double available) {
     if (!widget.enableDrag || available <= 0) return;
+    if (_dismissed) {
+      setState(() => _dismissed = false);
+    }
     final current = _dragFraction ?? _anim.value;
     final deltaFraction = -details.delta.dy / available;
     final minSnap = widget.allowClose ? 0.0 : _fractionFor(0);
@@ -604,22 +624,15 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
     // change (still snap 0 after a small drag), kick the animation
     // back to the current snap's fraction ourselves.
     if (_controller.snapIndex == targetIndex) {
-      _anim.animateTo(
-        snapFractions[targetIndex],
-        duration: widget.duration,
-        curve: widget.curve ?? Curves.easeOutCubic,
-      );
+      _animateTo(snapFractions[targetIndex]);
     }
     setState(() {});
   }
 
   void _dismiss() {
     _dragFraction = null;
-    _anim.animateTo(
-      0,
-      duration: widget.duration,
-      curve: widget.curve ?? Curves.easeOutCubic,
-    );
+    _dismissed = true;
+    _animateTo(0);
     setState(() {});
     widget.onClose?.call();
   }
@@ -695,16 +708,30 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
     // animation. If the index didn't actually change, kick the
     // animation ourselves so we still settle on the snap fraction.
     if (_controller.snapIndex == nearest) {
-      _anim.animateTo(
-        snapFractions[nearest],
-        duration: widget.duration,
-        curve: widget.curve ?? Curves.easeOutCubic,
-      );
+      _animateTo(snapFractions[nearest]);
     }
   }
 
+  void _animateTo(double target) {
+    final duration = _effectiveDuration;
+    if (duration == Duration.zero) {
+      _anim.value = target;
+      return;
+    }
+    _anim.animateTo(
+      target,
+      duration: duration,
+      curve: _effectiveCurve,
+    );
+  }
+
+  Duration get _effectiveDuration => _resolvedDuration;
+
+  Curve get _effectiveCurve => _resolvedCurve;
+
   @override
   Widget build(BuildContext context) {
+    _resolveMotion();
     final strings = UiLocalizations.of(context);
 
     return LayoutBuilder(
@@ -716,8 +743,14 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
         return AnimatedBuilder(
           animation: _anim,
           builder: (context, _) {
+            if (_dismissed) {
+              return const SizedBox.shrink();
+            }
             final fraction = _dragFraction ?? _anim.value;
             final height = (fraction * available).clamp(0.0, available);
+            if (height == 0) {
+              return const SizedBox.shrink();
+            }
             // PR-5 arbitration: descendants' scroll notifications
             // bubble into the listener below. Inner-list drags that
             // stay within the list's scroll range are absorbed by the

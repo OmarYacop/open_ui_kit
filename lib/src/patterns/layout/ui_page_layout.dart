@@ -27,7 +27,7 @@ class UiPageLayout extends StatelessWidget {
     this.secondary,
     this.bottomBar,
     this.backgroundColor,
-    this.safeViewportMode = UiSafeViewportMode.none,
+    this.safeViewportMode = UiSafeViewportMode.all,
     this.safeAreaMinimum = EdgeInsets.zero,
     this.syncSystemBars = true,
     this.leftSafeInset = true,
@@ -69,6 +69,10 @@ class UiPageLayout extends StatelessWidget {
   final Widget? bottomBar;
 
   final Color? backgroundColor;
+
+  /// Safe-area policy for the generated page chrome and body.
+  ///
+  /// Defaults to [UiSafeViewportMode.all].
   final UiSafeViewportMode safeViewportMode;
   final EdgeInsets safeAreaMinimum;
   final bool syncSystemBars;

@@ -44,6 +44,22 @@ Future<void> _pull(
 
 void main() {
   group('UiRefresher', () {
+    testWidgets('disposes safely without prior pull interaction',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiRefresher(
+            onRefresh: () async {},
+            child: _list(height: 20),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('runs refresh and renders rich lifecycle feedback',
         (tester) async {
       final completer = Completer<void>();

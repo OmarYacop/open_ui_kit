@@ -55,7 +55,7 @@ class UiCollectionPage<T> extends StatelessWidget {
     this.onRefresh,
     this.refreshController,
     this.refreshIndicatorBuilder,
-    this.safeViewportMode = UiSafeViewportMode.none,
+    this.safeViewportMode = UiSafeViewportMode.all,
     this.breakpoints = UiBreakpoints.standard,
   });
 
@@ -100,6 +100,10 @@ class UiCollectionPage<T> extends StatelessWidget {
   final Future<void> Function()? onRefresh;
   final UiRefresherController? refreshController;
   final UiRefreshIndicatorBuilder? refreshIndicatorBuilder;
+
+  /// Safe-area policy for the generated collection page.
+  ///
+  /// Defaults to [UiSafeViewportMode.all].
   final UiSafeViewportMode safeViewportMode;
   final UiBreakpoints breakpoints;
 

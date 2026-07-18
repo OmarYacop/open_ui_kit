@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../foundation/intl/intl.dart';
+import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/overlay/overlay.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
@@ -575,7 +576,7 @@ class _ScaleFade extends StatefulWidget {
   /// the trigger this is `topLeft` so the surface grows downward; when
   /// it opens above, pass `bottomLeft` so the growth direction tracks
   /// the trigger.
-  final AlignmentGeometry origin;
+  final Alignment origin;
 
   @override
   State<_ScaleFade> createState() => _ScaleFadeState();
@@ -583,10 +584,22 @@ class _ScaleFade extends StatefulWidget {
 
 class _ScaleFadeState extends State<_ScaleFade>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 140),
-  )..forward();
+  late final AnimationController _c = AnimationController(vsync: this);
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final motion = UiThemeTokens.of(context).motion;
+    _c.duration = motion.fast;
+    if (_started) return;
+    _started = true;
+    if (motion.fast == Duration.zero) {
+      _c.value = 1.0;
+    } else {
+      _c.forward();
+    }
+  }
 
   @override
   void dispose() {
@@ -599,22 +612,14 @@ class _ScaleFadeState extends State<_ScaleFade>
     // Isolate the menu surface in its own layer — the scale/opacity
     // animation would otherwise invalidate the page content below
     // every frame.
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (context, child) {
-          final t = Curves.easeOutCubic.transform(_c.value);
-          return Opacity(
-            opacity: t,
-            child: Transform.scale(
-              scale: 0.96 + 0.04 * t,
-              alignment: widget.origin,
-              child: child,
-            ),
-          );
-        },
-        child: widget.child,
-      ),
+    final motion = UiThemeTokens.of(context).motion;
+    final curved = CurvedAnimation(parent: _c, curve: motion.standardCurve);
+    return UiFadeScaleTransition(
+      animation: curved,
+      beginScale: 0.96,
+      alignment: widget.origin,
+      repaintBoundary: true,
+      child: widget.child,
     );
   }
 }

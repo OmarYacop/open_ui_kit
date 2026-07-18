@@ -240,6 +240,30 @@ void main() {
       expect(find.text('Session list'), findsOneWidget);
     });
 
+    testWidgets('keeps its generated title below the system top inset',
+        (tester) async {
+      const topInset = 59.0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: UiThemeData.light(),
+          home: MediaQuery(
+            data: const MediaQueryData(
+              padding: EdgeInsets.only(top: topInset),
+            ),
+            child: const UiPageLayout(
+              title: 'Safe title',
+              body: SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getRect(find.text('Safe title')).top,
+        greaterThanOrEqualTo(topInset),
+      );
+    });
+
     testWidgets('places semantic parts responsively', (tester) async {
       await tester.pumpWidget(
         _host(
@@ -604,6 +628,117 @@ void main() {
     });
 
     testWidgets(
+        'UiPageScaffold bleeds vertically and stays horizontally safe by default',
+        (tester) async {
+      const topInset = 59.0;
+      const bottomInset = 34.0;
+      const leftInset = 47.0;
+      const rightInset = 31.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            padding: EdgeInsets.only(
+              top: topInset,
+              bottom: bottomInset,
+              left: leftInset,
+              right: rightInset,
+            ),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: UiPageScaffold(
+              body: Builder(
+                builder: (context) {
+                  final insets = UiPageBodyInsets.of(context);
+                  return Stack(
+                    children: [
+                      const Positioned.fill(
+                        child: SizedBox(key: Key('safe-body')),
+                      ),
+                      Text('insets:${insets.top}/${insets.bottom}'),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final bodyRect = tester.getRect(find.byKey(const Key('safe-body')));
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      expect(bodyRect.top, 0);
+      expect(bodyRect.bottom, screen.height);
+      expect(bodyRect.left, leftInset);
+      expect(bodyRect.right, screen.width - rightInset);
+      expect(find.text('insets:$topInset/$bottomInset'), findsOneWidget);
+    });
+
+    testWidgets('UiPageScaffold keeps its default top bar below the top inset',
+        (tester) async {
+      const topInset = 59.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            padding: EdgeInsets.only(top: topInset),
+          ),
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: UiPageScaffold(
+              topBar: SizedBox(
+                key: Key('safe-top-bar'),
+                height: 48,
+                child: Text('Safe top bar'),
+              ),
+              body: SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getRect(find.byKey(const Key('safe-top-bar'))).top,
+        greaterThanOrEqualTo(topInset),
+      );
+    });
+
+    testWidgets('UiPageScaffold allows an explicit full-bleed opt-out',
+        (tester) async {
+      const topInset = 59.0;
+      const leftInset = 47.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            padding: EdgeInsets.only(top: topInset, left: leftInset),
+          ),
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: UiPageScaffold(
+              safeViewportMode: UiSafeViewportMode.none,
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  key: Key('full-bleed-body'),
+                  width: 10,
+                  height: 10,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getRect(find.byKey(const Key('full-bleed-body'))).top,
+        0,
+      );
+      expect(
+        tester.getRect(find.byKey(const Key('full-bleed-body'))).left,
+        0,
+      );
+    });
+
+    testWidgets(
         'UiPageScaffold paints background full-bleed under the status bar',
         (tester) async {
       // Regression: if the scaffold painted its background *inside* the
@@ -665,7 +800,7 @@ void main() {
       expect(bodyRect.bottom, lessThanOrEqualTo(screen.height - bottomInset));
     });
 
-    testWidgets('UiPageScaffold defaults to full-bleed body fade with insets',
+    testWidgets('UiPageScaffold can move safe insets into a full-bleed fade',
         (tester) async {
       const topInset = 44.0;
       const bottomInset = 34.0;
@@ -685,6 +820,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: UiPageScaffold(
               safeViewportMode: UiSafeViewportMode.all,
+              scrollFadeUsesSafeArea: true,
               body: Builder(
                 builder: (context) {
                   final insets = UiPageBodyInsets.of(context);
@@ -711,8 +847,10 @@ void main() {
       final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
       expect(bodyRect.top, 0);
       expect(bodyRect.bottom, screen.height);
+      expect(bodyRect.left, leftInset);
+      expect(bodyRect.right, screen.width - rightInset);
       expect(find.text('insets:$topInset/$bottomInset'), findsOneWidget);
-      expect(find.byType(SafeArea), findsNothing);
+      expect(find.byType(SafeArea), findsOneWidget);
     });
 
     testWidgets('UiPageBodyInsets does not inject horizontal page padding',
@@ -734,6 +872,7 @@ void main() {
           child: Directionality(
             textDirection: TextDirection.ltr,
             child: UiPageScaffold(
+              scrollFadeUsesSafeArea: true,
               body: Builder(
                 builder: (context) {
                   final insets = UiPageBodyInsets.of(context);

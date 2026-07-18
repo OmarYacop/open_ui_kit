@@ -23,7 +23,7 @@ class UiBox extends StatelessWidget {
 
   final Color? background;
   final BoxBorder? border;
-  final BorderRadius? borderRadius;
+  final BorderRadiusGeometry? borderRadius;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final double? width;

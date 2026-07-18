@@ -54,15 +54,28 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
   /// Resolve the Open UI Kit tokens attached to the ambient theme.
   /// Falls back to [light] if not present.
   static UiThemeTokens of(BuildContext context) {
-    return UiTheme.maybeOf(context) ??
+    final tokens = UiTheme.maybeOf(context) ??
         Theme.of(context).extension<UiThemeTokens>() ??
         light;
+    return _respectMotionPreferences(context, tokens);
   }
 
   /// Non-throwing lookup.
   static UiThemeTokens? maybeOf(BuildContext context) {
-    return UiTheme.maybeOf(context) ??
+    final tokens = UiTheme.maybeOf(context) ??
         Theme.of(context).extension<UiThemeTokens>();
+    if (tokens == null) return null;
+    return _respectMotionPreferences(context, tokens);
+  }
+
+  static UiThemeTokens _respectMotionPreferences(
+    BuildContext context,
+    UiThemeTokens tokens,
+  ) {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (!disableAnimations) return tokens;
+    return tokens.copyWith(motion: tokens.motion.reduce());
   }
 
   @override

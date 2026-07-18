@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
-import 'package:flutter/foundation.dart' show ValueListenable, immutable;
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
@@ -37,6 +37,75 @@ enum UiDrawerVariant {
   stacked,
 }
 
+enum _UiDrawerPlacement { side, bottom }
+
+const double _kPhoneSideDrawerMaxWidth = 292;
+const double _kPhoneSideDrawerEdgeInset = 48;
+
+@immutable
+class _UiDrawerLayoutMetrics {
+  const _UiDrawerLayoutMetrics({
+    required this.placement,
+    required this.sideWidth,
+    required this.bottomMaxWidth,
+    required this.bottomMaxHeight,
+  });
+
+  final _UiDrawerPlacement placement;
+  final double sideWidth;
+  final double bottomMaxWidth;
+  final double bottomMaxHeight;
+
+  _UiDrawerLayoutMetrics copyWith({
+    _UiDrawerPlacement? placement,
+    double? sideWidth,
+    double? bottomMaxWidth,
+    double? bottomMaxHeight,
+  }) {
+    return _UiDrawerLayoutMetrics(
+      placement: placement ?? this.placement,
+      sideWidth: sideWidth ?? this.sideWidth,
+      bottomMaxWidth: bottomMaxWidth ?? this.bottomMaxWidth,
+      bottomMaxHeight: bottomMaxHeight ?? this.bottomMaxHeight,
+    );
+  }
+
+  static _UiDrawerLayoutMetrics resolve(
+    Size size,
+    double requestedWidth, {
+    double? maxWidth,
+  }) {
+    final shortestSide = size.shortestSide;
+    final isPhone = shortestSide < 600;
+    final isLandscape = size.width > size.height;
+    final placement = isPhone && !isLandscape
+        ? _UiDrawerPlacement.side
+        : _UiDrawerPlacement.bottom;
+
+    final sideAvailable = (size.width - _kPhoneSideDrawerEdgeInset).clamp(
+      0.0,
+      double.infinity,
+    );
+    final resolvedMaxWidth = maxWidth ?? _kPhoneSideDrawerMaxWidth;
+    final sideMax =
+        sideAvailable < resolvedMaxWidth ? sideAvailable : resolvedMaxWidth;
+    final sideWidth = requestedWidth.clamp(0.0, sideMax).toDouble();
+    final bottomMaxHeight = isPhone
+        ? (size.height * 0.86).clamp(240.0, 420.0)
+        : (size.height * 0.72).clamp(360.0, 640.0);
+    final bottomAvailable = isPhone ? size.width : size.width - 64;
+    final bottomMax = maxWidth ?? (isPhone ? size.width : 720.0);
+    final bottomMaxWidth = bottomAvailable.clamp(0.0, bottomMax).toDouble();
+
+    return _UiDrawerLayoutMetrics(
+      placement: placement,
+      sideWidth: sideWidth,
+      bottomMaxWidth: bottomMaxWidth,
+      bottomMaxHeight: bottomMaxHeight,
+    );
+  }
+}
+
 /// Drawer content wrapper. Usually presented by [UiDrawerScope.show].
 class UiDrawer extends StatelessWidget {
   const UiDrawer({
@@ -47,6 +116,7 @@ class UiDrawer extends StatelessWidget {
     this.footer,
     this.side = UiDrawerSide.start,
     this.width = 300,
+    this.maxWidth,
     this.variant = UiDrawerVariant.standard,
     this.margin,
     this.borderRadius,
@@ -66,6 +136,10 @@ class UiDrawer extends StatelessWidget {
         assert(
           child == null || (header == null && body == null && footer == null),
           'child cannot be combined with header, body, or footer.',
+        ),
+        assert(
+          maxWidth == null || maxWidth > 0,
+          'maxWidth must be greater than zero.',
         );
 
   /// Legacy, fully custom drawer content.
@@ -85,6 +159,15 @@ class UiDrawer extends StatelessWidget {
   final Widget? footer;
   final UiDrawerSide side;
   final double width;
+
+  /// Optional maximum width used by adaptive drawer layouts.
+  ///
+  /// In phone portrait side mode, [width] is still the requested width and
+  /// [maxWidth] caps it after reserving the fixed edge inset. In bottom mode,
+  /// [maxWidth] caps the bottom panel width instead of the default large-screen
+  /// maximum.
+  final double? maxWidth;
+
   final UiDrawerVariant variant;
   final EdgeInsetsGeometry? margin;
 
@@ -121,6 +204,7 @@ class UiDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
+    final direction = Directionality.of(context);
     final c = tokens.colors;
     final inherited = _UiDrawerPresentation.maybeOf(context);
     final effectiveSide =
@@ -128,14 +212,30 @@ class UiDrawer extends StatelessWidget {
     final effectiveVariant = variant == UiDrawerVariant.standard
         ? (inherited?.variant ?? variant)
         : variant;
+    final layoutMetrics = _UiDrawerLayoutMetrics.resolve(
+      MediaQuery.sizeOf(context),
+      width,
+      maxWidth: maxWidth,
+    );
+    final inheritedMetrics = inherited?.layoutMetrics;
+    final effectiveLayoutMetrics = inheritedMetrics == null
+        ? layoutMetrics
+        : layoutMetrics.copyWith(
+            placement: inheritedMetrics.placement,
+            bottomMaxWidth:
+                inheritedMetrics.bottomMaxWidth < layoutMetrics.bottomMaxWidth
+                    ? inheritedMetrics.bottomMaxWidth
+                    : layoutMetrics.bottomMaxWidth,
+          );
+    final placement = effectiveLayoutMetrics.placement;
+    final isBottom = placement == _UiDrawerPlacement.bottom;
     final resolvedLeft = _resolveIsLeft(
       effectiveSide,
-      Directionality.of(context),
+      direction,
     );
     final strings = UiLocalizations.of(context);
     final resolvedLabel = semanticsLabel ?? strings.drawer;
     final floating = effectiveVariant != UiDrawerVariant.standard;
-    final direction = Directionality.of(context);
     final baseMargin = (margin ?? EdgeInsets.all(tokens.spacing.x3)).resolve(
       direction,
     );
@@ -154,6 +254,7 @@ class UiDrawer extends StatelessWidget {
         _resolveAdaptiveRadius(
           context,
           floating: floating,
+          placement: placement,
           isLeft: resolvedLeft,
           adaptive: adaptiveDeviceRadius,
         );
@@ -165,20 +266,38 @@ class UiDrawer extends StatelessWidget {
         ? Border.all(color: c.border)
         : hasRadius
             ? Border.all(color: c.border)
-            : Border(
-                right: resolvedLeft
-                    ? BorderSide(color: c.border)
-                    : BorderSide.none,
-                left: resolvedLeft
-                    ? BorderSide.none
-                    : BorderSide(color: c.border),
-              );
+            : isBottom
+                ? Border(top: BorderSide(color: c.border))
+                : Border(
+                    right: resolvedLeft
+                        ? BorderSide(color: c.border)
+                        : BorderSide.none,
+                    left: resolvedLeft
+                        ? BorderSide.none
+                        : BorderSide(color: c.border),
+                  );
     final content =
         child ?? _UiDrawerRegions(header: header, body: body, footer: footer);
+    final effectiveWidth =
+        isBottom ? double.infinity : effectiveLayoutMetrics.sideWidth;
+    final sizeBox = isBottom
+        ? ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: effectiveLayoutMetrics.bottomMaxWidth,
+              maxHeight: effectiveLayoutMetrics.bottomMaxHeight,
+            ),
+            child: SizedBox(width: effectiveWidth, child: content),
+          )
+        : SizedBox(width: effectiveWidth, child: content);
     Widget drawer = Padding(
       padding: floating ? resolvedMargin : EdgeInsets.zero,
-      child: SizedBox(
-        width: width,
+      child: ConstrainedBox(
+        constraints: isBottom
+            ? BoxConstraints(
+                maxWidth: effectiveLayoutMetrics.bottomMaxWidth,
+                maxHeight: effectiveLayoutMetrics.bottomMaxHeight,
+              )
+            : const BoxConstraints(),
         child: ClipRRect(
           borderRadius: resolvedRadius,
           child: UiBox(
@@ -190,7 +309,7 @@ class UiDrawer extends StatelessWidget {
                 : floating
                     ? tokens.shadows.lg
                     : tokens.shadows.md,
-            child: content,
+            child: sizeBox,
           ),
         ),
       ),
@@ -228,6 +347,7 @@ class UiDrawer extends StatelessWidget {
     return _resolveAdaptiveRadius(
       context,
       floating: variant != UiDrawerVariant.standard,
+      placement: _UiDrawerPlacement.side,
       isLeft: _resolveIsLeft(side, Directionality.of(context)),
       adaptive: adaptive,
     );
@@ -431,18 +551,26 @@ class _UiDrawerRegions extends StatelessWidget {
 BorderRadius _resolveAdaptiveRadius(
   BuildContext context, {
   required bool floating,
+  required _UiDrawerPlacement placement,
   required bool isLeft,
   required bool adaptive,
 }) {
   final tokens = UiThemeTokens.of(context);
   // Floating drawers are inset by x3. Add that inset to the largest standard
   // surface radius so the visible curvature still matches the app window.
-  final base = floating ? tokens.radius.xl.x + tokens.spacing.x3 : 0.0;
+  final base = floating
+      ? tokens.radius.xl.x + tokens.spacing.x3
+      : placement == _UiDrawerPlacement.bottom
+          ? tokens.radius.xl.x
+          : 0.0;
   final inferred = adaptive ? _inferDeviceCornerRadius(context) : 0.0;
   final value = inferred > base ? inferred : base;
   final radius = Radius.circular(value);
 
   if (floating) return BorderRadius.all(radius);
+  if (placement == _UiDrawerPlacement.bottom) {
+    return BorderRadius.only(topLeft: radius, topRight: radius);
+  }
   if (value == 0) return BorderRadius.zero;
   return isLeft
       ? BorderRadius.only(topLeft: radius, bottomLeft: radius)
@@ -492,13 +620,61 @@ class UiDrawerController<T> {
 typedef UiControlledDrawerBuilder<T> = Widget Function(
     BuildContext context, UiDrawerController<T> controller);
 
+UiControlledDrawerBuilder<dynamic>? _eraseControlledBuilder<T>(
+  UiControlledDrawerBuilder<T>? builder,
+) {
+  if (builder == null) return null;
+  return (context, controller) {
+    final typedController = UiDrawerController<T>._(([result]) {
+      controller.dismiss(result);
+    });
+    return builder(context, typedController);
+  };
+}
+
+/// Controls the nested stack inside a single modal drawer route.
+class UiDrawerStackController {
+  UiDrawerStackController._(this._state);
+
+  final _DrawerRouteHostState _state;
+
+  Future<T?> push<T>({
+    required WidgetBuilder builder,
+    UiControlledDrawerBuilder<T>? controlledBuilder,
+    UiDrawerSide? side,
+    UiDrawerVariant? variant,
+  }) {
+    return _state.push<T>(
+      builder: builder,
+      controlledBuilder: controlledBuilder,
+      side: side,
+      variant: variant,
+    );
+  }
+
+  void pop<T>([T? result]) => _state.popTop<T>(result);
+
+  bool get canPop => _state.canPopEntry;
+}
+
+/// Accessor for the drawer stack owned by the current modal drawer route.
+class UiDrawerNavigator {
+  UiDrawerNavigator._();
+
+  static UiDrawerStackController of(BuildContext context) {
+    final controller = maybeOf(context);
+    assert(controller != null, 'No UiDrawer route is active for this context.');
+    return controller!;
+  }
+
+  static UiDrawerStackController? maybeOf(BuildContext context) {
+    return _UiDrawerStackScope.maybeOf(context);
+  }
+}
+
 /// Imperative helpers for showing a [UiDrawer] overlay.
 class UiDrawerScope {
   UiDrawerScope._();
-
-  static final ValueNotifier<_DrawerStackSnapshot> _stack =
-      ValueNotifier<_DrawerStackSnapshot>(const _DrawerStackSnapshot());
-  static int _nextStackId = 0;
 
   /// Present a modal drawer from [side]. Returns the result passed to
   /// `Navigator.maybePop`.
@@ -512,25 +688,25 @@ class UiDrawerScope {
     bool? blurBackdrop,
     Color? barrierColor,
   }) {
+    final nested = UiDrawerNavigator.maybeOf(context);
+    if (nested != null) {
+      return nested.push<T>(
+        builder: builder,
+        controlledBuilder: controlledBuilder,
+        side: side,
+        variant: variant,
+      );
+    }
+
     final tokens = UiThemeTokens.of(context);
     final direction = Directionality.of(context);
-    final isLeft = _resolveIsLeft(side, direction);
     final effectiveBlurBackdrop =
         blurBackdrop ?? variant != UiDrawerVariant.standard;
     final navigator = Navigator.of(context, rootNavigator: true);
-    const drawerTransitionDuration = UiStackedMotion.drawerDuration;
-    final stackId = _nextStackId++;
-    _stack.value = _stack.value.push(stackId);
-    var markedClosing = false;
-    void markClosing() {
-      if (markedClosing) return;
-      markedClosing = true;
-      _stack.value = _stack.value.markClosing(stackId);
-    }
-
-    void removeFromStack() {
-      _stack.value = _stack.value.remove(stackId);
-    }
+    final motion = tokens.motion;
+    final drawerTransitionDuration = motion.standard == Duration.zero
+        ? Duration.zero
+        : UiStackedMotion.drawerDuration;
 
     final capturedThemes = InheritedTheme.capture(
       from: context,
@@ -539,37 +715,49 @@ class UiDrawerScope {
     final route = navigator.push<T>(
       PageRouteBuilder<T>(
         opaque: false,
-        barrierDismissible: barrierDismissible,
+        barrierDismissible: false,
         barrierColor: const Color(0x00000000),
         transitionDuration: drawerTransitionDuration,
         reverseTransitionDuration: drawerTransitionDuration,
         pageBuilder: (ctx, animation, __) {
-          final controller = UiDrawerController<T>._(([r]) {
-            Navigator.of(ctx).maybePop(r);
-          });
-          final drawer =
-              controlledBuilder?.call(ctx, controller) ?? builder(ctx);
           return capturedThemes.wrap(
             _DrawerRouteHost(
               animation: animation,
-              isLeft: isLeft,
               side: side,
               variant: variant,
-              stackId: stackId,
-              stackListenable: _stack,
+              direction: direction,
+              builder: builder,
+              controlledBuilder: _eraseControlledBuilder(controlledBuilder),
               blurBackdrop: effectiveBlurBackdrop,
               barrierColor: barrierColor ?? tokens.colors.overlay,
+              barrierDismissible: barrierDismissible,
               transitionDuration: drawerTransitionDuration,
-              onReverseStarted: markClosing,
-              child: drawer,
+              onDismissRoute: ([result]) {
+                Navigator.of(ctx).maybePop(result);
+              },
             ),
           );
         },
         transitionsBuilder: (_, __, ___, child) => child,
       ),
     );
-    route.whenComplete(removeFromStack);
     return route;
+  }
+
+  /// Push a nested drawer into the currently active drawer route.
+  static Future<T?> push<T>(
+    BuildContext context, {
+    required WidgetBuilder builder,
+    UiControlledDrawerBuilder<T>? controlledBuilder,
+    UiDrawerSide? side,
+    UiDrawerVariant? variant,
+  }) {
+    return UiDrawerNavigator.of(context).push<T>(
+      builder: builder,
+      controlledBuilder: controlledBuilder,
+      side: side,
+      variant: variant,
+    );
   }
 }
 
@@ -578,18 +766,28 @@ class _DrawerStackSnapshot {
   const _DrawerStackSnapshot({
     this.open = const <int>[],
     this.closing = const <int>{},
+    this.drag,
   });
 
   final List<int> open;
   final Set<int> closing;
+  final _DrawerStackDrag? drag;
 
   _DrawerStackSnapshot push(int id) {
-    return _DrawerStackSnapshot(open: [...open, id], closing: closing);
+    return _DrawerStackSnapshot(
+      open: [...open, id],
+      closing: closing,
+      drag: null,
+    );
   }
 
   _DrawerStackSnapshot markClosing(int id) {
     if (!open.contains(id) || closing.contains(id)) return this;
-    return _DrawerStackSnapshot(open: open, closing: {...closing, id});
+    return _DrawerStackSnapshot(
+      open: open,
+      closing: {...closing, id},
+      drag: drag,
+    );
   }
 
   _DrawerStackSnapshot remove(int id) {
@@ -602,7 +800,22 @@ class _DrawerStackSnapshot {
         for (final closingId in closing)
           if (closingId != id) closingId,
       },
+      drag: drag?.id == id ? null : drag,
     );
+  }
+
+  _DrawerStackSnapshot updateDrag(int id, double progress) {
+    if (!open.contains(id)) return this;
+    return _DrawerStackSnapshot(
+      open: open,
+      closing: closing,
+      drag: _DrawerStackDrag(id: id, progress: progress.clamp(0.0, 1.0)),
+    );
+  }
+
+  _DrawerStackSnapshot clearDrag(int id) {
+    if (drag?.id != id) return this;
+    return _DrawerStackSnapshot(open: open, closing: closing);
   }
 
   List<int> effectiveStackFor(int id) {
@@ -613,16 +826,46 @@ class _DrawerStackSnapshot {
   }
 }
 
+@immutable
+class _DrawerStackDrag {
+  const _DrawerStackDrag({required this.id, required this.progress});
+
+  final int id;
+  final double progress;
+}
+
+class _UiDrawerStackScope extends InheritedWidget {
+  const _UiDrawerStackScope({
+    required this.controller,
+    required super.child,
+  });
+
+  final UiDrawerStackController controller;
+
+  static UiDrawerStackController? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_UiDrawerStackScope>()
+        ?.controller;
+  }
+
+  @override
+  bool updateShouldNotify(_UiDrawerStackScope oldWidget) {
+    return controller != oldWidget.controller;
+  }
+}
+
 class _UiDrawerPresentation extends InheritedWidget {
   const _UiDrawerPresentation({
     required this.side,
     required this.variant,
+    required this.layoutMetrics,
     required this.stackDepth,
     required super.child,
   });
 
   final UiDrawerSide side;
   final UiDrawerVariant variant;
+  final _UiDrawerLayoutMetrics layoutMetrics;
   final int stackDepth;
 
   static _UiDrawerPresentation? maybeOf(BuildContext context) {
@@ -633,6 +876,7 @@ class _UiDrawerPresentation extends InheritedWidget {
   bool updateShouldNotify(_UiDrawerPresentation oldWidget) {
     return side != oldWidget.side ||
         variant != oldWidget.variant ||
+        layoutMetrics != oldWidget.layoutMetrics ||
         stackDepth != oldWidget.stackDepth;
   }
 }
@@ -640,39 +884,68 @@ class _UiDrawerPresentation extends InheritedWidget {
 class _DrawerRouteHost extends StatefulWidget {
   const _DrawerRouteHost({
     required this.animation,
-    required this.isLeft,
     required this.side,
     required this.variant,
-    required this.stackId,
-    required this.stackListenable,
+    required this.direction,
+    required this.builder,
+    required this.controlledBuilder,
     required this.blurBackdrop,
     required this.barrierColor,
+    required this.barrierDismissible,
     required this.transitionDuration,
-    required this.onReverseStarted,
-    required this.child,
+    required this.onDismissRoute,
   });
 
   final Animation<double> animation;
-  final bool isLeft;
   final UiDrawerSide side;
   final UiDrawerVariant variant;
-  final int stackId;
-  final ValueListenable<_DrawerStackSnapshot> stackListenable;
+  final TextDirection direction;
+  final WidgetBuilder builder;
+  final UiControlledDrawerBuilder<dynamic>? controlledBuilder;
   final bool blurBackdrop;
   final Color barrierColor;
+  final bool barrierDismissible;
   final Duration transitionDuration;
-  final VoidCallback onReverseStarted;
-  final Widget child;
+  final void Function([dynamic result]) onDismissRoute;
 
   @override
   State<_DrawerRouteHost> createState() => _DrawerRouteHostState();
 }
 
-class _DrawerRouteHostState extends State<_DrawerRouteHost> {
+class _DrawerRouteHostState extends State<_DrawerRouteHost>
+    with TickerProviderStateMixin {
+  final ValueNotifier<_DrawerStackSnapshot> _stackListenable =
+      ValueNotifier<_DrawerStackSnapshot>(const _DrawerStackSnapshot());
+  final List<_DrawerStackEntry<dynamic>> _entries =
+      <_DrawerStackEntry<dynamic>>[];
+  late final UiDrawerStackController _stackController;
+  late final AnimationController _dragController;
+  int _nextEntryId = 0;
+  int? _activeDragEntryId;
+  bool _routeMarkedClosing = false;
+
   @override
   void initState() {
     super.initState();
+    _stackController = UiDrawerStackController._(this);
+    _dragController = AnimationController(
+      vsync: this,
+      value: 0,
+      duration: widget.transitionDuration,
+    );
+    _dragController.addListener(_publishOwnedDragProgress);
     widget.animation.addStatusListener(_handleAnimationStatus);
+    final rootEntry = _createEntry<dynamic>(
+      builder: widget.builder,
+      controlledBuilder: widget.controlledBuilder,
+      side: widget.side,
+      variant: widget.variant,
+      direction: widget.direction,
+      isRoot: true,
+      animation: widget.animation,
+    );
+    _entries.add(rootEntry);
+    _stackListenable.value = _stackListenable.value.push(rootEntry.id);
   }
 
   @override
@@ -686,13 +959,355 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost> {
   @override
   void dispose() {
     widget.animation.removeStatusListener(_handleAnimationStatus);
+    _dragController.removeListener(_publishOwnedDragProgress);
+    _clearOwnedDrag();
+    _dragController.dispose();
+    _stackListenable.dispose();
+    for (final entry in _entries) {
+      if (!entry.isRoot) entry.dispose();
+    }
     super.dispose();
   }
 
   void _handleAnimationStatus(AnimationStatus status) {
-    if (status == AnimationStatus.reverse) {
-      widget.onReverseStarted();
+    if (status == AnimationStatus.reverse && !_routeMarkedClosing) {
+      _routeMarkedClosing = true;
+      final ids = _entries.map((entry) => entry.id).toList();
+      var snapshot = _stackListenable.value;
+      for (final id in ids) {
+        snapshot = snapshot.markClosing(id);
+      }
+      _stackListenable.value = snapshot;
     }
+  }
+
+  bool get canPopEntry => _entries.length > 1;
+
+  Future<T?> push<T>({
+    required WidgetBuilder builder,
+    UiControlledDrawerBuilder<T>? controlledBuilder,
+    UiDrawerSide? side,
+    UiDrawerVariant? variant,
+  }) {
+    final controller = AnimationController(
+      vsync: this,
+      duration: widget.transitionDuration,
+    );
+    final entry = _createEntry<T>(
+      builder: builder,
+      controlledBuilder: controlledBuilder,
+      side: side ?? widget.side,
+      variant: variant ?? widget.variant,
+      direction: _entries.isEmpty ? widget.direction : _entries.last.direction,
+      isRoot: false,
+      animation: controller,
+    );
+    setState(() {
+      _entries.add(entry);
+      _stackListenable.value = _stackListenable.value.push(entry.id);
+    });
+    controller.forward();
+    return entry.completer.future;
+  }
+
+  void popTop<T>([T? result]) {
+    if (_entries.length <= 1) {
+      widget.onDismissRoute(result);
+      return;
+    }
+    _popEntry(_entries.last.id, result);
+  }
+
+  _DrawerStackEntry<T> _createEntry<T>({
+    required WidgetBuilder builder,
+    required UiControlledDrawerBuilder<T>? controlledBuilder,
+    required UiDrawerSide side,
+    required UiDrawerVariant variant,
+    required TextDirection direction,
+    required bool isRoot,
+    required Animation<double> animation,
+  }) {
+    return _DrawerStackEntry<T>(
+      id: _nextEntryId++,
+      builder: builder,
+      controlledBuilder: _eraseControlledBuilder(controlledBuilder),
+      side: side,
+      variant: variant,
+      direction: direction,
+      isRoot: isRoot,
+      animation: animation,
+    );
+  }
+
+  Future<void> _popEntry<T>(int id, [T? result]) async {
+    final entry = _entryFor(id);
+    if (entry == null || entry.isClosing) return;
+    entry.isClosing = true;
+    _stackListenable.value = _stackListenable.value.markClosing(id);
+
+    final animation = entry.animation;
+    if (animation is AnimationController) {
+      await animation.reverse();
+    }
+    if (!mounted) return;
+
+    _removeEntry(entry, result);
+  }
+
+  void _removeEntry<T>(_DrawerStackEntry<dynamic> entry, [T? result]) {
+    if (_activeDragEntryId == entry.id) {
+      _activeDragEntryId = null;
+      _dragController.value = 0;
+    }
+    setState(() {
+      _entries.removeWhere((candidate) => candidate.id == entry.id);
+      _stackListenable.value = _stackListenable.value.remove(entry.id);
+    });
+    if (!entry.completer.isCompleted) {
+      entry.completer.complete(result);
+    }
+    if (!entry.isRoot) entry.dispose();
+  }
+
+  _DrawerStackEntry<dynamic>? _entryFor(int id) {
+    for (final entry in _entries) {
+      if (entry.id == id) return entry;
+    }
+    return null;
+  }
+
+  int? get _topEntryId => _entries.isEmpty ? null : _entries.last.id;
+
+  void _handleBackdropPressed() {
+    if (_entries.length > 1) {
+      popTop<dynamic>();
+      return;
+    }
+    if (widget.barrierDismissible) {
+      widget.onDismissRoute();
+    }
+  }
+
+  void _handleDragStart(_DrawerStackEntry<dynamic> entry) {
+    if (widget.animation.status != AnimationStatus.completed) return;
+    if (_topEntryId != entry.id) return;
+    _dragController.stop();
+    _activeDragEntryId = entry.id;
+    _publishOwnedDragProgress();
+  }
+
+  void _handleDragUpdate(
+    _DrawerStackEntry<dynamic> entry,
+    double primaryDelta,
+  ) {
+    if (widget.animation.status != AnimationStatus.completed) return;
+    if (_activeDragEntryId != entry.id) return;
+    if (primaryDelta == 0) return;
+
+    final layoutMetrics = _UiDrawerLayoutMetrics.resolve(
+      MediaQuery.sizeOf(context),
+      300,
+    );
+    final isBottom = layoutMetrics.placement == _UiDrawerPlacement.bottom;
+    final isLeft = _resolveIsLeft(entry.side, entry.direction);
+    final closingDelta =
+        isBottom ? primaryDelta : (isLeft ? -primaryDelta : primaryDelta);
+    final drawerSize = entry.key.currentContext?.size;
+    final drawerExtent = isBottom
+        ? (drawerSize?.height ?? layoutMetrics.bottomMaxHeight)
+        : (drawerSize?.width ?? MediaQuery.sizeOf(context).width);
+    if (drawerExtent <= 0) return;
+
+    _dragController.value =
+        (_dragController.value + closingDelta / drawerExtent).clamp(0.0, 1.0);
+  }
+
+  void _handleDragEnd(
+    _DrawerStackEntry<dynamic> entry,
+    double primaryVelocity,
+  ) {
+    if (widget.animation.status != AnimationStatus.completed) return;
+    if (_activeDragEntryId != entry.id) return;
+    final layoutMetrics = _UiDrawerLayoutMetrics.resolve(
+      MediaQuery.sizeOf(context),
+      300,
+    );
+    final isBottom = layoutMetrics.placement == _UiDrawerPlacement.bottom;
+    final isLeft = _resolveIsLeft(entry.side, entry.direction);
+    final velocity = isBottom
+        ? primaryVelocity
+        : isLeft
+            ? -primaryVelocity
+            : primaryVelocity;
+    final shouldDismiss = velocity > 700 || _dragController.value > 0.35;
+
+    if (shouldDismiss) {
+      _dragController.animateTo(1).whenComplete(() {
+        if (!mounted) return;
+        if (entry.isRoot) {
+          widget.onDismissRoute();
+        } else {
+          _removeEntry(entry);
+        }
+      });
+    } else {
+      _dragController.animateBack(0).whenComplete(_clearOwnedDrag);
+    }
+  }
+
+  void _handleDragCancel(_DrawerStackEntry<dynamic> entry) {
+    if (widget.animation.status == AnimationStatus.completed) {
+      if (_activeDragEntryId != entry.id) return;
+      _dragController.animateBack(0).whenComplete(_clearOwnedDrag);
+    }
+  }
+
+  void _publishOwnedDragProgress() {
+    final id = _activeDragEntryId;
+    if (id == null) return;
+    _stackListenable.value = _stackListenable.value.updateDrag(
+      id,
+      _dragController.value,
+    );
+  }
+
+  void _clearOwnedDrag() {
+    final id = _activeDragEntryId ?? _stackListenable.value.drag?.id;
+    if (id == null) {
+      return;
+    }
+    _activeDragEntryId = null;
+    _dragController.value = 0;
+    _stackListenable.value = _stackListenable.value.clearDrag(id);
+  }
+
+  Widget _buildEntry(
+    BuildContext context,
+    _DrawerStackSnapshot snapshot,
+    _DrawerStackEntry<dynamic> entry,
+    Widget drawer,
+  ) {
+    final isLeft = _resolveIsLeft(entry.side, entry.direction);
+    final layoutMetrics = _UiDrawerLayoutMetrics.resolve(
+      MediaQuery.sizeOf(context),
+      300,
+    );
+    final isBottom = layoutMetrics.placement == _UiDrawerPlacement.bottom;
+    final stack = snapshot.effectiveStackFor(entry.id);
+    final index = stack.indexOf(entry.id);
+    final stackDepth = index < 0 ? 0 : stack.length - 1 - index;
+    final drag = snapshot.drag;
+    final draggedIndex = drag == null ? -1 : stack.indexOf(drag.id);
+    final activeDragProgress = drag?.id == entry.id ? drag!.progress : 0.0;
+    final dragControlsDepth = draggedIndex > index;
+    final depthDragProgress = dragControlsDepth ? drag!.progress : 0.0;
+    final motion = UiThemeTokens.of(context).motion;
+    final drawerCurve = motion.standard == Duration.zero
+        ? motion.standardCurve
+        : UiStackedMotion.drawerCurve;
+    final drawerStackDuration = motion.standard == Duration.zero
+        ? Duration.zero
+        : UiStackedMotion.drawerStackDuration;
+    final curved = CurvedAnimation(
+      parent: entry.animation,
+      curve: drawerCurve,
+      reverseCurve: drawerCurve.flipped,
+    );
+
+    return AnimatedBuilder(
+      animation: curved,
+      builder: (context, _) {
+        final direction = isBottom
+            ? AxisDirection.up
+            : isLeft
+                ? AxisDirection.right
+                : AxisDirection.left;
+        final visibleFraction =
+            (curved.value * (1 - activeDragProgress)).clamp(0.0, 1.0);
+        final depthValue = entry.variant == UiDrawerVariant.stacked
+            ? (stackDepth - depthDragProgress).clamp(0.0, double.infinity)
+            : 0.0;
+        final depthOffsetStep = isBottom
+            ? UiStackedMotion.drawerNestedOffsetStep +
+                layoutMetrics.bottomMaxHeight * UiStackedMotion.scaleStep
+            : UiStackedMotion.drawerNestedOffsetStep;
+        return UiStackedOverlaySurface(
+          depth: depthValue,
+          stackDirection: direction,
+          depthOffsetStep: depthOffsetStep,
+          duration: dragControlsDepth ? Duration.zero : drawerStackDuration,
+          curve: drawerCurve,
+          scaleAlignment: isBottom
+              ? Alignment.bottomCenter
+              : isLeft
+                  ? Alignment.centerLeft
+                  : Alignment.centerRight,
+          applyOpacity: false,
+          implicitScaleAnimation: false,
+          child: Align(
+            alignment: isBottom
+                ? Alignment.bottomCenter
+                : isLeft
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart:
+                  isBottom ? null : (_) => _handleDragStart(entry),
+              onHorizontalDragUpdate: isBottom
+                  ? null
+                  : (details) {
+                      _handleDragUpdate(entry, details.primaryDelta ?? 0);
+                    },
+              onHorizontalDragEnd: isBottom
+                  ? null
+                  : (details) {
+                      _handleDragEnd(entry, details.primaryVelocity ?? 0);
+                    },
+              onHorizontalDragCancel:
+                  isBottom ? null : () => _handleDragCancel(entry),
+              onVerticalDragStart:
+                  isBottom ? (_) => _handleDragStart(entry) : null,
+              onVerticalDragUpdate: isBottom
+                  ? (details) {
+                      _handleDragUpdate(entry, details.primaryDelta ?? 0);
+                    }
+                  : null,
+              onVerticalDragEnd: isBottom
+                  ? (details) {
+                      _handleDragEnd(entry, details.primaryVelocity ?? 0);
+                    }
+                  : null,
+              onVerticalDragCancel:
+                  isBottom ? () => _handleDragCancel(entry) : null,
+              child: FractionalTranslation(
+                translation: Offset(
+                  isBottom
+                      ? 0
+                      : isLeft
+                          ? -(1 - visibleFraction)
+                          : 1 - visibleFraction,
+                  isBottom ? 1 - visibleFraction : 0,
+                ),
+                child: KeyedSubtree(
+                  key: entry.key,
+                  child: Directionality(
+                    textDirection: entry.direction,
+                    child: _UiDrawerPresentation(
+                      side: entry.side,
+                      variant: entry.variant,
+                      layoutMetrics: layoutMetrics,
+                      stackDepth: stackDepth,
+                      child: drawer,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -702,84 +1317,113 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost> {
       curve: UiStackedMotion.drawerCurve,
       reverseCurve: UiStackedMotion.drawerCurve.flipped,
     );
-    return ValueListenableBuilder<_DrawerStackSnapshot>(
-      valueListenable: widget.stackListenable,
-      child: widget.child,
-      builder: (context, snapshot, drawer) {
-        final stack = snapshot.effectiveStackFor(widget.stackId);
-        final index = stack.indexOf(widget.stackId);
-        final stackDepth = index < 0 ? 0 : stack.length - 1 - index;
-        final isClosing = widget.animation.status == AnimationStatus.reverse ||
-            snapshot.closing.contains(widget.stackId) ||
-            widget.animation.status == AnimationStatus.dismissed;
-        final isBaseLayer = (snapshot.open.isNotEmpty &&
-                snapshot.open.first == widget.stackId) ||
-            (snapshot.open.isEmpty && isClosing);
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            if (isBaseLayer)
-              _DrawerBackdrop(
-                animation: curved,
-                color: widget.barrierColor,
-                blur: widget.blurBackdrop,
-              ),
-            AnimatedBuilder(
-              animation: curved,
-              builder: (context, _) {
-                final direction =
-                    widget.isLeft ? AxisDirection.right : AxisDirection.left;
-                final depthValue = widget.variant == UiDrawerVariant.stacked
-                    ? stackDepth.toDouble()
-                    : 0.0;
-                return UiStackedOverlaySurface(
-                  depth: depthValue,
-                  stackDirection: direction,
-                  depthOffsetStep: UiStackedMotion.drawerNestedOffsetStep,
-                  duration: UiStackedMotion.drawerStackDuration,
-                  curve: UiStackedMotion.drawerCurve,
-                  scaleAlignment: widget.isLeft
-                      ? Alignment.centerLeft
-                      : Alignment.centerRight,
-                  applyOpacity: false,
-                  implicitScaleAnimation: false,
-                  child: Align(
-                    alignment: widget.isLeft
-                        ? Alignment.centerLeft
-                        : Alignment.centerRight,
-                    child: FractionalTranslation(
-                      translation: Offset(
-                        widget.isLeft ? -(1 - curved.value) : 1 - curved.value,
-                        0,
-                      ),
-                      child: _UiDrawerPresentation(
-                        side: widget.side,
-                        variant: widget.variant,
-                        stackDepth: stackDepth,
-                        child: drawer!,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        );
+    return PopScope(
+      canPop: _entries.length <= 1,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _entries.length <= 1) return;
+        popTop<dynamic>();
       },
+      child: _UiDrawerStackScope(
+        controller: _stackController,
+        child: ValueListenableBuilder<_DrawerStackSnapshot>(
+          valueListenable: _stackListenable,
+          builder: (context, snapshot, _) {
+            final drag = snapshot.drag;
+            final rootDragProgress =
+                drag?.id == (_entries.isEmpty ? null : _entries.first.id)
+                    ? drag!.progress
+                    : 0.0;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                _DrawerBackdrop(
+                  animation: curved,
+                  dragProgress: rootDragProgress,
+                  color: widget.barrierColor,
+                  blur: widget.blurBackdrop,
+                  onPressed: _handleBackdropPressed,
+                ),
+                for (final entry in List<_DrawerStackEntry<dynamic>>.of(
+                  _entries,
+                ))
+                  Builder(
+                    key: ValueKey<int>(entry.id),
+                    builder: (entryContext) {
+                      final controller = UiDrawerController<dynamic>._(([r]) {
+                        if (entry.isRoot) {
+                          widget.onDismissRoute(r);
+                        } else {
+                          _popEntry<dynamic>(entry.id, r);
+                        }
+                      });
+                      final drawer = entry.controlledBuilder?.call(
+                            entryContext,
+                            controller,
+                          ) ??
+                          entry.builder(entryContext);
+                      return _buildEntry(
+                        entryContext,
+                        snapshot,
+                        entry,
+                        drawer,
+                      );
+                    },
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
     );
+  }
+}
+
+class _DrawerStackEntry<T> {
+  _DrawerStackEntry({
+    required this.id,
+    required this.builder,
+    required this.controlledBuilder,
+    required this.side,
+    required this.variant,
+    required this.direction,
+    required this.isRoot,
+    required this.animation,
+  });
+
+  final int id;
+  final WidgetBuilder builder;
+  final UiControlledDrawerBuilder<dynamic>? controlledBuilder;
+  final UiDrawerSide side;
+  final UiDrawerVariant variant;
+  final TextDirection direction;
+  final bool isRoot;
+  final Animation<double> animation;
+  final GlobalKey key = GlobalKey();
+  final Completer<T?> completer = Completer<T?>();
+  bool isClosing = false;
+
+  void dispose() {
+    final animation = this.animation;
+    if (animation is AnimationController) {
+      animation.dispose();
+    }
   }
 }
 
 class _DrawerBackdrop extends StatelessWidget {
   const _DrawerBackdrop({
     required this.animation,
+    required this.dragProgress,
     required this.color,
     required this.blur,
+    required this.onPressed,
   });
 
   final Animation<double> animation;
+  final double dragProgress;
   final Color color;
   final bool blur;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -790,9 +1434,23 @@ class _DrawerBackdrop extends StatelessWidget {
         child: backdrop,
       );
     }
-    return IgnorePointer(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
       child: RepaintBoundary(
-        child: FadeTransition(opacity: animation, child: backdrop),
+        child: AnimatedBuilder(
+          animation: animation,
+          child: backdrop,
+          builder: (context, child) {
+            return Opacity(
+              opacity: (animation.value * (1 - dragProgress)).clamp(
+                0.0,
+                1.0,
+              ),
+              child: child,
+            );
+          },
+        ),
       ),
     );
   }

@@ -13,8 +13,10 @@ import 'ui_system_bars.dart';
 /// Defaults are tuned for production use:
 /// - Background comes from `UiThemeTokens.colors.background`.
 /// - Scroll fade is enabled by default.
-/// - Top and bottom system insets are moved into the faded body layer instead
-///   of insetting the whole page.
+/// - Top and bottom system insets are moved into the faded body layer so the
+///   page remains vertically edge-to-edge.
+/// - Left and right system insets remain physical safe-area padding for
+///   landscape notches and rounded display corners.
 /// - Status/navigation bar icons sync to the page background so they stay
 ///   legible when the theme flips between light and dark.
 ///
@@ -30,7 +32,7 @@ class UiPageScaffold extends StatelessWidget {
     this.topBar,
     this.bottomBar,
     this.backgroundColor,
-    this.safeViewportMode = UiSafeViewportMode.none,
+    this.safeViewportMode = UiSafeViewportMode.all,
     this.safeAreaMinimum = EdgeInsets.zero,
     this.systemOverlayStyle,
     this.syncSystemBars = true,
@@ -56,7 +58,8 @@ class UiPageScaffold extends StatelessWidget {
   /// Page background. Defaults to `UiThemeTokens.colors.background`.
   final Color? backgroundColor;
 
-  /// How insets are applied around [body]. See [UiSafeViewportMode].
+  /// How insets are applied around [body]. Defaults to
+  /// [UiSafeViewportMode.all]. See [UiSafeViewportMode].
   final UiSafeViewportMode safeViewportMode;
 
   /// Minimum inset enforced by the safe viewport even when the system
@@ -114,8 +117,11 @@ class UiPageScaffold extends StatelessWidget {
 
   /// Moves top/bottom safe-area padding into the faded body layer.
   ///
-  /// Enabled by default so scroll-fade pages do not place scrollable content
-  /// under hardware insets, while the fade still covers the protected edge.
+  /// Enabled by default so the page surface and fade remain vertically
+  /// edge-to-edge. Scrollables with explicit content padding should add
+  /// [UiPageBodyInsets] to keep resting content clear of system hardware.
+  /// Set this to false when an arbitrary body needs a physical top/bottom
+  /// [UiSafeViewport] instead.
   final bool scrollFadeUsesSafeArea;
 
   @override
@@ -135,13 +141,16 @@ class UiPageScaffold extends StatelessWidget {
     final consumeFadeTopInset = scrollFade &&
         scrollFadeUsesSafeArea &&
         topBar == null &&
-        !paintTopInsetWithTopBar;
-    final consumeFadeBottomInset =
-        scrollFade && scrollFadeUsesSafeArea && bottomBar == null;
-    if (consumeFadeTopInset && _usesTopInset(effectiveSafeMode)) {
+        !paintTopInsetWithTopBar &&
+        _usesTopInset(effectiveSafeMode);
+    final consumeFadeBottomInset = scrollFade &&
+        scrollFadeUsesSafeArea &&
+        bottomBar == null &&
+        _usesBottomInset(effectiveSafeMode);
+    if (consumeFadeTopInset) {
       effectiveSafeMode = _withoutTopInset(effectiveSafeMode);
     }
-    if (consumeFadeBottomInset && _usesBottomInset(effectiveSafeMode)) {
+    if (consumeFadeBottomInset) {
       effectiveSafeMode = _withoutBottomInset(effectiveSafeMode);
     }
     final scrollFadeSafePadding = EdgeInsets.only(
@@ -183,13 +192,34 @@ class UiPageScaffold extends StatelessWidget {
       ],
     );
 
-    content = UiSafeViewport(
-      mode: effectiveSafeMode,
-      left: leftSafeInset,
-      right: rightSafeInset,
-      minimum: safeAreaMinimum,
-      child: content,
-    );
+    // Moving both vertical insets into UiPageBodyInsets can reduce the
+    // effective vertical mode to `none`. Preserve the original mode's
+    // horizontal contract so landscape notches remain protected.
+    final needsHorizontalSafeViewport =
+        effectiveSafeMode == UiSafeViewportMode.none &&
+            safeViewportMode != UiSafeViewportMode.none &&
+            (leftSafeInset || rightSafeInset);
+    if (needsHorizontalSafeViewport) {
+      content = SafeArea(
+        top: false,
+        bottom: false,
+        left: leftSafeInset,
+        right: rightSafeInset,
+        minimum: EdgeInsets.only(
+          left: safeAreaMinimum.left,
+          right: safeAreaMinimum.right,
+        ),
+        child: content,
+      );
+    } else {
+      content = UiSafeViewport(
+        mode: effectiveSafeMode,
+        left: leftSafeInset,
+        right: rightSafeInset,
+        minimum: safeAreaMinimum,
+        child: content,
+      );
+    }
 
     content = UiBox(
       background: bg,

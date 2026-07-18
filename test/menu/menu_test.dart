@@ -10,6 +10,17 @@ Widget _host(Widget child) {
   );
 }
 
+Widget _reducedMotionHost(Widget child) {
+  return MaterialApp(
+    theme: UiThemeData.light(),
+    builder: (context, appChild) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(disableAnimations: true),
+      child: appChild ?? const SizedBox.shrink(),
+    ),
+    home: Scaffold(body: Center(child: child)),
+  );
+}
+
 void main() {
   testWidgets('dropdown opens from trigger and closes on outside tap',
       (tester) async {
@@ -55,6 +66,43 @@ void main() {
     await tester.tapAt(tester.getCenter(find.text('Open menu')));
     await tester.pumpAndSettle();
     expect(find.text('Profile'), findsNothing);
+  });
+
+  testWidgets('dropdown entrance resolves immediately with reduced motion',
+      (tester) async {
+    await tester.pumpWidget(
+      _reducedMotionHost(
+        UiDropdownMenu(
+          trigger: const Text('Open menu'),
+          items: [
+            UiMenuItem(label: 'Profile', onPressed: () {}),
+          ],
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open menu'));
+    await tester.pump();
+
+    expect(find.text('Profile'), findsOneWidget);
+    final fadeValues = tester
+        .widgetList<FadeTransition>(
+          find.ancestor(
+            of: find.text('Profile'),
+            matching: find.byType(FadeTransition),
+          ),
+        )
+        .map((widget) => widget.opacity.value);
+    final scaleValues = tester
+        .widgetList<ScaleTransition>(
+          find.ancestor(
+            of: find.text('Profile'),
+            matching: find.byType(ScaleTransition),
+          ),
+        )
+        .map((widget) => widget.scale.value);
+    expect(fadeValues, contains(1.0));
+    expect(scaleValues, contains(1.0));
   });
 
   testWidgets('keyboard navigation activates focused row with Enter',

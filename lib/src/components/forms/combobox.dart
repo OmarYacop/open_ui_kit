@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
+import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/overlay/overlay.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
@@ -638,27 +639,23 @@ class _ComboboxMenuRevealState extends State<_ComboboxMenuReveal>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final t = widget.curve.transform(_controller.value);
-        return RepaintBoundary(
-          child: Opacity(
-            opacity: t,
-            child: Transform.translate(
-              offset: Offset(0, (widget.openAbove ? 4 : -4) * (1 - t)),
-              child: Transform.scale(
-                scale: 0.98 + t * 0.02,
-                alignment: widget.openAbove
-                    ? Alignment.bottomCenter
-                    : Alignment.topCenter,
-                child: child,
-              ),
-            ),
-          ),
-        );
-      },
-      child: widget.child,
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: widget.curve,
+    );
+    return UiSlideFadeTransition(
+      animation: curved,
+      beginOffset: Offset(0, widget.openAbove ? 4 : -4),
+      offsetUnit: UiTransitionOffsetUnit.logicalPixels,
+      repaintBoundary: true,
+      child: UiFadeScaleTransition(
+        animation: curved,
+        beginScale: 0.98,
+        fade: false,
+        alignment:
+            widget.openAbove ? Alignment.bottomCenter : Alignment.topCenter,
+        child: widget.child,
+      ),
     );
   }
 }

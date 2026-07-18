@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
@@ -463,13 +464,10 @@ class UiTabViews extends StatelessWidget {
       switchInCurve: tokens.motion.standardCurve,
       switchOutCurve: tokens.motion.standardCurve,
       transitionBuilder: (child, animation) {
-        final slide = Tween<Offset>(
-          begin: const Offset(0, 0.04),
-          end: Offset.zero,
-        ).animate(animation);
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(position: slide, child: child),
+        return UiSlideFadeTransition(
+          animation: animation,
+          beginOffset: const Offset(0, 0.04),
+          child: child,
         );
       },
       layoutBuilder: (current, previous) => Stack(

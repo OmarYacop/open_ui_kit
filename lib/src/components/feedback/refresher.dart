@@ -188,9 +188,7 @@ class UiRefresher extends StatefulWidget {
 
 class _UiRefresherState extends State<UiRefresher>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _motionController = AnimationController(
-    vsync: this,
-  )..addListener(_tickMotion);
+  late final AnimationController _motionController;
 
   Animation<double>? _extentAnimation;
   UiRefreshStatus _status = UiRefreshStatus.idle;
@@ -205,6 +203,8 @@ class _UiRefresherState extends State<UiRefresher>
   @override
   void initState() {
     super.initState();
+    _motionController = AnimationController(vsync: this)
+      ..addListener(_tickMotion);
     widget.controller?._attach(this);
   }
 

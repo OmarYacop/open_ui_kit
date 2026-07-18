@@ -27,6 +27,26 @@ class UiRadiusTokens {
   BorderRadius get xlAll => BorderRadius.all(xl);
   BorderRadius get pillAll => BorderRadius.all(pill);
 
+  BorderRadiusDirectional get smStart => BorderRadiusDirectional.horizontal(start: sm);
+  BorderRadiusDirectional get mdStart => BorderRadiusDirectional.horizontal(start: md);
+  BorderRadiusDirectional get lgStart => BorderRadiusDirectional.horizontal(start: lg);
+  BorderRadiusDirectional get xlStart => BorderRadiusDirectional.horizontal(start: xl);
+
+  BorderRadiusDirectional get smEnd => BorderRadiusDirectional.horizontal(end: sm);
+  BorderRadiusDirectional get mdEnd => BorderRadiusDirectional.horizontal(end: md);
+  BorderRadiusDirectional get lgEnd => BorderRadiusDirectional.horizontal(end: lg);
+  BorderRadiusDirectional get xlEnd => BorderRadiusDirectional.horizontal(end: xl);
+
+  BorderRadius get smTop => BorderRadius.vertical(top: sm);
+  BorderRadius get mdTop => BorderRadius.vertical(top: md);
+  BorderRadius get lgTop => BorderRadius.vertical(top: lg);
+  BorderRadius get xlTop => BorderRadius.vertical(top: xl);
+
+  BorderRadius get smBottom => BorderRadius.vertical(bottom: sm);
+  BorderRadius get mdBottom => BorderRadius.vertical(bottom: md);
+  BorderRadius get lgBottom => BorderRadius.vertical(bottom: lg);
+  BorderRadius get xlBottom => BorderRadius.vertical(bottom: xl);
+
   static const UiRadiusTokens standard = UiRadiusTokens();
 
   UiRadiusTokens copyWith({

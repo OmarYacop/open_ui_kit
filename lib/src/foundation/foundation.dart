@@ -4,6 +4,7 @@ export 'motion/motion.dart';
 export 'overlay/overlay.dart';
 export 'platform/platform.dart';
 export 'primitives/primitives.dart';
+export 'reactive/reactive.dart';
 export 'theme/theme.dart';
 export 'tokens/tokens.dart';
 export 'ui_app.dart';

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -211,10 +212,11 @@ class _AlertDialogHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final motion = UiThemeTokens.of(context).motion;
     final curved = CurvedAnimation(
       parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeOutCubic.flipped,
+      curve: motion.standardCurve,
+      reverseCurve: motion.standardCurve.flipped,
     );
 
     return Stack(
@@ -224,12 +226,9 @@ class _AlertDialogHost extends StatelessWidget {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: FadeTransition(
-              opacity: curved,
-              child: ScaleTransition(
-                scale: Tween(begin: 0.96, end: 1.0).animate(curved),
-                child: child,
-              ),
+            child: UiFadeScaleTransition(
+              animation: curved,
+              child: child,
             ),
           ),
         ),

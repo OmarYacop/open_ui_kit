@@ -10,6 +10,17 @@ Widget _host(Widget child) {
   );
 }
 
+Widget _reducedMotionHost(Widget child) {
+  return MaterialApp(
+    theme: UiThemeData.light(),
+    builder: (context, appChild) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(disableAnimations: true),
+      child: appChild ?? const SizedBox.shrink(),
+    ),
+    home: Scaffold(body: Center(child: child)),
+  );
+}
+
 void _noop() {}
 
 void main() {
@@ -1222,6 +1233,31 @@ void main() {
         contains(const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
       );
     });
+
+    testWidgets('wraps long body text inside narrow viewports', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _host(
+          const SizedBox(
+            width: 260,
+            child: UiToast(
+              title: 'Cancel unavailable',
+              message:
+                  'This action is not available yet. It needs a longer body '
+                  'that should wrap instead of overflowing the toast surface.',
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+          tester.getRect(find.byType(UiToast)).width, lessThanOrEqualTo(260));
+    });
   });
 
   group('UiSelect', () {
@@ -1664,9 +1700,122 @@ void main() {
       // Remove one currently-visible toast and ensure no hidden queue
       // is promoted.
       dismissC();
+      await tester.pump();
+      expect(find.text('c'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 220));
       expect(find.text('b'), findsOneWidget);
       expect(find.byType(UiToast), findsNWidgets(1));
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
+    testWidgets('toast host grows vertically for wrapped body text',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(
+        ctx,
+        title: 'Cancel unavailable',
+        message: 'This action is not available yet. The message can wrap into '
+            'multiple lines without being squeezed by the toast lane.',
+        duration: const Duration(days: 1),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.byType(UiToast)).height, greaterThan(80));
+
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
+    testWidgets('outside interaction does not dismiss toast', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        _host(
+          TextButton(
+            onPressed: () => taps++,
+            child: const Text('Interact'),
+          ),
+        ),
+      );
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(ctx,
+          message: 'dismiss me', duration: const Duration(days: 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Interact'));
+      await tester.pump();
+
+      expect(taps, 1);
+      expect(find.text('dismiss me'), findsOneWidget);
+
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
+    testWidgets('default toast position is top on mobile', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(ctx, message: 'mobile', duration: const Duration(days: 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final toastRect = tester.getRect(find.byType(UiToast));
+      expect(toastRect.top, lessThan(80));
+
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
+    testWidgets('default toast position is bottom start on large screens',
+        (tester) async {
+      tester.view.physicalSize = const Size(900, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(ctx, message: 'wide', duration: const Duration(days: 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final toastRect = tester.getRect(find.byType(UiToast));
+      expect(toastRect.left, lessThan(32));
+      expect(toastRect.bottom, greaterThan(620));
+
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
+    testWidgets(
+        'toast stack transition resolves immediately with reduced motion',
+        (tester) async {
+      await tester.pumpWidget(_reducedMotionHost(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+
+      UiToaster.show(ctx,
+          message: 'reduced', duration: const Duration(seconds: 10));
+      await tester.pump();
+
+      expect(find.text('reduced'), findsOneWidget);
+      final surface = tester.widget<UiStackedOverlaySurface>(
+        find.byType(UiStackedOverlaySurface),
+      );
+      expect(surface.duration, Duration.zero);
       UiToaster.dismissAll();
       await tester.pump();
     });

@@ -91,6 +91,51 @@ void main() {
       expect(resolved.brightness, Brightness.dark);
       expect(resolved.colors.background, UiColorTokens.dark.background);
     });
+
+    testWidgets('UiThemeTokens.of respects reduced-motion preference',
+        (tester) async {
+      late UiThemeTokens resolved;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: UiThemeData.light(),
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Builder(
+              builder: (ctx) {
+                resolved = UiThemeTokens.of(ctx);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(resolved.motion.fast, Duration.zero);
+      expect(resolved.motion.standard, Duration.zero);
+      expect(resolved.motion.slow, Duration.zero);
+      expect(resolved.motion.standardCurve, Curves.linear);
+    });
+
+    testWidgets('UiApp route transition respects reduced-motion preference',
+        (tester) async {
+      await tester.pumpWidget(
+        UiApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text('home'),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('home'), findsOneWidget);
+      expect(find.byType(FadeTransition), findsNothing);
+    });
   });
 
   group('primitives', () {
@@ -120,6 +165,40 @@ void main() {
         rendered.style?.fontSize,
         UiTypographyTokens.standard.heading.fontSize,
       );
+    });
+
+    testWidgets('UiFadeScaleTransition composes fade and scale',
+        (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: UiFadeScaleTransition(
+            animation: AlwaysStoppedAnimation<double>(0.5),
+            child: Text('surface'),
+          ),
+        ),
+      );
+
+      expect(find.byType(FadeTransition), findsOneWidget);
+      expect(find.byType(ScaleTransition), findsOneWidget);
+    });
+
+    testWidgets('UiSlideFadeTransition supports logical-pixel offsets',
+        (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: UiSlideFadeTransition(
+            animation: AlwaysStoppedAnimation<double>(0.5),
+            beginOffset: Offset(0, 10),
+            offsetUnit: UiTransitionOffsetUnit.logicalPixels,
+            child: Text('surface'),
+          ),
+        ),
+      );
+
+      final transform = tester.widget<Transform>(find.byType(Transform));
+      expect(transform.transform.getTranslation().y, moreOrLessEquals(5));
     });
   });
 }

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/layout/ui_navigation_chrome_scope.dart';
+import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../layout/ui_system_bars.dart';
@@ -516,13 +517,10 @@ class _CompactRow extends StatelessWidget {
   }
 
   static Widget _chromeTransition(Widget child, Animation<double> animation) {
-    final offset = Tween<Offset>(
-      begin: const Offset(0.08, 0),
-      end: Offset.zero,
-    ).animate(animation);
-    return FadeTransition(
-      opacity: animation,
-      child: SlideTransition(position: offset, child: child),
+    return UiSlideFadeTransition(
+      animation: animation,
+      beginOffset: const Offset(0.08, 0),
+      child: child,
     );
   }
 }

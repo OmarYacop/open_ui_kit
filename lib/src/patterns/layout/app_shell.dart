@@ -14,13 +14,15 @@ class UiAppShell extends StatelessWidget {
     required this.body,
     this.topBar,
     this.bottomBar,
-    this.safeArea = false,
+    this.safeArea = true,
     this.backgroundColor,
   });
 
   final Widget body;
   final Widget? topBar;
   final Widget? bottomBar;
+
+  /// Keeps the shell chrome and body inside system insets. Defaults to true.
   final bool safeArea;
   final Color? backgroundColor;
 

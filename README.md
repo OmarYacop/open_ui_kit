@@ -32,6 +32,9 @@ All colors, spacing, radii, typography, and motion are token-driven.
 Tokens live in `lib/src/foundation/tokens` and are aggregated into the
 `UiThemeTokens` theme extension.
 
+Motion timing, easing, and reduced-motion behavior are documented in
+[`doc/motion.md`](doc/motion.md).
+
 ### Variants
 
 Interactive components share a three-axis variant model:
@@ -464,8 +467,26 @@ Defaults are production-safe:
 
 - Background comes from `UiThemeTokens.colors.background`.
 - `safeViewportMode: UiSafeViewportMode.all` consumes top + bottom insets.
+- `scrollFadeUsesSafeArea: true` keeps the page surface vertically
+  edge-to-edge and publishes top/bottom `UiPageBodyInsets` for resting content.
+- Left/right safe insets remain physical padding for landscape display
+  cutouts.
 - `syncSystemBars: true` installs a `UiSystemBars` so the OS icons match
   the theme brightness.
+
+Intentional edge-to-edge pages can opt out explicitly:
+
+```dart
+UiPageScaffold(
+  safeViewportMode: UiSafeViewportMode.none,
+  body: fullBleedContent,
+)
+```
+
+Scrollables with explicit content padding should add
+`UiPageBodyInsets.of(context)` to that padding. Set
+`scrollFadeUsesSafeArea: false` when an arbitrary body needs physical
+top/bottom safe-area constraints instead of vertical bleed.
 
 ### 8. Keyboard-aware form screen
 
@@ -501,6 +522,7 @@ annotation to the region so the rest of the page keeps its own style.
 
 ```dart
 UiPageScaffold(
+  safeViewportMode: UiSafeViewportMode.none,
   body: Column(
     children: [
       UiSurfaceRegion(
@@ -525,6 +547,7 @@ photo where auto-contrast would be wrong — pass an explicit
 
 ```dart
 UiPageScaffold(
+  safeViewportMode: UiSafeViewportMode.none,
   systemOverlayStyle: UiSystemBarsStyle.dark, // light icons
   body: fullBleedHero,
 )
