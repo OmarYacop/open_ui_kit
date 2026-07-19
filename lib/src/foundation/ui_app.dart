@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'reactive/ui_clock.dart';
 import 'theme/ui_theme_extensions.dart';
 
 /// How [UiApp] picks between its light and dark token sets.
@@ -32,6 +33,9 @@ class UiApp extends StatelessWidget {
     this.builder,
     this.navigatorKey,
     this.navigatorObservers = const [],
+    this.clockController,
+    this.clockTickMode = UiClockTickMode.minute,
+    this.clockTickInterval,
   });
 
   final Widget? home;
@@ -48,6 +52,9 @@ class UiApp extends StatelessWidget {
   final TransitionBuilder? builder;
   final GlobalKey<NavigatorState>? navigatorKey;
   final List<NavigatorObserver> navigatorObservers;
+  final UiClockController? clockController;
+  final UiClockTickMode clockTickMode;
+  final Duration? clockTickInterval;
 
   @override
   Widget build(BuildContext context) {
@@ -70,18 +77,22 @@ class UiApp extends StatelessWidget {
         return PageRouteBuilder<T>(
           settings: settings,
           pageBuilder: (ctx, _, __) => builder(ctx),
-          transitionsBuilder: (ctx, animation, _, child) =>
-              _UiAppRouteTransition(animation: animation, child: child),
+          transitionsBuilder: (ctx, animation, _, child) => child,
         );
       },
       builder: (context, child) {
         final brightness = _brightnessFor(context);
         final tokens = brightness == Brightness.dark ? dark : light;
-        final themed = UiAppContext(
-          title: title,
-          child: UiTheme(
-            tokens: tokens,
-            child: child ?? const SizedBox.shrink(),
+        final themed = UiClockScope(
+          controller: clockController,
+          tickMode: clockTickMode,
+          tickInterval: clockTickInterval,
+          child: UiAppContext(
+            title: title,
+            child: UiTheme(
+              tokens: tokens,
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
         return builder == null ? themed : builder!(context, themed);
@@ -100,31 +111,6 @@ class UiApp extends StatelessWidget {
         return MediaQuery.maybePlatformBrightnessOf(context) ??
             Brightness.light;
     }
-  }
-}
-
-class _UiAppRouteTransition extends StatelessWidget {
-  const _UiAppRouteTransition({
-    required this.animation,
-    required this.child,
-  });
-
-  final Animation<double> animation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final motion = UiThemeTokens.of(context).motion;
-    if (motion.standard == Duration.zero) {
-      return child;
-    }
-
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: motion.standardCurve,
-      reverseCurve: motion.standardCurve.flipped,
-    );
-    return FadeTransition(opacity: curved, child: child);
   }
 }
 

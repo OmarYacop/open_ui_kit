@@ -116,14 +116,10 @@ void main() {
       expect(resolved.motion.standardCurve, Curves.linear);
     });
 
-    testWidgets('UiApp route transition respects reduced-motion preference',
+    testWidgets('UiApp route transition does not wrap routes with fade',
         (tester) async {
       await tester.pumpWidget(
         UiApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child ?? const SizedBox.shrink(),
-          ),
           home: const Directionality(
             textDirection: TextDirection.ltr,
             child: Text('home'),

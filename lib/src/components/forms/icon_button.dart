@@ -71,10 +71,8 @@ class UiIconButton extends StatelessWidget {
         return UiFocusRing(
           visible: state.focused,
           borderRadius: radius,
-          child: AnimatedScale(
+          child: Transform.scale(
             scale: state.pressed ? 0.96 : 1,
-            duration: tokens.motion.fast,
-            curve: tokens.motion.standardCurve,
             child: UiBox(
               width: visualSize,
               height: visualSize,

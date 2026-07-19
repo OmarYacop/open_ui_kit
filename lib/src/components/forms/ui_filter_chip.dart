@@ -71,13 +71,10 @@ class UiFilterChip extends StatelessWidget {
           return UiFocusRing(
             visible: state.focused,
             borderRadius: radius,
-            child: AnimatedOpacity(
+            child: Opacity(
               opacity: state.disabled ? 0.5 : 1,
-              duration: tokens.motion.fast,
-              child: AnimatedScale(
+              child: Transform.scale(
                 scale: state.pressed ? 0.97 : 1,
-                duration: tokens.motion.fast,
-                curve: tokens.motion.standardCurve,
                 child: UiBox(
                   background: colors.background,
                   border: Border.all(color: colors.border),

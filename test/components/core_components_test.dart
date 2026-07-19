@@ -107,6 +107,41 @@ void main() {
   });
 
   group('pagination + data table', () {
+    testWidgets('skeleton components render card, bars, circles, and text',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const UiCardSkeleton(
+            width: 240,
+            height: 120,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    UiSkeletonBar.circle(size: 32),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: UiSkeletonText(
+                        lines: 2,
+                        widths: [120.0, 80.0],
+                      ),
+                    ),
+                  ],
+                ),
+                Spacer(),
+                UiSkeletonBar(width: 96, height: 20),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(UiCardSkeleton), findsOneWidget);
+      expect(find.byType(UiSkeletonBar), findsNWidgets(4));
+      expect(find.byType(UiSkeletonText), findsOneWidget);
+    });
+
     testWidgets('pagination navigates and exposes loading state',
         (tester) async {
       var page = 2;

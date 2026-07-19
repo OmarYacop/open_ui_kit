@@ -108,28 +108,23 @@ class UiButton extends StatelessWidget {
         return UiFocusRing(
           visible: state.focused,
           borderRadius: radius,
-          child: AnimatedScale(
+          child: Transform.scale(
             scale: scale,
-            duration: tokens.motion.fast,
-            curve: tokens.motion.standardCurve,
-            child: AnimatedOpacity(
+            child: Opacity(
               opacity: style.opacity,
-              duration: tokens.motion.fast,
-              child: AnimatedContainer(
-                duration: tokens.motion.fast,
-                curve: tokens.motion.standardCurve,
-                decoration: BoxDecoration(
-                  color: style.background,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minHeight),
+                child: UiBox(
+                  background: style.background,
                   borderRadius: radius,
                   border: style.border != null
                       ? Border.all(color: style.border!, width: 1)
                       : null,
+                  padding: padding,
+                  alignment: Alignment.center,
+                  width: expand ? double.infinity : null,
+                  child: _content(context, style.foreground, textStyle, state),
                 ),
-                constraints: BoxConstraints(minHeight: minHeight),
-                padding: padding,
-                alignment: Alignment.center,
-                width: expand ? double.infinity : null,
-                child: _content(context, style.foreground, textStyle, state),
               ),
             ),
           ),

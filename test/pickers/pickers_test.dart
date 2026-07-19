@@ -19,6 +19,27 @@ Widget _host(Widget child) {
 
 void main() {
   group('UiDatePicker accessibility', () {
+    testWidgets('uses shadcn calendar structure with Sunday-first outside days',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiDatePicker(
+            value: DateTime(2026, 7, 23),
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      final sunday = tester.getTopLeft(find.text('Su'));
+      final monday = tester.getTopLeft(find.text('Mo'));
+      expect(sunday.dx, lessThan(monday.dx));
+
+      final outsideJune28 = tester.getSemantics(
+        find.bySemanticsLabel(RegExp(r'June 28, 2026')),
+      );
+      expect(outsideJune28.label, contains('June 28, 2026'));
+    });
+
     testWidgets('day semantics include full spoken date and state',
         (tester) async {
       await tester.pumpWidget(
@@ -319,6 +340,52 @@ void main() {
   });
 
   group('Range and date-time semantics context', () {
+    testWidgets('date range picker renders adjacent months in one surface',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiDateRangePicker(
+            value: UiDateRange(
+              start: DateTime(2026, 1, 13),
+              end: DateTime(2026, 2, 25),
+            ),
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.text('January 2026'), findsOneWidget);
+      expect(find.text('February 2026'), findsOneWidget);
+
+      final january = tester.getCenter(find.text('January 2026'));
+      final february = tester.getCenter(find.text('February 2026'));
+      expect(february.dx, greaterThan(january.dx));
+      expect((february.dy - january.dy).abs(), lessThan(1));
+    });
+
+    testWidgets('date range picker collapses to one month when width is tight',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 320,
+            child: UiDateRangePicker(
+              value: UiDateRange(
+                start: DateTime(2026, 1, 13),
+                end: DateTime(2026, 2, 25),
+              ),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('January 2026'), findsOneWidget);
+      expect(find.text('February 2026'), findsNothing);
+      expect(find.text('‹'), findsOneWidget);
+      expect(find.text('›'), findsOneWidget);
+    });
+
     testWidgets('date range labels mark range start and end', (tester) async {
       await tester.pumpWidget(
         _host(

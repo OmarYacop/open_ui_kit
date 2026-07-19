@@ -1228,7 +1228,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('5'));
+      await tester.tap(find.bySemanticsLabel(RegExp(r'March 5, 2024')));
       await tester.pumpAndSettle();
       expect(picked, isNull, reason: 'Days before min should reject taps.');
     });

@@ -39,7 +39,7 @@ enum UiDrawerVariant {
 
 enum _UiDrawerPlacement { side, bottom }
 
-const double _kPhoneSideDrawerMaxWidth = 292;
+const double _kPhoneSideDrawerMaxWidth = 324;
 const double _kPhoneSideDrawerEdgeInset = 48;
 
 @immutable

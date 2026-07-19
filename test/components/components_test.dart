@@ -325,12 +325,16 @@ void main() {
       );
 
       BoxDecoration? ghostDecoration() {
-        final containers = tester.widgetList<AnimatedContainer>(
-          find.byType(AnimatedContainer),
+        final boxes = tester.widgetList<DecoratedBox>(
+          find.byType(DecoratedBox),
         );
-        for (final c in containers) {
-          final d = c.decoration;
-          if (d is BoxDecoration) return d;
+        for (final box in boxes) {
+          final decoration = box.decoration;
+          if (decoration is BoxDecoration &&
+              decoration.color != null &&
+              decoration.borderRadius != null) {
+            return decoration;
+          }
         }
         return null;
       }
@@ -1650,7 +1654,10 @@ void main() {
   });
 
   group('UiToaster', () {
-    tearDown(() => UiToaster.dismissAll());
+    tearDown(() {
+      UiToaster.dismissAll();
+      UiToaster.maxVisible = 3;
+    });
 
     testWidgets('keeps maxVisible and replaces oldest when full',
         (tester) async {
@@ -1693,6 +1700,8 @@ void main() {
         duration: const Duration(seconds: 10),
       );
       await tester.pump();
+      expect(find.text('a'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 220));
       expect(find.text('a'), findsNothing);
       expect(find.text('b'), findsOneWidget);
       expect(find.text('c'), findsOneWidget);
@@ -1733,6 +1742,25 @@ void main() {
 
       UiToaster.dismissAll();
       await tester.pump();
+    });
+
+    testWidgets('toast text compacts under tight vertical constraints',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const SizedBox(
+            width: 390,
+            height: 80,
+            child: UiToast(
+              title: 'A title that can wrap into more than one line',
+              message: 'A body message that would normally need more room.',
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(UiToast), findsOneWidget);
     });
 
     testWidgets('outside interaction does not dismiss toast', (tester) async {
@@ -1801,6 +1829,148 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('pressing the stack reveals older toasts', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(ctx, message: 'first', duration: const Duration(days: 1));
+      UiToaster.show(ctx, message: 'second', duration: const Duration(days: 1));
+      UiToaster.show(ctx, message: 'third', duration: const Duration(days: 1));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+
+      List<double> scales() => tester
+          .widgetList<AnimatedScale>(find.byType(AnimatedScale))
+          .map((scale) => scale.scale)
+          .toList(growable: false);
+
+      List<double> yOffsets() => tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .where((container) => container.transform != null)
+          .map((container) => container.transform!.storage[13])
+          .toList(growable: false);
+
+      expect(scales(), containsAll(<double>[1, 0.95, 0.9]));
+      expect(yOffsets(), containsAll(<double>[0, 14, 28]));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(UiToast).last),
+      );
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(scales(), everyElement(1));
+      expect(yOffsets().where((offset) => offset > 40).length, 2);
+
+      await gesture.up();
+      await tester.pump();
+      expect(scales(), containsAll(<double>[1, 0.95, 0.9]));
+      expect(yOffsets(), containsAll(<double>[0, 14, 28]));
+
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
+    testWidgets('pointer callbacks after host removal do not set state',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(ctx,
+          message: 'leaving', duration: const Duration(days: 1));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(UiToast)),
+      );
+      await tester.pumpWidget(_host(const SizedBox()));
+      UiToaster.dismissAll();
+      await tester.pump();
+
+      await gesture.up();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('vertical swipe dismisses a top toast', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+      UiToaster.show(ctx,
+          message: 'swipe me', duration: const Duration(days: 1));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+
+      await tester.drag(find.byType(UiToast), const Offset(0, -60));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+
+      expect(find.text('swipe me'), findsNothing);
+    });
+
+    testWidgets('rapid stacked titled toasts do not overflow while entering',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_host(const SizedBox()));
+      final ctx = tester.element(find.byType(Scaffold));
+
+      UiToaster.show(
+        ctx,
+        title: 'First update',
+        message: 'A multi-line notification that needs its natural height.',
+        duration: const Duration(days: 1),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      UiToaster.show(
+        ctx,
+        title: 'Second update',
+        message: 'Another notification fired while the first is entering.',
+        duration: const Duration(days: 1),
+      );
+      UiToaster.show(
+        ctx,
+        title: 'Third update',
+        message: 'This one should stack without forcing older content smaller.',
+        duration: const Duration(days: 1),
+      );
+
+      for (final elapsed in <Duration>[
+        Duration.zero,
+        const Duration(milliseconds: 80),
+        const Duration(milliseconds: 160),
+        const Duration(milliseconds: 260),
+        const Duration(milliseconds: 450),
+      ]) {
+        await tester.pump(elapsed);
+        expect(tester.takeException(), isNull);
+      }
+
+      expect(find.byType(UiToast), findsNWidgets(3));
+      UiToaster.dismissAll();
+      await tester.pump();
+    });
+
     testWidgets(
         'toast stack transition resolves immediately with reduced motion',
         (tester) async {
@@ -1812,10 +1982,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('reduced'), findsOneWidget);
-      final surface = tester.widget<UiStackedOverlaySurface>(
-        find.byType(UiStackedOverlaySurface),
-      );
-      expect(surface.duration, Duration.zero);
+      final transformedContainer = tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .firstWhere((container) => container.transform != null);
+      expect(transformedContainer.duration, Duration.zero);
       UiToaster.dismissAll();
       await tester.pump();
     });
