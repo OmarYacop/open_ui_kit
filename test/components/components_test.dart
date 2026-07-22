@@ -235,7 +235,7 @@ void main() {
       );
     });
 
-    testWidgets('neutral variant preserves the pre-PR-A outlined look',
+    testWidgets('neutral variant preserves the calm outlined surface look',
         (tester) async {
       await tester.pumpWidget(
         _host(
@@ -260,9 +260,10 @@ void main() {
         deco.any((d) => d.color == UiColorTokens.light.surface),
         isTrue,
       );
-      // Neutral carries a 1pt border (the "outlined" look).
       expect(
-        deco.any((d) => d.border != null),
+        deco
+            .where((d) => d.color == UiColorTokens.light.surface)
+            .any((d) => d.border != null),
         isTrue,
       );
     });
@@ -295,7 +296,7 @@ void main() {
       expect(deco.any((d) => d.boxShadow == shadow), isTrue);
     });
 
-    testWidgets('secondary pressed scale backdrop matches pressed surface',
+    testWidgets('secondary pressed state keeps a single outlined surface',
         (tester) async {
       await tester.pumpWidget(
         _host(
@@ -325,19 +326,43 @@ void main() {
           .where((d) => d.color == pressedSecondary)
           .toList();
 
-      expect(matchingSurfaces.length, greaterThanOrEqualTo(2));
+      expect(matchingSurfaces.length, 1);
       expect(
-        matchingSurfaces.any((d) => d.border == null && d.boxShadow == null),
-        isTrue,
-        reason: 'The exposed scaled area should be a background-only backdrop.',
+        matchingSurfaces.single.border,
+        isNotNull,
       );
       expect(
-        matchingSurfaces.any((d) => d.border != null),
-        isTrue,
-        reason: 'The scaled button surface should keep its own outline.',
+        matchingSurfaces.single.boxShadow,
+        isNull,
       );
 
       await gesture.up();
+    });
+
+    testWidgets('showBorder=false suppresses secondary button outline',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiButton(
+            label: 'Floating secondary',
+            intent: UiIntent.secondary,
+            showBorder: false,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      final deco = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((d) => d.decoration)
+          .whereType<BoxDecoration>()
+          .toList();
+
+      expect(
+        deco.any((d) => d.color == UiColorTokens.light.secondary),
+        isTrue,
+      );
+      expect(deco.any((d) => d.border != null), isFalse);
     });
 
     testWidgets('disabled button rejects taps', (tester) async {

@@ -72,6 +72,7 @@ class UiButton extends StatelessWidget {
     this.autofocus = false,
     this.semanticsLabel,
     this.boxShadow,
+    this.showBorder = true,
   });
 
   final String label;
@@ -86,6 +87,7 @@ class UiButton extends StatelessWidget {
   final bool autofocus;
   final String? semanticsLabel;
   final List<BoxShadow>? boxShadow;
+  final bool showBorder;
 
   bool get _enabled => onPressed != null && !loading;
 
@@ -107,56 +109,30 @@ class UiButton extends StatelessWidget {
       builder: (context, state, _) {
         final style = _resolveStyle(tokens.colors, intent, state);
         final scale = state.pressed ? 0.97 : 1.0;
-        final effectiveIntent = _effectiveButtonIntent(intent);
-        final showPressedBackdrop = state.pressed &&
-            effectiveIntent != UiIntent.ghost &&
-            effectiveIntent != UiIntent.link &&
-            style.background.a > 0;
-
-        Widget surface() {
-          return Opacity(
-            opacity: style.opacity,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: minHeight),
-              child: UiBox(
-                background: style.background,
-                borderRadius: radius,
-                border: style.border != null
-                    ? Border.all(color: style.border!, width: 1)
-                    : null,
-                boxShadow: boxShadow,
-                padding: padding,
-                alignment: Alignment.center,
-                width: expand ? double.infinity : null,
-                child: _content(context, style.foreground, textStyle, state),
-              ),
-            ),
-          );
-        }
-
-        final scaledSurface = Transform.scale(
-          scale: scale,
-          child: surface(),
-        );
 
         return UiFocusRing(
           visible: state.focused,
           borderRadius: radius,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (showPressedBackdrop)
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: style.opacity,
-                    child: UiBox(
-                      background: style.background,
-                      borderRadius: radius,
-                    ),
-                  ),
+          child: Transform.scale(
+            scale: scale,
+            child: Opacity(
+              opacity: style.opacity,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minHeight),
+                child: UiBox(
+                  background: style.background,
+                  borderRadius: radius,
+                  border: showBorder && style.border != null
+                      ? Border.all(color: style.border!, width: 1)
+                      : null,
+                  boxShadow: boxShadow,
+                  padding: padding,
+                  alignment: Alignment.center,
+                  width: expand ? double.infinity : null,
+                  child: _content(context, style.foreground, textStyle, state),
                 ),
-              scaledSurface,
-            ],
+              ),
+            ),
           ),
         );
       },
@@ -322,9 +298,6 @@ class UiButton extends StatelessWidget {
     }
     return base;
   }
-
-  static UiIntent _effectiveButtonIntent(UiIntent intent) =>
-      intent == UiIntent.defaultIntent ? UiIntent.primary : intent;
 
   /// Darken ([amount] < 0) or lighten ([amount] > 0) a color by [amount]
   /// in [0,1]. Transparent colors are returned unchanged.

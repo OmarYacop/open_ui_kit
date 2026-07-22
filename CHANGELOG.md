@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 - 2026-07-22
+
+- Added `UiButton.showBorder` so bordered button variants can opt out when used
+  as elevated floating actions.
+
 ## 0.3.0 - 2026-07-22
 
 - Fixed page bodies and generated title bars being placed beneath iPhone
