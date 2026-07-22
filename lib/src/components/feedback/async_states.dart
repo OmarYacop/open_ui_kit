@@ -116,20 +116,20 @@ class _AsyncStateSurface extends StatelessWidget {
       child: body,
     );
 
-    final semanticsChild = Semantics(
+    final content = isCentered
+        ? Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: surface,
+            ),
+          )
+        : surface;
+
+    return Semantics(
       container: true,
       liveRegion: liveRegion,
       label: semanticsLabel,
-      child: surface,
-    );
-
-    if (!isCentered) return semanticsChild;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: semanticsChild,
-      ),
+      child: content,
     );
   }
 }
@@ -221,7 +221,7 @@ class UiErrorState extends StatelessWidget {
     this.title,
     this.description,
     this.icon,
-    this.mode = UiAsyncStateMode.inline,
+    this.mode = UiAsyncStateMode.section,
     this.actions = const [],
   });
 

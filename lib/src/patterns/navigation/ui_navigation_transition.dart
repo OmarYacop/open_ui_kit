@@ -4,10 +4,15 @@ import '../../foundation/motion/ui_motion_transitions.dart';
 
 /// Transition presets for navigation animations.
 ///
-/// These match the three common patterns used across the kit's demos and
-/// screens. Keep the list small on purpose — more styles should be added
-/// only when they correspond to a real product need.
+/// These match the common patterns used across the kit's demos and screens.
+/// Keep the list small on purpose — more styles should be added only when they
+/// correspond to a real product need.
 enum UiNavigationTransitionStyle {
+  /// Subtle page-to-page motion: fade + trailing-edge shift + tiny scale.
+  /// This is the kit default because it feels modern without calling attention
+  /// to itself, and it works for both compact mobile routes and desktop panes.
+  softShift,
+
   /// Cross-fade only. Good for neutral swaps where motion would feel
   /// heavy (modal dismiss, settings toggle result).
   fade,
@@ -32,7 +37,7 @@ class UiNavigationTransition extends StatelessWidget {
     super.key,
     required this.animation,
     required this.child,
-    this.style = UiNavigationTransitionStyle.sharedAxis,
+    this.style = UiNavigationTransitionStyle.softShift,
     this.reverse = false,
   });
 
@@ -48,6 +53,8 @@ class UiNavigationTransition extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (style) {
+      case UiNavigationTransitionStyle.softShift:
+        return _softShift(context);
       case UiNavigationTransitionStyle.fade:
         return FadeTransition(opacity: animation, child: child);
       case UiNavigationTransitionStyle.slide:
@@ -63,6 +70,35 @@ class UiNavigationTransition extends StatelessWidget {
       animation: animation,
       beginOffset: Offset(dx, 0),
       child: child,
+    );
+  }
+
+  Widget _softShift(BuildContext context) {
+    final textDirection = Directionality.maybeOf(context) ?? TextDirection.ltr;
+    final readingSign = textDirection == TextDirection.rtl ? -1.0 : 1.0;
+    final direction = reverse ? -readingSign : readingSign;
+
+    return AnimatedBuilder(
+      animation: animation,
+      child: RepaintBoundary(child: child),
+      builder: (context, child) {
+        final t = animation.value.clamp(0.0, 1.0).toDouble();
+        final remaining = 1 - t;
+        final offset = Offset(direction * remaining * 18, remaining * 2);
+        final scale = 0.985 + (0.015 * t);
+
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: offset,
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

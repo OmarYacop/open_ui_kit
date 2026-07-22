@@ -30,6 +30,11 @@ void main() {
     c.dispose();
   });
 
+  test('navigation specs use softShift navigation motion by default', () {
+    const spec = UiNavigationSpec(title: 'Page');
+    expect(spec.transitionStyle, UiNavigationTransitionStyle.softShift);
+  });
+
   test('push adds an entry and returns a future that resolves on pop',
       () async {
     final c = makeController();

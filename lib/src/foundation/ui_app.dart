@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'reactive/ui_clock.dart';
 import 'theme/ui_theme_extensions.dart';
+import '../patterns/navigation/ui_navigation_transition.dart';
 
 /// How [UiApp] picks between its light and dark token sets.
 enum UiThemeMode { system, light, dark }
@@ -76,8 +77,20 @@ class UiApp extends StatelessWidget {
       pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
         return PageRouteBuilder<T>(
           settings: settings,
+          transitionDuration: const Duration(milliseconds: 220),
+          reverseTransitionDuration: const Duration(milliseconds: 160),
           pageBuilder: (ctx, _, __) => builder(ctx),
-          transitionsBuilder: (ctx, animation, _, child) => child,
+          transitionsBuilder: (ctx, animation, _, child) {
+            final tokens = UiThemeTokens.of(ctx);
+            return UiNavigationTransition(
+              animation: CurvedAnimation(
+                parent: animation,
+                curve: tokens.motion.standardCurve,
+                reverseCurve: tokens.motion.standardCurve,
+              ),
+              child: child,
+            );
+          },
         );
       },
       builder: (context, child) {

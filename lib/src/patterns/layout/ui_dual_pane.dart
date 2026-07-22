@@ -75,7 +75,7 @@ class UiDualPane<T> extends StatefulWidget {
     this.gap = 12,
     this.showDivider = true,
     this.breakpoints = UiBreakpoints.standard,
-    this.phoneTransitionStyle = UiNavigationTransitionStyle.sharedAxis,
+    this.phoneTransitionStyle = UiNavigationTransitionStyle.softShift,
     this.transitionDuration,
     this.phoneUsesRootNavigator = true,
   });

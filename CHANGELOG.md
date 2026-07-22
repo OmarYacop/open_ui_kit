@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-07-22
 
 - Fixed page bodies and generated title bars being placed beneath iPhone
   status-bar and Dynamic Island insets.

@@ -107,4 +107,20 @@ void main() {
 
     expect(find.text('entry:detail|scope:detail'), findsOneWidget);
   });
+
+  testWidgets('host uses softShift transition by default', (tester) async {
+    final controller = UiNavigationController(
+      routes: [homeRoute(detail), detail],
+    );
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(host(controller));
+    await tester.tap(find.text('Go detail'));
+    await tester.pump();
+
+    final transition = tester.widget<UiNavigationTransition>(
+      find.byType(UiNavigationTransition).last,
+    );
+    expect(transition.style, UiNavigationTransitionStyle.softShift);
+  });
 }

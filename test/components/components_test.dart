@@ -267,6 +267,79 @@ void main() {
       );
     });
 
+    testWidgets('applies optional button shadow to the button surface',
+        (tester) async {
+      const shadow = [
+        BoxShadow(
+          color: Color(0x66000000),
+          blurRadius: 8,
+          offset: Offset(0, 4),
+        ),
+      ];
+      await tester.pumpWidget(
+        _host(
+          UiButton(
+            label: 'Shadow',
+            boxShadow: shadow,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      final deco = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((d) => d.decoration)
+          .whereType<BoxDecoration>()
+          .toList();
+
+      expect(deco.any((d) => d.boxShadow == shadow), isTrue);
+    });
+
+    testWidgets('secondary pressed scale backdrop matches pressed surface',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiButton(
+            label: 'Secondary',
+            intent: UiIntent.secondary,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Secondary')),
+      );
+      await tester.pump();
+
+      final pressedSecondary = HSLColor.fromColor(UiColorTokens.light.secondary)
+          .withLightness(
+            (HSLColor.fromColor(UiColorTokens.light.secondary).lightness - 0.08)
+                .clamp(0.0, 1.0),
+          )
+          .toColor();
+      final matchingSurfaces = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((d) => d.decoration)
+          .whereType<BoxDecoration>()
+          .where((d) => d.color == pressedSecondary)
+          .toList();
+
+      expect(matchingSurfaces.length, greaterThanOrEqualTo(2));
+      expect(
+        matchingSurfaces.any((d) => d.border == null && d.boxShadow == null),
+        isTrue,
+        reason: 'The exposed scaled area should be a background-only backdrop.',
+      );
+      expect(
+        matchingSurfaces.any((d) => d.border != null),
+        isTrue,
+        reason: 'The scaled button surface should keep its own outline.',
+      );
+
+      await gesture.up();
+    });
+
     testWidgets('disabled button rejects taps', (tester) async {
       var tapped = 0;
       await tester.pumpWidget(
@@ -1423,6 +1496,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('selection closes the dropdown before notifying onChanged',
+        (tester) async {
+      var menuVisibleDuringChange = true;
+
+      await tester.pumpWidget(
+        _host(
+          UiSelect<int>(
+            hint: 'Pick one',
+            options: const [
+              UiSelectOption(value: 1, label: 'One'),
+              UiSelectOption(value: 2, label: 'Two'),
+            ],
+            onChanged: (_) {
+              menuVisibleDuringChange = find
+                  .byKey(const ValueKey<String>('ui-select-menu'))
+                  .evaluate()
+                  .isNotEmpty;
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pick one'));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey<String>('ui-select-menu')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('One'));
+      await tester.pump();
+
+      expect(menuVisibleDuringChange, isFalse);
+      expect(
+        find.byKey(const ValueKey<String>('ui-select-menu')),
+        findsNothing,
+      );
     });
 
     testWidgets('dropdown highlights the selected row with a check',

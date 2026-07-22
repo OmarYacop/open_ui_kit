@@ -48,7 +48,7 @@ class UiNavigationHost extends StatelessWidget {
     super.key,
     required this.controller,
     this.builder,
-    this.transitionStyle = UiNavigationTransitionStyle.sharedAxis,
+    this.transitionStyle = UiNavigationTransitionStyle.softShift,
     this.enableEdgeSwipePop,
     this.edgeSwipeWidth = 22,
     this.edgeSwipeMinDistance = 64,

@@ -6,6 +6,7 @@ import 'package:flutter/painting.dart';
 class UiRadiusTokens {
   const UiRadiusTokens({
     this.none = Radius.zero,
+    this.xs = const Radius.circular(6),
     this.sm = const Radius.circular(10),
     this.md = const Radius.circular(12),
     this.lg = const Radius.circular(16),
@@ -14,6 +15,7 @@ class UiRadiusTokens {
   });
 
   final Radius none;
+  final Radius xs;
   final Radius sm;
   final Radius md;
   final Radius lg;
@@ -21,27 +23,42 @@ class UiRadiusTokens {
   final Radius pill;
 
   BorderRadius get noneAll => BorderRadius.all(none);
+  BorderRadius get xsAll => BorderRadius.all(xs);
   BorderRadius get smAll => BorderRadius.all(sm);
   BorderRadius get mdAll => BorderRadius.all(md);
   BorderRadius get lgAll => BorderRadius.all(lg);
   BorderRadius get xlAll => BorderRadius.all(xl);
   BorderRadius get pillAll => BorderRadius.all(pill);
 
-  BorderRadiusDirectional get smStart => BorderRadiusDirectional.horizontal(start: sm);
-  BorderRadiusDirectional get mdStart => BorderRadiusDirectional.horizontal(start: md);
-  BorderRadiusDirectional get lgStart => BorderRadiusDirectional.horizontal(start: lg);
-  BorderRadiusDirectional get xlStart => BorderRadiusDirectional.horizontal(start: xl);
+  BorderRadiusDirectional get xsStart =>
+      BorderRadiusDirectional.horizontal(start: xs);
+  BorderRadiusDirectional get smStart =>
+      BorderRadiusDirectional.horizontal(start: sm);
+  BorderRadiusDirectional get mdStart =>
+      BorderRadiusDirectional.horizontal(start: md);
+  BorderRadiusDirectional get lgStart =>
+      BorderRadiusDirectional.horizontal(start: lg);
+  BorderRadiusDirectional get xlStart =>
+      BorderRadiusDirectional.horizontal(start: xl);
 
-  BorderRadiusDirectional get smEnd => BorderRadiusDirectional.horizontal(end: sm);
-  BorderRadiusDirectional get mdEnd => BorderRadiusDirectional.horizontal(end: md);
-  BorderRadiusDirectional get lgEnd => BorderRadiusDirectional.horizontal(end: lg);
-  BorderRadiusDirectional get xlEnd => BorderRadiusDirectional.horizontal(end: xl);
+  BorderRadiusDirectional get xsEnd =>
+      BorderRadiusDirectional.horizontal(end: xs);
+  BorderRadiusDirectional get smEnd =>
+      BorderRadiusDirectional.horizontal(end: sm);
+  BorderRadiusDirectional get mdEnd =>
+      BorderRadiusDirectional.horizontal(end: md);
+  BorderRadiusDirectional get lgEnd =>
+      BorderRadiusDirectional.horizontal(end: lg);
+  BorderRadiusDirectional get xlEnd =>
+      BorderRadiusDirectional.horizontal(end: xl);
 
+  BorderRadius get xsTop => BorderRadius.vertical(top: xs);
   BorderRadius get smTop => BorderRadius.vertical(top: sm);
   BorderRadius get mdTop => BorderRadius.vertical(top: md);
   BorderRadius get lgTop => BorderRadius.vertical(top: lg);
   BorderRadius get xlTop => BorderRadius.vertical(top: xl);
 
+  BorderRadius get xsBottom => BorderRadius.vertical(bottom: xs);
   BorderRadius get smBottom => BorderRadius.vertical(bottom: sm);
   BorderRadius get mdBottom => BorderRadius.vertical(bottom: md);
   BorderRadius get lgBottom => BorderRadius.vertical(bottom: lg);
@@ -51,6 +68,7 @@ class UiRadiusTokens {
 
   UiRadiusTokens copyWith({
     Radius? none,
+    Radius? xs,
     Radius? sm,
     Radius? md,
     Radius? lg,
@@ -59,6 +77,7 @@ class UiRadiusTokens {
   }) {
     return UiRadiusTokens(
       none: none ?? this.none,
+      xs: xs ?? this.xs,
       sm: sm ?? this.sm,
       md: md ?? this.md,
       lg: lg ?? this.lg,
@@ -72,6 +91,7 @@ class UiRadiusTokens {
     return UiRadiusTokens(
       none: l(a.none, b.none),
       sm: l(a.sm, b.sm),
+      xs: l(a.xs, b.xs),
       md: l(a.md, b.md),
       lg: l(a.lg, b.lg),
       xl: l(a.xl, b.xl),

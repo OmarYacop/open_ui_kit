@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:lucide_flutter/lucide_flutter.dart';
 
+import '../../foundation/icons/ui_directional_icons.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -17,6 +17,14 @@ class UiNavigationBackHistoryItem {
   final String title;
   final String? subtitle;
   final Object? value;
+}
+
+@immutable
+class UiNavigationBackPopTarget {
+  const UiNavigationBackPopTarget(this.count)
+      : assert(count > 0, 'count must be greater than zero');
+
+  final int count;
 }
 
 class UiNavigationBackButton extends StatefulWidget {
@@ -99,9 +107,9 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
           child: UiBox(
             background: c.popover,
             border: Border.all(color: c.border),
-            borderRadius: tokens.radius.mdAll,
+            borderRadius: tokens.radius.smAll,
             boxShadow: tokens.shadows.md,
-            padding: EdgeInsets.all(tokens.spacing.x2),
+            padding: EdgeInsets.all(tokens.spacing.x1),
             child: IntrinsicWidth(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 280),
@@ -112,7 +120,8 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
                     for (final item in widget.history)
                       Padding(
                         padding: EdgeInsets.symmetric(
-                            vertical: tokens.spacing.x1 / 2),
+                          vertical: tokens.spacing.x1 / 4,
+                        ),
                         child: UiPressable(
                           onPressed: () {
                             _removeMenu();
@@ -131,10 +140,10 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
                               background: highlight
                                   ? c.surfaceMuted
                                   : const Color(0x00000000),
-                              borderRadius: tokens.radius.mdAll,
+                              borderRadius: tokens.radius.xsAll,
                               padding: EdgeInsets.symmetric(
-                                horizontal: tokens.spacing.x3,
-                                vertical: tokens.spacing.x2,
+                                horizontal: tokens.spacing.x2,
+                                vertical: tokens.spacing.x1,
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,33 +191,44 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
         semanticsLabel: widget.label,
         minTapSize: 0,
         builder: (context, state, _) {
-          return UiBox(
-            background: state.pressed
-                ? c.surfaceMuted.withValues(alpha: 0.9)
-                : const Color(0x00000000),
-            borderRadius: tokens.radius.smAll,
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.x2,
-              vertical: tokens.spacing.x1,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  LucideIcons.chevronLeft,
-                  size: 18,
-                  color: c.textPrimary,
+          final foreground = state.pressed
+              ? c.textPrimary.withValues(alpha: 0.55)
+              : state.hovered || state.focused
+                  ? c.textPrimary.withValues(alpha: 0.78)
+                  : c.textPrimary;
+
+          return TweenAnimationBuilder<Color?>(
+            tween: ColorTween(end: foreground),
+            duration: tokens.motion.fast,
+            curve: tokens.motion.standardCurve,
+            builder: (context, color, _) {
+              final resolvedColor = color ?? foreground;
+              return UiBox(
+                background: const Color(0x00000000),
+                borderRadius: tokens.radius.smAll,
+                padding: EdgeInsets.zero,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      UiDirectionalIcons.chevronBack(context),
+                      size: 17,
+                      color: resolvedColor,
+                    ),
+                    SizedBox(width: tokens.spacing.x1 / 2),
+                    Flexible(
+                      child: UiText(
+                        widget.label,
+                        variant: UiTextVariant.body,
+                        style: TextStyle(color: resolvedColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: tokens.spacing.x1),
-                UiText(
-                  widget.label,
-                  variant: UiTextVariant.subheading,
-                  style: TextStyle(color: c.textPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

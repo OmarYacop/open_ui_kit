@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
+import '../../foundation/icons/ui_directional_icons.dart';
 import '../../foundation/intl/intl.dart';
 import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/overlay/overlay.dart';
@@ -531,7 +532,9 @@ class _SubmenuRowState extends State<_SubmenuRow> {
                   ),
                 ),
                 Icon(
-                  _open ? LucideIcons.chevronDown : LucideIcons.chevronRight,
+                  _open
+                      ? LucideIcons.chevronDown
+                      : UiDirectionalIcons.chevronForward(context),
                   size: 16,
                   color: c.mutedForeground,
                 ),
@@ -540,8 +543,8 @@ class _SubmenuRowState extends State<_SubmenuRow> {
           ),
           if (_open)
             Padding(
-              padding: EdgeInsets.only(
-                left: tokens.spacing.x4,
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.spacing.x4,
                 top: tokens.spacing.x1,
               ),
               child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../components/data_display/card.dart';
+import '../../foundation/icons/ui_directional_icons.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -245,7 +246,7 @@ class _SettingsItemRow extends StatelessWidget {
               SizedBox(width: tokens.spacing.x2),
               item.trailing ??
                   Icon(
-                    Icons.chevron_right_rounded,
+                    UiDirectionalIcons.chevronForward(context),
                     size: 20,
                     color: tokens.colors.textMuted,
                   ),

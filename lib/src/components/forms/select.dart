@@ -211,7 +211,9 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     _entry = OverlayEntry(builder: (_) => _buildOverlay());
     overlay.insert(_entry!);
     setState(() {});
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    });
   }
 
   void _hide({bool notify = true}) {
@@ -225,12 +227,17 @@ class UiSelectState<T> extends State<UiSelect<T>> {
   }
 
   void _pick(UiSelectOption<T> option) {
-    widget.onChanged?.call(option.value);
+    final onChanged = widget.onChanged;
+    final value = option.value;
     if (_internalError != null) _internalError = null;
     _hide();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      onChanged?.call(value);
+    });
   }
 
   void _scrollToSelected() {
+    if (!mounted || _isDisposing || _entry == null) return;
     if (!_scrollController.hasClients) return;
     final idx = _selectedIndex;
     if (idx < 0) return;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -413,31 +414,53 @@ class _CompactRow extends StatelessWidget {
         controller.popTo(item.value as UiRouteEntry);
         return;
       }
+      if (item.value is UiNavigationBackPopTarget) {
+        final popCount = (item.value as UiNavigationBackPopTarget).count;
+        final navigator = Navigator.maybeOf(context);
+        if (navigator == null) return;
+        unawaited(_popNavigatorTimes(navigator, popCount));
+        return;
+      }
       spec.back?.onPressed();
     }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x3),
-      child: NavigationToolbar(
-        centerMiddle: true,
-        middleSpacing: tokens.spacing.x2,
-        leading: spec.back != null
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontalPadding = tokens.spacing.x3 * 2;
+        final contentWidth = math.max(
+          0.0,
+          constraints.maxWidth - horizontalPadding,
+        );
+        final backMaxWidth = math.max(
+          44.0,
+          math.min(112.0, contentWidth * 0.28),
+        );
+        final trailingWidth = spec.actions.isEmpty
+            ? 0.0
+            : 44.0 * spec.actions.length +
+                tokens.spacing.x2 * (spec.actions.length - 1);
+        final middleSideReserve =
+            math.max(backMaxWidth, trailingWidth) + tokens.spacing.x2;
+        final leading = spec.back != null
             ? AnimatedSwitcher(
                 duration: tokens.motion.standard,
                 reverseDuration: tokens.motion.fast,
                 switchInCurve: tokens.motion.standardCurve,
                 switchOutCurve: tokens.motion.standardCurve,
                 transitionBuilder: _chromeTransition,
-                child: UiNavigationBackButton(
+                child: ConstrainedBox(
                   key: ValueKey('back:$resolvedBackLabel'),
-                  label: resolvedBackLabel,
-                  onPressed: spec.back!.onPressed,
-                  history: seededHistory,
-                  onHistorySelected: onHistorySelected,
+                  constraints: BoxConstraints(maxWidth: backMaxWidth),
+                  child: UiNavigationBackButton(
+                    label: resolvedBackLabel,
+                    onPressed: spec.back!.onPressed,
+                    history: seededHistory,
+                    onHistorySelected: onHistorySelected,
+                  ),
                 ),
               )
-            : spec.leading,
-        trailing: spec.actions.isEmpty
+            : spec.leading;
+        final trailing = spec.actions.isEmpty
             ? null
             : AnimatedSwitcher(
                 duration: tokens.motion.standard,
@@ -455,8 +478,8 @@ class _CompactRow extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
-        middle: showMiddle
+              );
+        final middle = showMiddle
             ? AnimatedSwitcher(
                 duration: tokens.motion.standard,
                 reverseDuration: tokens.motion.fast,
@@ -511,8 +534,39 @@ class _CompactRow extends StatelessWidget {
                   ],
                 ),
               )
-            : const SizedBox.shrink(),
-      ),
+            : const SizedBox.shrink();
+
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x3),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: Row(
+                  children: [
+                    if (leading != null)
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: leading,
+                      ),
+                    const Spacer(),
+                    if (trailing != null)
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: trailing,
+                      ),
+                  ],
+                ),
+              ),
+              Positioned.fill(
+                left: middleSideReserve,
+                right: middleSideReserve,
+                child: Center(child: middle),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -522,6 +576,13 @@ class _CompactRow extends StatelessWidget {
       beginOffset: const Offset(0.08, 0),
       child: child,
     );
+  }
+}
+
+Future<void> _popNavigatorTimes(NavigatorState navigator, int count) async {
+  for (var i = 0; i < count; i++) {
+    final didPop = await navigator.maybePop();
+    if (!didPop) return;
   }
 }
 

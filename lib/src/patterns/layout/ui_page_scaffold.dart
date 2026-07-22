@@ -46,7 +46,7 @@ class UiPageScaffold extends StatelessWidget {
     this.scrollFadeTop = true,
     this.scrollFadeBottom = true,
     this.scrollFadeExtent = 48,
-    this.scrollFadeHorizontalInset = 18,
+    this.scrollFadeHorizontalInset = 0,
     this.scrollFadeMaxOpacity = 0.74,
     this.scrollFadeUsesSafeArea = true,
   });
@@ -108,8 +108,10 @@ class UiPageScaffold extends StatelessWidget {
   /// Physical fade distance in logical pixels.
   final double scrollFadeExtent;
 
-  /// Horizontal inset for the fade overlay so the edge treatment does not read
-  /// as a full-width scrim.
+  /// Optional horizontal inset for the fade overlay.
+  ///
+  /// Defaults to zero so the edge treatment spans the full page width,
+  /// including horizontal safe-area padding.
   final double scrollFadeHorizontalInset;
 
   /// Maximum opacity used at the outer fade edge.
@@ -370,15 +372,24 @@ class _UiScrollFade extends StatelessWidget {
       alpha: maxOpacity.clamp(0.0, 0.72),
     );
     final transparentEdgeColor = backgroundColor.withValues(alpha: 0);
+    final direction = Directionality.maybeOf(context) ?? TextDirection.ltr;
+    final view = View.of(context);
+    final leftSafeBleed = view.padding.left / view.devicePixelRatio;
+    final rightSafeBleed = view.padding.right / view.devicePixelRatio;
+    final startBleed =
+        direction == TextDirection.ltr ? leftSafeBleed : rightSafeBleed;
+    final endBleed =
+        direction == TextDirection.ltr ? rightSafeBleed : leftSafeBleed;
 
     return Stack(
       fit: StackFit.expand,
+      clipBehavior: Clip.none,
       children: [
         child,
         if (showTop)
           PositionedDirectional(
-            start: horizontalInset,
-            end: horizontalInset,
+            start: horizontalInset - startBleed,
+            end: horizontalInset - endBleed,
             top: 0,
             height: extent,
             child: IgnorePointer(
@@ -395,8 +406,8 @@ class _UiScrollFade extends StatelessWidget {
           ),
         if (showBottom)
           PositionedDirectional(
-            start: horizontalInset,
-            end: horizontalInset,
+            start: horizontalInset - startBleed,
+            end: horizontalInset - endBleed,
             bottom: 0,
             height: extent,
             child: IgnorePointer(

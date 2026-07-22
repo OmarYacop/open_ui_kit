@@ -43,7 +43,7 @@ class UiNavigationSpec {
     this.surface = UiNavigationSurface.adaptive,
     this.blurSigma = 14,
     this.showDivider = true,
-    this.transitionStyle = UiNavigationTransitionStyle.sharedAxis,
+    this.transitionStyle = UiNavigationTransitionStyle.softShift,
     this.animationGroupId,
   });
 

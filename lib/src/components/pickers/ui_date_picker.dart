@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/intl/intl.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -443,7 +444,10 @@ class _Header extends StatelessWidget {
     return Row(
       children: [
         if (prev != null)
-          _NavArrow(onPressed: prev, glyph: '‹')
+          _NavArrow(
+            onPressed: prev,
+            glyph: UiDirectionalGlyphs.backwards(context),
+          )
         else
           const SizedBox(width: _kHeaderHeight),
         Expanded(
@@ -467,7 +471,10 @@ class _Header extends StatelessWidget {
           ),
         ),
         if (next != null)
-          _NavArrow(onPressed: next, glyph: '›')
+          _NavArrow(
+            onPressed: next,
+            glyph: UiDirectionalGlyphs.forwards(context),
+          )
         else
           const SizedBox(width: _kHeaderHeight),
       ],

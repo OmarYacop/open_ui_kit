@@ -56,7 +56,7 @@ class UiNavigationDrawer extends StatelessWidget {
     this.headerLeading,
     this.headerAction,
     this.actions = const <UiNavigationDrawerAction>[],
-    this.footerActions = const <UiNavigationDrawerAction>[],
+    this.footerActions = const <Object>[],
     this.footerDestinations = const <UiNavigationDrawerDestination>[],
     this.side = UiDrawerSide.start,
     this.variant = UiDrawerVariant.standard,
@@ -70,7 +70,15 @@ class UiNavigationDrawer extends StatelessWidget {
   final Widget? headerAction;
   final List<UiNavigationDrawerAction> actions;
   final List<UiNavigationDrawerDestination> destinations;
-  final List<UiNavigationDrawerAction> footerActions;
+
+  /// Widgets or drawer item configs rendered in the persistent footer area.
+  ///
+  /// Supported entries are:
+  /// - [Widget], rendered directly for custom controls.
+  /// - [UiNavigationDrawerAction], rendered with navigation drawer row chrome.
+  /// - [UiNavigationDrawerDestination], rendered like [footerDestinations].
+  final List<Object> footerActions;
+
   final List<UiNavigationDrawerDestination> footerDestinations;
   final UiDrawerSide side;
   final UiDrawerVariant variant;
@@ -128,14 +136,8 @@ class UiNavigationDrawer extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final action in footerActions)
-                    _NavigationDrawerRow(
-                      label: action.label,
-                      icon: action.icon,
-                      badge: action.badge ?? _badgeFor(action.badgeCount),
-                      onPressed: action.onPressed,
-                      borderRadius: itemRadius,
-                    ),
+                  for (final item in footerActions)
+                    _footerItemFor(item, itemRadius),
                   for (final destination in footerDestinations)
                     _NavigationDrawerRow(
                       label: destination.label,
@@ -155,6 +157,33 @@ class UiNavigationDrawer extends StatelessWidget {
 
   Widget? _badgeFor(int? count) =>
       count == null || count <= 0 ? null : UiNavigationCountBadge(count: count);
+
+  Widget _footerItemFor(Object item, BorderRadius borderRadius) {
+    return switch (item) {
+      UiNavigationDrawerAction action => _NavigationDrawerRow(
+          label: action.label,
+          icon: action.icon,
+          badge: action.badge ?? _badgeFor(action.badgeCount),
+          onPressed: action.onPressed,
+          borderRadius: borderRadius,
+        ),
+      UiNavigationDrawerDestination destination => _NavigationDrawerRow(
+          label: destination.label,
+          icon: destination.icon,
+          badge: destination.badge ?? _badgeFor(destination.badgeCount),
+          selected: destination.selected,
+          onPressed: destination.onPressed,
+          borderRadius: borderRadius,
+        ),
+      Widget widget => widget,
+      _ => throw ArgumentError.value(
+          item,
+          'footerActions',
+          'Expected a Widget, UiNavigationDrawerAction, or '
+              'UiNavigationDrawerDestination.',
+        ),
+    };
+  }
 }
 
 class _NavigationDrawerRow extends StatelessWidget {

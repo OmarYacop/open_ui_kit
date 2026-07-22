@@ -51,6 +51,7 @@ void main() {
         tester,
         brightness: Brightness.dark,
         child: UiErrorState(
+          mode: UiAsyncStateMode.inline,
           title: 'Could not load',
           description: 'Check your connection and try again.',
           actions: [

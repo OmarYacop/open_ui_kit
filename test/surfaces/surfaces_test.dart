@@ -588,7 +588,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final drawerRect = tester.getRect(find.byType(UiDrawer));
-    expect(drawerRect.width, 292);
+    expect(drawerRect.width, 300);
     expect(drawerRect.right, 390);
   });
 
@@ -817,8 +817,8 @@ void main() {
     final first = tester.getRect(firstDrawer);
     final second = tester.getRect(secondDrawer);
 
-    expect(second.top - first.top, greaterThan(24));
-    expect(second.bottom - first.bottom, greaterThan(24));
+    expect(second.top - first.top, greaterThan(20));
+    expect(second.bottom - first.bottom, greaterThan(20));
     expect(first.center.dx, moreOrLessEquals(second.center.dx));
   });
 
@@ -1254,6 +1254,42 @@ void main() {
 
     expect(find.byType(UiNavigationCountBadge), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
+  });
+
+  testWidgets(
+      'navigation drawer footer actions render widgets and destinations',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: UiThemeData.light(),
+        home: const Directionality(
+          textDirection: TextDirection.ltr,
+          child: UiNavigationDrawer(
+            title: 'More',
+            destinations: [
+              UiNavigationDrawerDestination(
+                label: 'Home',
+                onPressed: _noop,
+              ),
+            ],
+            footerActions: [
+              Text('Language select'),
+              UiNavigationDrawerDestination(
+                label: 'Account',
+                onPressed: _noop,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Language select'), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Language select')).dy,
+      lessThan(tester.getTopLeft(find.text('Account')).dy),
+    );
   });
 
   testWidgets('navigation drawer rows use comfortable content padding', (

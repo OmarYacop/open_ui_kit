@@ -923,6 +923,22 @@ void main() {
       );
     });
 
+    testWidgets('UiPageScaffold scroll fade is full-width by default',
+        (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: UiPageScaffold(body: SizedBox.expand()),
+        ),
+      );
+
+      final scaffold = tester.widget<UiPageScaffold>(
+        find.byType(UiPageScaffold),
+      );
+      expect(scaffold.scrollFadeHorizontalInset, 0);
+      expect(scaffold.scrollFadeUsesSafeArea, isTrue);
+    });
+
     testWidgets('UiSafeViewport none does not inject SafeArea', (tester) async {
       await tester.pumpWidget(
         _host(

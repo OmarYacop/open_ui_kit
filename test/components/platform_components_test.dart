@@ -318,7 +318,7 @@ void main() {
       );
     });
 
-    testWidgets('floating scaffold body extends underneath the dock',
+    testWidgets('floating scaffold adds body padding for the dock',
         (tester) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
@@ -334,13 +334,19 @@ void main() {
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat'),
               ],
-              pages: const [
+              pages: [
                 ColoredBox(
-                  key: Key('page-body'),
-                  color: Color(0xFF00FF00),
-                  child: SizedBox.expand(),
+                  key: const Key('page-body'),
+                  color: const Color(0xFF00FF00),
+                  child: SizedBox.expand(
+                    child: Builder(
+                      builder: (context) => Text(
+                        'bottom-padding:${MediaQuery.paddingOf(context).bottom}',
+                      ),
+                    ),
+                  ),
                 ),
-                Center(child: Text('chat-page')),
+                const Center(child: Text('chat-page')),
               ],
               currentIndex: 0,
               onChanged: _noopTabChange,
@@ -354,6 +360,7 @@ void main() {
           tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
       expect(bodyRect.height, 700);
       expect(bodyRect.bottom, greaterThan(dockRect.top));
+      expect(find.text('bottom-padding:82.0'), findsOneWidget);
     });
 
     testWidgets('floating dock sinks toward home-indicator edge', (
@@ -464,6 +471,45 @@ void main() {
         find.byType(UiBottomTabBar),
       );
       expect(overflowSelectedBar.currentIndex, 3);
+    });
+
+    testWidgets('scaffold automatic overflow accepts a custom More label', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _host(
+          UiBottomTabScaffold(
+            items: const [
+              UiBottomTabItem(label: 'Home'),
+              UiBottomTabItem(label: 'Schedule'),
+              UiBottomTabItem(label: 'Chat'),
+              UiBottomTabItem(label: 'Library'),
+            ],
+            pages: const [
+              Center(child: Text('home-page')),
+              Center(child: Text('schedule-page')),
+              Center(child: Text('chat-page')),
+              Center(child: Text('library-page')),
+            ],
+            currentIndex: 0,
+            onChanged: (_) {},
+            moreLabel: 'المزيد',
+          ),
+        ),
+      );
+
+      expect(find.text('المزيد'), findsOneWidget);
+      expect(find.text('More'), findsNothing);
+
+      await tester.tap(find.text('المزيد'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('المزيد'), findsWidgets);
+      expect(find.text('Library'), findsOneWidget);
     });
 
     testWidgets('scaffold can convert bottom tabs to a rail on wide screens',

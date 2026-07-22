@@ -15,7 +15,7 @@ class UiNavigationStack extends StatelessWidget {
     super.key,
     required this.index,
     required this.children,
-    this.transitionStyle = UiNavigationTransitionStyle.sharedAxis,
+    this.transitionStyle = UiNavigationTransitionStyle.softShift,
     this.duration,
   }) : assert(
           children.length > 0,

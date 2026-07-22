@@ -149,6 +149,31 @@ void main() {
       expect(find.byType(DecoratedBox), findsWidgets);
     });
 
+    testWidgets('UiConstrained caps width inside tight parents',
+        (tester) async {
+      const childKey = Key('constrained-child');
+
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox(
+            width: 600,
+            child: UiConstrained(
+              maxWidth: 240,
+              child: SizedBox(
+                key: childKey,
+                width: double.infinity,
+                height: 20,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byKey(childKey)).width, 240);
+      expect(tester.getCenter(find.byKey(childKey)).dx, 400);
+    });
+
     testWidgets('UiText applies heading font size', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

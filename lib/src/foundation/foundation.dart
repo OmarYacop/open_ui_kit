@@ -1,3 +1,4 @@
+export 'icons/ui_directional_icons.dart';
 export 'intl/intl.dart';
 export 'layout/layout.dart';
 export 'motion/motion.dart';

@@ -6,6 +6,8 @@ import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../foundation/intl/intl.dart';
+import '../../foundation/layout/layout.dart';
+import '../../foundation/theme/ui_theme_extensions.dart';
 import '../surfaces/ui_drawer.dart';
 import '../surfaces/ui_responsive_navigation_scaffold.dart';
 import 'bottom_tab_bar.dart';
@@ -13,6 +15,7 @@ import 'ui_navigation_drawer.dart';
 
 const _kBottomTabScaffoldControlWidth = 72.0;
 const _kBottomTabScaffoldDockPadding = 6.0;
+const _kBottomTabScaffoldBarHeight = 54.0;
 
 class UiBottomTabRailConfig {
   const UiBottomTabRailConfig({
@@ -63,6 +66,7 @@ class UiBottomTabScaffold extends StatelessWidget {
     this.bottomCurrentIndex,
     this.onBottomChanged,
     this.maxVisibleBottomItems = 3,
+    this.moreLabel,
     this.overflowDrawerBuilder,
   })  : assert(
           items.length == pages.length,
@@ -114,6 +118,13 @@ class UiBottomTabScaffold extends StatelessWidget {
   /// layouts; once [railBreakpoint] is reached, [railBuilder] receives the full
   /// canonical item list.
   final int maxVisibleBottomItems;
+
+  /// Label used by the automatic overflow control and default overflow drawer.
+  ///
+  /// Defaults to `UiLocalizations.more`. Apps with their own localization
+  /// system can pass a resolved string here without replacing the whole
+  /// overflow drawer.
+  final String? moreLabel;
 
   /// Optional application-owned composition for the automatic More drawer.
   ///
@@ -172,6 +183,7 @@ class UiBottomTabScaffold extends StatelessWidget {
             floatingMaxWidth: tabBarFloatingMaxWidth,
             floatingHorizontalMargin: tabBarFloatingHorizontalMargin,
             floatingBottomMargin: tabBarFloatingBottomMargin,
+            moreLabel: moreLabel,
             overflowDrawerBuilder: overflowDrawerBuilder,
           );
         },
@@ -194,6 +206,7 @@ class UiBottomTabScaffold extends StatelessWidget {
       floatingMaxWidth: tabBarFloatingMaxWidth,
       floatingHorizontalMargin: tabBarFloatingHorizontalMargin,
       floatingBottomMargin: tabBarFloatingBottomMargin,
+      moreLabel: moreLabel,
       overflowDrawerBuilder: overflowDrawerBuilder,
     );
   }
@@ -305,6 +318,7 @@ class _BottomTabBody extends StatefulWidget {
     required this.floatingMaxWidth,
     required this.floatingHorizontalMargin,
     required this.floatingBottomMargin,
+    required this.moreLabel,
     required this.overflowDrawerBuilder,
   });
 
@@ -323,6 +337,7 @@ class _BottomTabBody extends StatefulWidget {
   final double floatingMaxWidth;
   final double floatingHorizontalMargin;
   final double floatingBottomMargin;
+  final String? moreLabel;
   final UiBottomTabOverflowDrawerBuilder? overflowDrawerBuilder;
 
   @override
@@ -348,11 +363,19 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
         final resolvedChanged = overflow == null
             ? widget.onChanged
             : (int index) => _handleOverflowTap(context, overflow, index);
+        final bodyBottomInset = _resolveBodyBottomInset(context, constraints);
+        final paddedBody = MediaQuery(
+          data: _addBottomPadding(
+            MediaQuery.of(context),
+            bottomPadding: bodyBottomInset,
+          ),
+          child: widget.body,
+        );
 
         return Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(child: widget.body),
+            Positioned.fill(child: paddedBody),
             PositionedDirectional(
               start: 0,
               end: 0,
@@ -393,11 +416,11 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
 
     final directCount = directLimit.clamp(1, (capacity - 1).clamp(1, capacity));
     final visibleIndices = List<int>.generate(directCount, (index) => index);
-    final strings = UiLocalizations.of(context);
+    final moreLabel = widget.moreLabel ?? UiLocalizations.of(context).more;
     final visibleItems = [
       for (final index in visibleIndices) widget.canonicalItems[index],
       UiBottomTabItem(
-        label: strings.more,
+        label: moreLabel,
         icon: const Icon(LucideIcons.menu),
         activeIcon: const Icon(LucideIcons.menu),
       ),
@@ -425,6 +448,45 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
             _kBottomTabScaffoldControlWidth)
         .floor();
     return capacity.clamp(2, widget.maxVisibleItems + 1);
+  }
+
+  double _resolveBodyBottomInset(
+    BuildContext context,
+    BoxConstraints constraints,
+  ) {
+    final isWide = constraints.maxWidth.isFinite &&
+        constraints.maxWidth >= widget.adaptiveBreakpoint;
+    final resolvedLayout = switch (widget.layout) {
+      UiBottomTabBarLayout.edgeToEdge => UiBottomTabBarLayout.edgeToEdge,
+      UiBottomTabBarLayout.floatingDock => UiBottomTabBarLayout.floatingDock,
+      UiBottomTabBarLayout.adaptive => isWide
+          ? UiBottomTabBarLayout.floatingDock
+          : UiBottomTabBarLayout.edgeToEdge,
+    };
+
+    if (resolvedLayout == UiBottomTabBarLayout.edgeToEdge) {
+      return _kBottomTabScaffoldBarHeight;
+    }
+
+    final tokens = UiThemeTokens.of(context);
+    final bottomOffset = resolveUiEdgeAwareBottomOffset(
+      context,
+      minimum: widget.floatingBottomMargin + tokens.spacing.x1,
+    );
+    return _kBottomTabScaffoldBarHeight +
+        _kBottomTabScaffoldDockPadding * 2 +
+        bottomOffset;
+  }
+
+  MediaQueryData _addBottomPadding(
+    MediaQueryData media, {
+    required double bottomPadding,
+  }) {
+    return media.copyWith(
+      padding: media.padding.copyWith(
+        bottom: media.padding.bottom + bottomPadding,
+      ),
+    );
   }
 
   void _handleOverflowTap(
@@ -469,8 +531,9 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
     UiDrawerController<void> controller,
   ) {
     final strings = UiLocalizations.of(context);
+    final moreLabel = widget.moreLabel ?? strings.more;
     return UiNavigationDrawer(
-      title: strings.more,
+      title: moreLabel,
       variant: UiDrawerVariant.stacked,
       destinations: [
         for (var index = 0; index < widget.canonicalItems.length; index++)
