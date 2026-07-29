@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import '../theme/ui_theme_extensions.dart';
+import '../motion/ui_motion_spec.dart';
 
 typedef UiNowProvider = DateTime Function();
 
@@ -335,7 +335,7 @@ class UiTimeGate extends StatelessWidget {
     this.visibleUntil,
     this.controller,
     this.transition = UiTimeGateTransition.fadeScale,
-    this.duration,
+    this.duration = UiMotionDuration.fast,
   });
 
   final DateTime? visibleFrom;
@@ -344,7 +344,7 @@ class UiTimeGate extends StatelessWidget {
   final WidgetBuilder builder;
   final WidgetBuilder? placeholder;
   final UiTimeGateTransition transition;
-  final Duration? duration;
+  final UiMotionDuration duration;
 
   @override
   Widget build(BuildContext context) {
@@ -366,11 +366,11 @@ class UiTimeGate extends StatelessWidget {
         return switch (transition) {
           UiTimeGateTransition.none => child,
           UiTimeGateTransition.fade => AnimatedSwitcher(
-              duration: duration ?? UiThemeTokens.of(context).motion.fast,
+              duration: duration.resolve(context),
               child: child,
             ),
           UiTimeGateTransition.fadeScale => AnimatedSwitcher(
-              duration: duration ?? UiThemeTokens.of(context).motion.fast,
+              duration: duration.resolve(context),
               transitionBuilder: (child, animation) => FadeTransition(
                 opacity: animation,
                 child: ScaleTransition(

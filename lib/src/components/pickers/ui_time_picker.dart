@@ -29,6 +29,11 @@ import 'ui_picker_models.dart';
 /// `onChanged` is still invoked once per snapped index so external
 /// listeners (form state, other pickers) see the full stream of
 /// intermediate values during a fling, unchanged from before.
+@Deprecated(
+  'Use UiTimeGridPicker for inline picker surfaces or UiTimePickerField for '
+  'form fields. The wheel picker will remain available through the next minor '
+  'release for migration.',
+)
 class UiTimePicker extends StatefulWidget {
   const UiTimePicker({
     super.key,

@@ -5,5 +5,8 @@ export 'input.dart';
 export 'select.dart';
 export 'ui_checkbox.dart';
 export 'ui_filter_chip.dart';
+export 'ui_compact_choice_filter.dart';
 export 'ui_radio.dart';
+export 'ui_radio_group.dart';
+export 'ui_smart_action_group.dart';
 export 'ui_switch.dart';

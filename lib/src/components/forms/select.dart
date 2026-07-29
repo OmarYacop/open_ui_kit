@@ -164,6 +164,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
   double _horizontalOffset = 0;
   double _anchorOffset = 0;
   double? _triggerWidth;
+  double? _triggerHeight;
   Rect? _targetOverlayRect;
   Rect? _targetGlobalRect;
 
@@ -302,7 +303,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
                   child: ListView.separated(
                     controller: _scrollController,
                     primary: false,
-                    padding: EdgeInsets.all(tokens.spacing.x2),
+                    padding: EdgeInsets.all(tokens.spacing.x1),
                     scrollCacheExtent: ScrollCacheExtent.pixels(
                       rowCacheExtent,
                     ),
@@ -407,7 +408,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
 
         return UiBox(
           background: background,
-          borderRadius: tokens.radius.mdAll,
+          borderRadius: tokens.radius.smAll,
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.x3,
             vertical: tokens.spacing.x2,
@@ -457,7 +458,11 @@ class UiSelectState<T> extends State<UiSelect<T>> {
               return UiFocusRing(
                 visible: (state.focused || open) && !hasError,
                 borderRadius: triggerRadius,
+                color: c.ring.withValues(alpha: 0.32),
+                width: 1,
+                offset: 1,
                 child: AnimatedContainer(
+                  key: const ValueKey<String>('ui-select-trigger'),
                   duration: tokens.motion.fast,
                   curve: tokens.motion.standardCurve,
                   decoration: BoxDecoration(
@@ -466,7 +471,10 @@ class UiSelectState<T> extends State<UiSelect<T>> {
                     borderRadius: triggerRadius,
                   ),
                   constraints: BoxConstraints(
-                    minHeight: _minHeightFor(widget.size),
+                    minHeight: math.max(
+                      _minHeightFor(widget.size),
+                      open ? _triggerHeight ?? 0 : 0,
+                    ),
                     minWidth:
                         widget.shrinkWrap && open ? _triggerWidth ?? 0 : 0,
                   ),
@@ -568,6 +576,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     _targetOverlayRect = geometry.targetOverlayRect;
     _targetGlobalRect = geometry.targetGlobalRect;
     _triggerWidth = geometry.triggerWidth;
+    _triggerHeight = geometry.targetOverlayRect.height;
     _openAbove = geometry.openAbove;
     _menuMaxHeight = geometry.maxHeight;
     _menuWidth = geometry.width;

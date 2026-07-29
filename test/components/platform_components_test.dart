@@ -10,6 +10,42 @@ Widget _host(Widget child) => MaterialApp(
     );
 
 void main() {
+  group('UiInput', () {
+    testWidgets('embedded variant lets its parent own every visual surface',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: UiInput(
+              hint: 'Search',
+              variant: UiInputVariant.embedded,
+            ),
+          ),
+        ),
+      );
+
+      BoxDecoration decoration() {
+        final container = tester.widget<AnimatedContainer>(
+          find.descendant(
+            of: find.byType(UiInput),
+            matching: find.byType(AnimatedContainer),
+          ),
+        );
+        return container.decoration! as BoxDecoration;
+      }
+
+      expect(decoration().color, const Color(0x00000000));
+      expect(decoration().border, isNull);
+
+      await tester.tap(find.byType(UiInput));
+      await tester.pump();
+
+      expect(decoration().color, const Color(0x00000000));
+      expect(decoration().border, isNull);
+    });
+  });
+
   group('UiSheetScope', () {
     testWidgets('open + programmatic dismiss resolves the future',
         (tester) async {
@@ -710,6 +746,329 @@ void main() {
       await tester.pumpAndSettle();
       dockRect = tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
       expect(dockRect.width, 300);
+    });
+
+    testWidgets('bottom tab accessory occupies a separate compact island',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _host(
+          UiBottomTabBar(
+            items: const [
+              UiBottomTabItem(label: 'Home'),
+              UiBottomTabItem(label: 'Library'),
+              UiBottomTabItem(label: 'Account'),
+            ],
+            currentIndex: 1,
+            onChanged: (_) {},
+            accessory: const UiBottomTabAccessory(
+              child: Icon(Icons.search),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final dock = tester.getRect(
+        find.byKey(const Key('ui_bottom_tab_dock')),
+      );
+      final accessory = tester.getRect(
+        find.byKey(const Key('ui_bottom_tab_accessory')),
+      );
+      expect(accessory.width, 56);
+      expect(accessory.height, 56);
+      expect(dock.right, lessThan(accessory.left));
+    });
+
+    testWidgets('bottom tab accessory can shrink from dock height for search',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      Widget subject({required bool expanded}) => _host(
+            UiBottomTabBar(
+              items: const [
+                UiBottomTabItem(label: 'Home'),
+                UiBottomTabItem(label: 'Search'),
+              ],
+              currentIndex: 1,
+              onChanged: (_) {},
+              accessory: UiBottomTabAccessory(
+                expanded: expanded,
+                collapsedWidth: 67,
+                collapsedHeight: 67,
+                height: 56,
+                leadingItem: const UiBottomTabItem(label: 'Search'),
+                child: const Icon(Icons.search),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(subject(expanded: false));
+      expect(
+        tester.getSize(find.byKey(const Key('ui_bottom_tab_accessory'))).height,
+        67,
+      );
+
+      await tester.pumpWidget(subject(expanded: true));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byKey(const Key('ui_bottom_tab_accessory'))).height,
+        56,
+      );
+    });
+
+    testWidgets('expanded accessory replaces dock with selected tab island',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _host(
+          UiBottomTabBar(
+            items: const [
+              UiBottomTabItem(label: 'Home'),
+              UiBottomTabItem(label: 'Library'),
+              UiBottomTabItem(label: 'Account'),
+            ],
+            currentIndex: 1,
+            onChanged: (_) {},
+            accessory: const UiBottomTabAccessory(
+              expanded: true,
+              leadingItem: UiBottomTabItem(label: 'Library'),
+              child: Text('Search field'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('ui_bottom_tab_dock')), findsOneWidget);
+      expect(
+        find.byKey(const Key('ui_bottom_tab_accessory_leading')),
+        findsOneWidget,
+      );
+      expect(find.text('Library'), findsNothing);
+      expect(
+        tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).height,
+        56,
+      );
+      expect(
+        tester.getSize(find.byKey(const Key('ui_bottom_tab_accessory'))).width,
+        greaterThan(200),
+      );
+    });
+
+    testWidgets('expanded scaffold accessory stays above the keyboard',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _host(
+          UiBottomTabScaffold(
+            items: const [
+              UiBottomTabItem(label: 'Home'),
+              UiBottomTabItem(label: 'Chat'),
+            ],
+            currentIndex: 1,
+            onChanged: (_) {},
+            pages: const [SizedBox(), SizedBox()],
+            bottomAccessory: const UiBottomTabAccessory(
+              expanded: true,
+              leadingItem: UiBottomTabItem(label: 'Chat'),
+              child: Text('Search field'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final before = tester.getBottomLeft(
+        find.byKey(const Key('ui_bottom_tab_accessory')),
+      );
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+      await tester.pump();
+      await tester.pumpAndSettle();
+      final after = tester.getBottomLeft(
+        find.byKey(const Key('ui_bottom_tab_accessory')),
+      );
+
+      expect(after.dy, closeTo(before.dy - 280, 0.1));
+    });
+
+    testWidgets('accessory can enter and leave expanded mode with semantics',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final semantics = tester.ensureSemantics();
+
+      var expanded = false;
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) => UiBottomTabBar(
+              items: const [
+                UiBottomTabItem(label: 'Home'),
+                UiBottomTabItem(label: 'Library'),
+                UiBottomTabItem(label: 'Account'),
+              ],
+              currentIndex: 1,
+              onChanged: (_) {},
+              accessory: UiBottomTabAccessory(
+                expanded: expanded,
+                leadingItem: const UiBottomTabItem(label: 'Library'),
+                onLeadingPressed: () => setState(() => expanded = false),
+                child: SizedBox.expand(
+                  child: TextButton(
+                    onPressed: () => setState(() => expanded = true),
+                    child: Text(expanded ? 'Search field' : 'Search'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final collapsedDockWidth =
+          tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).width;
+      final collapsedAccessoryWidth = tester
+          .getSize(find.byKey(const Key('ui_bottom_tab_accessory')))
+          .width;
+
+      await tester.tap(find.text('Search'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final morphingDockWidth =
+          tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).width;
+      final morphingAccessoryWidth = tester
+          .getSize(find.byKey(const Key('ui_bottom_tab_accessory')))
+          .width;
+      expect(morphingDockWidth, lessThan(collapsedDockWidth));
+      expect(morphingDockWidth, greaterThan(56));
+      expect(morphingAccessoryWidth, greaterThan(collapsedAccessoryWidth));
+
+      await tester.pumpAndSettle();
+      expect(find.text('Search field'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('Library'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    });
+
+    testWidgets('scaffold fades out before removing its accessory',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var visible = true;
+      late StateSetter update;
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return UiBottomTabScaffold(
+                items: const [UiBottomTabItem(label: 'Home')],
+                currentIndex: 0,
+                onChanged: (_) {},
+                pages: const [SizedBox.expand()],
+                bottomAccessory: visible
+                    ? const UiBottomTabAccessory(
+                        child: Icon(Icons.search),
+                      )
+                    : null,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      update(() => visible = false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(
+        find.byKey(const Key('ui_bottom_tab_accessory')),
+        findsOneWidget,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('ui_bottom_tab_accessory')),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+        'accessory reduces automatic tab capacity and animates the removed tab',
+        (tester) async {
+      tester.view.physicalSize = const Size(420, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var visible = false;
+      late StateSetter update;
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return UiBottomTabScaffold(
+                items: const [
+                  UiBottomTabItem(label: 'First'),
+                  UiBottomTabItem(label: 'Second'),
+                  UiBottomTabItem(label: 'Third'),
+                  UiBottomTabItem(label: 'Fourth'),
+                  UiBottomTabItem(label: 'Fifth'),
+                ],
+                currentIndex: 0,
+                onChanged: (_) {},
+                pages: const [
+                  SizedBox.expand(),
+                  SizedBox.expand(),
+                  SizedBox.expand(),
+                  SizedBox.expand(),
+                  SizedBox.expand(),
+                ],
+                maxVisibleBottomItems: 5,
+                bottomAccessory: visible
+                    ? const UiBottomTabAccessory(child: Icon(Icons.search))
+                    : null,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fifth'), findsOneWidget);
+      expect(find.text('More'), findsNothing);
+
+      update(() => visible = true);
+      await tester.pump();
+
+      expect(find.text('Fifth'), findsOneWidget);
+      expect(find.text('More'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('Fifth'), findsOneWidget);
+      expect(find.text('More'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('Fifth'), findsNothing);
+      expect(find.text('More'), findsOneWidget);
     });
 
     testWidgets('selected tab slot expands while inactive slots stay compact',

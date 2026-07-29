@@ -62,9 +62,9 @@ class UiNavigationRailGeometry {
     this.expandedOuterWidth = 260,
     this.collapsedOuterWidth = 84,
     this.outerMargin = 12,
-    this.itemPadding = 8,
+    this.itemPadding = 10,
     this.headerHeight = 40,
-    this.destinationHeight = 34,
+    this.destinationHeight = 40,
     this.maxPanelHeight = double.infinity,
     this.minVisibleDestinations = 3,
     this.expandedHeaderTopPadding = 4,
@@ -161,6 +161,7 @@ class UiNavigationRail extends StatefulWidget {
     required this.collapsed,
     required this.onToggleCollapsed,
     this.title,
+    this.headerLeading,
     this.footerActions = const <UiNavigationRailAction>[],
     this.footerDestinations = const <UiNavigationRailDestination>[],
     this.platformCapabilities,
@@ -168,6 +169,7 @@ class UiNavigationRail extends StatefulWidget {
   });
 
   final String? title;
+  final Widget? headerLeading;
   final List<UiNavigationRailDestination> destinations;
   final List<UiNavigationRailAction> footerActions;
   final List<UiNavigationRailDestination> footerDestinations;
@@ -408,6 +410,8 @@ class _UiNavigationRailState extends State<UiNavigationRail>
                                                 title: widget.title ??
                                                     UiAppContext.titleOf(
                                                         context),
+                                                headerLeading:
+                                                    widget.headerLeading,
                                                 onToggleCollapsed:
                                                     widget.onToggleCollapsed,
                                               ),
@@ -570,18 +574,20 @@ class UiNavigationRailAvatar extends StatelessWidget {
     required this.name,
     this.imageUrl,
     this.semanticLabel,
+    this.size = 30,
   });
 
   final String? name;
   final String? imageUrl;
   final String? semanticLabel;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return UiAvatar(
       name: name,
       imageUrl: imageUrl,
-      size: 26,
+      size: size,
       showBorder: false,
       semanticLabel: semanticLabel,
     );
@@ -673,6 +679,7 @@ class _RailHeader extends StatelessWidget {
     required this.chromeLeadingInset,
     required this.itemLeadingInset,
     required this.title,
+    this.headerLeading,
     required this.onToggleCollapsed,
   });
 
@@ -683,6 +690,7 @@ class _RailHeader extends StatelessWidget {
   final double chromeLeadingInset;
   final double itemLeadingInset;
   final String title;
+  final Widget? headerLeading;
   final VoidCallback onToggleCollapsed;
 
   @override
@@ -732,11 +740,36 @@ class _RailHeader extends StatelessWidget {
                     alignment: AlignmentDirectional.centerStart,
                     child: Opacity(
                       opacity: titleProgress,
-                      child: UiText(
-                        title,
-                        variant: UiTextVariant.subheading,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final showBrand = headerLeading != null &&
+                              constraints.maxWidth >= 52;
+                          return Row(
+                            children: [
+                              if (showBrand) ...[
+                                SizedBox.square(
+                                  dimension: 24,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: FittedBox(
+                                      fit: BoxFit.contain,
+                                      child: headerLeading,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: UiText(
+                                  title,
+                                  variant: UiTextVariant.subheading,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -871,20 +904,20 @@ class _RailDestinationButton extends StatelessWidget {
                   ? hoverBackground
                   : const Color(0x00000000);
           final segmentExtent = geometry.destinationHeight;
-          final pillRadius = Radius.circular(segmentExtent / 2);
+          final itemRadius = tokens.radius.md;
           final iconEndRadius = Radius.circular(
-            (segmentExtent / 2) * (1 - labelProgress),
+            itemRadius.x * (1 - labelProgress),
           );
           final direction = Directionality.of(context);
           final iconRadius = BorderRadiusDirectional.only(
-            topStart: pillRadius,
-            bottomStart: pillRadius,
+            topStart: itemRadius,
+            bottomStart: itemRadius,
             topEnd: iconEndRadius,
             bottomEnd: iconEndRadius,
           ).resolve(direction);
           final labelRadius = BorderRadiusDirectional.only(
-            topEnd: pillRadius,
-            bottomEnd: pillRadius,
+            topEnd: itemRadius,
+            bottomEnd: itemRadius,
           ).resolve(direction);
 
           return SizedBox(

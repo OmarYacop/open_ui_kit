@@ -161,7 +161,7 @@ class _DialogHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final motion = UiThemeTokens.of(context).motion;
+    final motion = UiThemeTokens.motionOf(context);
     final curved = CurvedAnimation(
       parent: animation,
       curve: motion.standardCurve,
@@ -197,6 +197,14 @@ class _DialogBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final blurSigma = UiThemeTokens.effectsOf(context).scaleBlur(2.5);
+    Widget backdrop = ColoredBox(color: color);
+    if (blurSigma > 0) {
+      backdrop = BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: backdrop,
+      );
+    }
     // Keep the blur filter static so its shader doesn't rebuild every
     // frame. Animate the scrim+blur layer via opacity instead — the
     // route animation fades the whole subtree in/out, the compositor
@@ -205,10 +213,7 @@ class _DialogBackdrop extends StatelessWidget {
       child: RepaintBoundary(
         child: FadeTransition(
           opacity: animation,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
-            child: ColoredBox(color: color),
-          ),
+          child: backdrop,
         ),
       ),
     );

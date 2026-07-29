@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'motion/ui_motion_spec.dart';
 import 'reactive/ui_clock.dart';
 import 'theme/ui_theme_extensions.dart';
 import '../patterns/navigation/ui_navigation_transition.dart';
@@ -17,7 +18,7 @@ enum UiThemeMode { system, light, dark }
 ///
 /// Localization (including RTL text direction for ar/ur) comes from the
 /// delegates you pass — include `GlobalWidgetsLocalizations.delegate`.
-class UiApp extends StatelessWidget {
+class UiApp extends StatefulWidget {
   const UiApp({
     super.key,
     this.home,
@@ -34,6 +35,8 @@ class UiApp extends StatelessWidget {
     this.builder,
     this.navigatorKey,
     this.navigatorObservers = const [],
+    this.pageTransitionDuration = UiMotionDuration.standard,
+    this.pageReverseTransitionDuration = UiMotionDuration.fast,
     this.clockController,
     this.clockTickMode = UiClockTickMode.minute,
     this.clockTickInterval,
@@ -53,32 +56,60 @@ class UiApp extends StatelessWidget {
   final TransitionBuilder? builder;
   final GlobalKey<NavigatorState>? navigatorKey;
   final List<NavigatorObserver> navigatorObservers;
+
+  /// Default route timing. Accepts a theme token or an authored custom value.
+  final UiMotionDuration pageTransitionDuration;
+  final UiMotionDuration pageReverseTransitionDuration;
+
   final UiClockController? clockController;
   final UiClockTickMode clockTickMode;
   final Duration? clockTickInterval;
 
   @override
+  State<UiApp> createState() => _UiAppState();
+}
+
+class _UiAppState extends State<UiApp> {
+  final HeroController _heroController = HeroController();
+
+  @override
   Widget build(BuildContext context) {
-    final light = lightTokens ?? UiThemeTokens.light;
-    final dark = darkTokens ?? UiThemeTokens.dark;
+    final light = widget.lightTokens ?? UiThemeTokens.light;
+    final dark = widget.darkTokens ?? UiThemeTokens.dark;
+    final reducedMotion = MediaQuery.maybeDisableAnimationsOf(context) ??
+        WidgetsBinding.instance.platformDispatcher.accessibilityFeatures
+            .disableAnimations;
+    final routeDuration = widget.pageTransitionDuration.resolveFromTokens(
+      light.motion,
+      reducedMotion: reducedMotion,
+    );
+    final routeReverseDuration = widget.pageReverseTransitionDuration
+        .resolveFromTokens(light.motion, reducedMotion: reducedMotion);
+    final navigatorObservers = <NavigatorObserver>[
+      if (!widget.navigatorObservers.any(
+        (observer) => observer is HeroController,
+      ))
+        _heroController,
+      ...widget.navigatorObservers,
+    ];
 
     return WidgetsApp(
       key: const ValueKey('ui_app'),
-      navigatorKey: navigatorKey,
+      navigatorKey: widget.navigatorKey,
       navigatorObservers: navigatorObservers,
-      title: title,
+      title: widget.title,
       color: light.colors.primary,
-      locale: locale,
-      localizationsDelegates: localizationsDelegates,
-      supportedLocales: supportedLocales,
-      localeResolutionCallback: localeResolutionCallback,
-      localeListResolutionCallback: localeListResolutionCallback,
-      debugShowCheckedModeBanner: debugShowCheckedModeBanner,
+      locale: widget.locale,
+      localizationsDelegates: widget.localizationsDelegates,
+      supportedLocales: widget.supportedLocales,
+      localeResolutionCallback: widget.localeResolutionCallback,
+      localeListResolutionCallback: widget.localeListResolutionCallback,
+      debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
       pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
         return PageRouteBuilder<T>(
           settings: settings,
-          transitionDuration: const Duration(milliseconds: 220),
-          reverseTransitionDuration: const Duration(milliseconds: 160),
+          transitionDuration: routeDuration,
+          reverseTransitionDuration: routeReverseDuration,
           pageBuilder: (ctx, _, __) => builder(ctx),
           transitionsBuilder: (ctx, animation, _, child) {
             final tokens = UiThemeTokens.of(ctx);
@@ -97,25 +128,27 @@ class UiApp extends StatelessWidget {
         final brightness = _brightnessFor(context);
         final tokens = brightness == Brightness.dark ? dark : light;
         final themed = UiClockScope(
-          controller: clockController,
-          tickMode: clockTickMode,
-          tickInterval: clockTickInterval,
+          controller: widget.clockController,
+          tickMode: widget.clockTickMode,
+          tickInterval: widget.clockTickInterval,
           child: UiAppContext(
-            title: title,
+            title: widget.title,
             child: UiTheme(
               tokens: tokens,
               child: child ?? const SizedBox.shrink(),
             ),
           ),
         );
-        return builder == null ? themed : builder!(context, themed);
+        return widget.builder == null
+            ? themed
+            : widget.builder!(context, themed);
       },
-      home: home,
+      home: widget.home,
     );
   }
 
   Brightness _brightnessFor(BuildContext context) {
-    switch (mode) {
+    switch (widget.mode) {
       case UiThemeMode.light:
         return Brightness.light;
       case UiThemeMode.dark:

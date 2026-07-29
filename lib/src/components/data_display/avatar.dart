@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import 'wavatar.dart';
 
 enum UiAvatarShape { circle, rounded, square }
 
@@ -107,43 +108,21 @@ class UiAvatar extends StatelessWidget {
   Widget _fallback(BuildContext context) {
     if (fallback != null) return fallback!;
 
-    final initials = _initials(name);
-    if (initials.isNotEmpty) {
-      return UiText(
-        initials,
-        variant: _textVariant,
-        tone: UiTextTone.muted,
-        textAlign: TextAlign.center,
-      );
-    }
-
-    return Icon(
-      Icons.account_circle_rounded,
-      size: size * 0.7,
-      color: UiThemeTokens.of(context).colors.textMuted,
+    final seed = name?.trim().isNotEmpty == true
+        ? name!.trim()
+        : semanticLabel?.trim().isNotEmpty == true
+            ? semanticLabel!.trim()
+            : 'anonymous';
+    return ExcludeSemantics(
+      child: UiWavatar(
+        seed: seed,
+        size: size,
+        shape: shape == UiAvatarShape.circle
+            ? BoxShape.circle
+            : BoxShape.rectangle,
+        borderRadius: _borderRadius(UiThemeTokens.of(context)),
+      ),
     );
-  }
-
-  UiTextVariant get _textVariant {
-    if (size < 32) return UiTextVariant.caption;
-    if (size < 56) return UiTextVariant.label;
-    return UiTextVariant.subheading;
-  }
-
-  String _initials(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return '';
-
-    final parts = text
-        .split(RegExp(r'\s+'))
-        .where((part) => part.trim().isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return '';
-
-    final first = parts.first.characters.first.toUpperCase();
-    if (parts.length == 1) return first;
-    final second = parts.last.characters.first.toUpperCase();
-    return '$first$second';
   }
 }
 

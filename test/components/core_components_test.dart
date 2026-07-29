@@ -104,6 +104,98 @@ void main() {
       final loadingNode = tester.getSemantics(find.text('Syncing'));
       expect(loadingNode.hint, contains('loading'));
     });
+
+    testWidgets('radio group selects options and exposes helper and error text',
+        (tester) async {
+      var selected = 'student';
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              return UiRadioGroup<String>(
+                label: 'Account type',
+                value: selected,
+                helper: 'Choose the closest role.',
+                errorText:
+                    selected == 'guardian' ? 'Guardian is unavailable' : null,
+                options: const [
+                  UiRadioGroupOption(
+                    value: 'student',
+                    label: 'Student',
+                    helper: 'Learner access',
+                  ),
+                  UiRadioGroupOption(
+                    value: 'teacher',
+                    label: 'Teacher',
+                  ),
+                  UiRadioGroupOption(
+                    value: 'guardian',
+                    label: 'Guardian',
+                  ),
+                ],
+                onChanged: (next) => setState(() => selected = next),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Choose the closest role.'), findsOneWidget);
+      expect(find.text('Learner access'), findsOneWidget);
+
+      await tester.tap(find.text('Teacher'));
+      await tester.pump();
+      expect(selected, 'teacher');
+
+      await tester.tap(find.text('Guardian'));
+      await tester.pump();
+      expect(selected, 'guardian');
+      expect(find.text('Guardian is unavailable'), findsOneWidget);
+      expect(find.text('Choose the closest role.'), findsNothing);
+    });
+
+    testWidgets('radio group disables group and individual options',
+        (tester) async {
+      var selected = 'student';
+      await tester.pumpWidget(
+        _host(
+          UiRadioGroup<String>(
+            value: selected,
+            options: const [
+              UiRadioGroupOption(value: 'student', label: 'Student'),
+              UiRadioGroupOption(
+                value: 'teacher',
+                label: 'Teacher',
+                enabled: false,
+              ),
+            ],
+            onChanged: (next) => selected = next,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Teacher'));
+      await tester.pump();
+      expect(selected, 'student');
+
+      await tester.pumpWidget(
+        _host(
+          UiRadioGroup<String>(
+            value: selected,
+            enabled: false,
+            options: const [
+              UiRadioGroupOption(value: 'student', label: 'Student'),
+              UiRadioGroupOption(value: 'teacher', label: 'Teacher'),
+            ],
+            onChanged: (next) => selected = next,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Teacher'));
+      await tester.pump();
+      expect(selected, 'student');
+    });
   });
 
   group('pagination + data table', () {

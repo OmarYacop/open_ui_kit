@@ -2,8 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../components/forms/button.dart';
+import '../../components/forms/icon_button.dart';
 import '../../components/forms/input.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -17,8 +19,16 @@ class UiChatComposer extends StatefulWidget {
     this.hint = 'Message…',
     this.disabled = false,
     this.loading = false,
+    this.header,
     this.leading,
+    this.focusNode,
+    this.onChanged,
+    this.sendLabel = 'Send',
+    this.compactSendAction = false,
+    this.submitOnKeyboardAction = true,
+    this.textInputAction = TextInputAction.send,
     this.maxLines = 6,
+    this.floating = false,
   });
 
   final ValueChanged<String> onSend;
@@ -26,8 +36,19 @@ class UiChatComposer extends StatefulWidget {
   final String hint;
   final bool disabled;
   final bool loading;
+  final Widget? header;
   final Widget? leading;
+  final FocusNode? focusNode;
+  final ValueChanged<String>? onChanged;
+  final String sendLabel;
+  final bool compactSendAction;
+  final bool submitOnKeyboardAction;
+  final TextInputAction textInputAction;
   final int maxLines;
+
+  /// Removes the shared toolbar surface so the input and actions read as
+  /// independent floating islands above a page edge fade.
+  final bool floating;
 
   @override
   State<UiChatComposer> createState() => _UiChatComposerState();
@@ -61,7 +82,18 @@ class _UiChatComposerState extends State<UiChatComposer> {
     super.didUpdateWidget(old);
     if (old.controller != widget.controller) {
       old.controller?.removeListener(_update);
-      widget.controller?.addListener(_update);
+      if (old.controller == null && widget.controller != null) {
+        _own?.removeListener(_update);
+        _own?.dispose();
+        _own = null;
+      }
+      if (widget.controller != null) {
+        widget.controller!.addListener(_update);
+      } else {
+        _ctrl;
+      }
+      _canSend = _ctrl.text.trim().isNotEmpty;
+      _visualLines = _estimateVisualLines();
     }
   }
 
@@ -97,46 +129,72 @@ class _UiChatComposerState extends State<UiChatComposer> {
     final c = tokens.colors;
 
     return UiBox(
-      background: c.surface,
-      border: Border(top: BorderSide(color: c.border, width: 1)),
+      background: widget.floating ? const Color(0x00000000) : c.surface,
+      border: widget.floating
+          ? null
+          : Border(top: BorderSide(color: c.border, width: 1)),
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.x3,
         vertical: tokens.spacing.x2,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (widget.leading != null) ...[
-            widget.leading!,
-            SizedBox(width: tokens.spacing.x2),
+          if (widget.header != null) ...[
+            widget.header!,
+            SizedBox(height: tokens.spacing.x2),
           ],
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth != _inputWidth) {
-                  _inputWidth = constraints.maxWidth;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) _update();
-                  });
-                }
-                return UiInput(
-                  controller: _ctrl,
-                  hint: widget.hint,
-                  enabled: !widget.disabled,
-                  maxLines: widget.maxLines,
-                  minLines: _visualLines,
-                  onSubmitted: (_) => _submit(),
-                  textInputAction: TextInputAction.send,
-                );
-              },
-            ),
-          ),
-          SizedBox(width: tokens.spacing.x2),
-          UiButton(
-            label: 'Send',
-            intent: UiIntent.primary,
-            loading: widget.loading,
-            onPressed: widget.disabled || !_canSend ? null : _submit,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (widget.leading != null) ...[
+                widget.leading!,
+                SizedBox(width: tokens.spacing.x2),
+              ],
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth != _inputWidth) {
+                      _inputWidth = constraints.maxWidth;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) _update();
+                      });
+                    }
+                    return UiInput(
+                      controller: _ctrl,
+                      focusNode: widget.focusNode,
+                      hint: widget.hint,
+                      enabled: !widget.disabled,
+                      maxLines: widget.maxLines,
+                      minLines: _visualLines,
+                      onChanged: widget.onChanged,
+                      onSubmitted: widget.submitOnKeyboardAction
+                          ? (_) => _submit()
+                          : null,
+                      textInputAction: widget.textInputAction,
+                    );
+                  },
+                ),
+              ),
+              SizedBox(width: tokens.spacing.x2),
+              if (widget.compactSendAction)
+                UiIconButton(
+                  icon: const Icon(LucideIcons.send),
+                  semanticsLabel: widget.sendLabel,
+                  intent: UiIntent.primary,
+                  borderRadius: tokens.radius.pillAll,
+                  onPressed: widget.disabled || widget.loading || !_canSend
+                      ? null
+                      : _submit,
+                )
+              else
+                UiButton(
+                  label: widget.sendLabel,
+                  intent: UiIntent.primary,
+                  loading: widget.loading,
+                  onPressed: widget.disabled || !_canSend ? null : _submit,
+                ),
+            ],
           ),
         ],
       ),

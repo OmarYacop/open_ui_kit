@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'ui_navigation_transition.dart';
 
@@ -16,7 +17,8 @@ class UiNavigationStack extends StatelessWidget {
     required this.index,
     required this.children,
     this.transitionStyle = UiNavigationTransitionStyle.softShift,
-    this.duration,
+    this.duration = UiMotionDuration.standard,
+    this.reverseDuration = UiMotionDuration.fast,
   }) : assert(
           children.length > 0,
           'UiNavigationStack requires at least one child',
@@ -26,17 +28,16 @@ class UiNavigationStack extends StatelessWidget {
   final List<Widget> children;
   final UiNavigationTransitionStyle transitionStyle;
 
-  /// Override for the swap duration. When null, the ambient
-  /// `UiMotionTokens.standard` is used.
-  final Duration? duration;
+  final UiMotionDuration duration;
+  final UiMotionDuration reverseDuration;
 
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final i = index.clamp(0, children.length - 1);
     return AnimatedSwitcher(
-      duration: duration ?? tokens.motion.standard,
-      reverseDuration: duration ?? tokens.motion.fast,
+      duration: duration.resolve(context),
+      reverseDuration: reverseDuration.resolve(context),
       switchInCurve: tokens.motion.standardCurve,
       switchOutCurve: tokens.motion.standardCurve,
       transitionBuilder: (child, animation) {

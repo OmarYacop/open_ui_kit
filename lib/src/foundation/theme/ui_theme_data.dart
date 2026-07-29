@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../motion/ui_motion_tokens.dart';
+import '../effects/ui_effects_tokens.dart';
 import '../tokens/ui_color_tokens.dart';
 import '../tokens/ui_radius_tokens.dart';
 import '../tokens/ui_shadow_tokens.dart';
@@ -24,6 +25,7 @@ class UiThemeData {
     UiShadowTokens? shadows,
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
+    UiEffectsTokens? effects,
   }) {
     final tokens = UiThemeTokens(
       colors: colors ?? UiColorTokens.light,
@@ -32,6 +34,7 @@ class UiThemeData {
       shadows: shadows ?? UiShadowTokens.standard,
       typography: typography ?? UiTypographyTokens.standard,
       motion: motion ?? UiMotionTokens.defaults,
+      effects: effects ?? UiEffectsTokens.adaptive,
       brightness: Brightness.light,
     );
     return _build(tokens);
@@ -45,6 +48,7 @@ class UiThemeData {
     UiShadowTokens? shadows,
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
+    UiEffectsTokens? effects,
   }) {
     final tokens = UiThemeTokens(
       colors: colors ?? UiColorTokens.dark,
@@ -53,6 +57,7 @@ class UiThemeData {
       shadows: shadows ?? UiShadowTokens.standard,
       typography: typography ?? UiTypographyTokens.standard,
       motion: motion ?? UiMotionTokens.defaults,
+      effects: effects ?? UiEffectsTokens.adaptive,
       brightness: Brightness.dark,
     );
     return _build(tokens);
@@ -72,6 +77,7 @@ class UiThemeData {
     UiShadowTokens? shadows,
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
+    UiEffectsTokens? effects,
   }) {
     final colors = brand.colorTokens(brightness);
     return brightness == Brightness.dark
@@ -82,6 +88,7 @@ class UiThemeData {
             shadows: shadows,
             typography: typography,
             motion: motion,
+            effects: effects,
           )
         : light(
             colors: colors,
@@ -90,6 +97,7 @@ class UiThemeData {
             shadows: shadows,
             typography: typography,
             motion: motion,
+            effects: effects,
           );
   }
 

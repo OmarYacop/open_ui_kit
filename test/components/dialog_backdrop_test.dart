@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) => MaterialApp(
-      theme: UiThemeData.light(),
+      theme: UiThemeData.light(effects: UiEffectsTokens.full),
       home: Scaffold(body: child),
     );
 
@@ -114,6 +114,37 @@ void main() {
         tester.getTopLeft(find.text('Cancel')).dy,
         tester.getTopLeft(find.text('Delete')).dy,
       );
+    });
+
+    testWidgets('alert dialog stacks full-width actions on compact screens', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 360,
+            child: UiAlertDialog(
+              title: 'Delete account',
+              confirmLabel: 'Delete',
+              onConfirm: () {},
+              onCancel: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('ui-alert-dialog-actions-stacked')),
+        findsOneWidget,
+      );
+      final cancelRect = tester.getRect(
+        find.ancestor(of: find.text('Cancel'), matching: find.byType(UiButton)),
+      );
+      final confirmRect = tester.getRect(
+        find.ancestor(of: find.text('Delete'), matching: find.byType(UiButton)),
+      );
+      expect(confirmRect.top, lessThan(cancelRect.top));
+      expect(confirmRect.width, closeTo(cancelRect.width, 0.1));
     });
 
     testWidgets(

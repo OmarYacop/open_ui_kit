@@ -4,9 +4,9 @@ import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'ui_picker_models.dart';
-import 'ui_time_picker.dart';
+import 'ui_time_grid_picker.dart';
 
-/// Pair of [UiTimePicker]s for a start/end time range.
+/// Pair of [UiTimeGridPicker]s for a start/end time range.
 class UiTimeRangePicker extends StatefulWidget {
   const UiTimeRangePicker({
     super.key,
@@ -50,10 +50,12 @@ class _UiTimeRangePickerState extends State<UiTimeRangePicker> {
           child: UiText('Start', variant: UiTextVariant.label),
         ),
         SizedBox(height: tokens.spacing.x1),
-        UiTimePicker(
+        UiTimeGridPicker(
           value: _start,
           minuteStep: widget.minuteStep,
           semanticsPrefix: 'Start time',
+          showBorder: false,
+          boxShadow: const [],
           onChanged: (v) {
             setState(() => _start = v);
             _emit();
@@ -67,10 +69,12 @@ class _UiTimeRangePickerState extends State<UiTimeRangePicker> {
           child: UiText('End', variant: UiTextVariant.label),
         ),
         SizedBox(height: tokens.spacing.x1),
-        UiTimePicker(
+        UiTimeGridPicker(
           value: _end,
           minuteStep: widget.minuteStep,
           semanticsPrefix: 'End time',
+          showBorder: false,
+          boxShadow: const [],
           onChanged: (v) {
             setState(() => _end = v);
             _emit();

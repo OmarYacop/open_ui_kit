@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import '../theme/ui_theme_extensions.dart';
+import '../layout/ui_keyboard_geometry.dart';
 
 /// Geometry shared by anchored floating surfaces such as selects,
 /// comboboxes, and menus.
@@ -61,7 +62,7 @@ UiAnchoredOverlayGeometry? resolveUiAnchoredOverlayGeometry({
   final topLimit = (media?.padding.top ?? 0) + boundaryMargin;
   final bottomLimit = overlayBox.size.height -
       (media?.padding.bottom ?? 0) -
-      (media?.viewInsets.bottom ?? 0) -
+      UiKeyboardGeometry.currentInsetOf(overlay.context) -
       boundaryMargin;
   final leftLimit = (media?.padding.left ?? 0) + boundaryMargin;
   final rightLimit =

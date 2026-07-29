@@ -7,14 +7,21 @@ import 'ui_navigation_transition.dart';
 /// Visual treatment for the navigation surface.
 enum UiNavigationSurface {
   /// Platform-adaptive default:
-  /// - iOS: [blurred]
+  /// - iOS: [edgeFade]
   /// - others: [solid]
   adaptive,
 
   /// Opaque surface color — no blur, sharp edge.
   solid,
 
-  /// Translucent tint + `BackdropFilter` blur (iOS-style glass).
+  /// Surface-color gradient that lets scrolling content recede below chrome
+  /// without live backdrop sampling.
+  edgeFade,
+
+  /// Compatibility alias for the former iOS backdrop blur treatment.
+  ///
+  /// This now renders the same inexpensive gradient as [edgeFade].
+  @Deprecated('Use UiNavigationSurface.edgeFade.')
   blurred,
 
   /// Fully transparent; lets the page content paint through.
@@ -34,15 +41,18 @@ class UiNavigationSpec {
   const UiNavigationSpec({
     required this.title,
     this.subtitle,
+    this.compactTitle,
+    this.showCompactTitle = true,
     this.brand,
     this.leading,
     this.back,
     this.actions = const <Widget>[],
+    this.actionsFollowTitleCollapse = false,
     this.heroTag,
     this.largeTitle = true,
     this.surface = UiNavigationSurface.adaptive,
     this.blurSigma = 14,
-    this.showDivider = true,
+    this.showDivider = false,
     this.transitionStyle = UiNavigationTransitionStyle.softShift,
     this.animationGroupId,
   });
@@ -53,6 +63,14 @@ class UiNavigationSpec {
   /// Secondary line under the large title. Fades out first as the user
   /// collapses the header.
   final String? subtitle;
+
+  /// Optional title used only by the centered, collapsed navigation row.
+  ///
+  /// Defaults to [title].
+  final String? compactTitle;
+
+  /// Whether the collapsed navigation row shows a centered title.
+  final bool showCompactTitle;
 
   /// Optional brand runtime config. When provided, navigation bars can
   /// resolve `brand.logo`/`brand.darkLogo` for the active brightness.
@@ -70,6 +88,14 @@ class UiNavigationSpec {
   /// Trailing action cluster. Rendered right-to-left.
   final List<Widget> actions;
 
+  /// Keeps [actions] end-aligned while their vertical position follows the
+  /// large title into the compact navigation row.
+  ///
+  /// The actions do not fade or move horizontally with the title. They begin
+  /// at the large title's Y level, travel upward as it collapses, and then pin
+  /// at the end of the compact bar.
+  final bool actionsFollowTitleCollapse;
+
   /// Shared-element tag when pushing between pages with matching content.
   final Object? heroTag;
 
@@ -80,13 +106,15 @@ class UiNavigationSpec {
   /// Visual treatment for the bar surface.
   final UiNavigationSurface surface;
 
-  /// Maximum BackdropFilter blur radius when collapsed. `0` disables the
-  /// blur layer even when [surface] resolves to
-  /// [UiNavigationSurface.blurred].
+  /// Legacy compatibility switch. `0` disables the edge fade when [surface]
+  /// resolves to [UiNavigationSurface.blurred] or
+  /// [UiNavigationSurface.edgeFade].
+  @Deprecated(
+      'Live navigation blur was replaced by UiNavigationSurface.edgeFade.')
   final double blurSigma;
 
   /// Whether to paint a bottom divider under the bar once content scrolls
-  /// behind it. Set this to `false` when blur and tint provide enough
+  /// behind it. Set this to `false` when the edge fade provides enough
   /// separation from scrolling content.
   final bool showDivider;
 
@@ -101,10 +129,13 @@ class UiNavigationSpec {
   UiNavigationSpec copyWith({
     String? title,
     String? subtitle,
+    String? compactTitle,
+    bool? showCompactTitle,
     UiBrand? brand,
     Widget? leading,
     UiNavigationBackConfig? back,
     List<Widget>? actions,
+    bool? actionsFollowTitleCollapse,
     Object? heroTag,
     bool? largeTitle,
     UiNavigationSurface? surface,
@@ -116,10 +147,14 @@ class UiNavigationSpec {
     return UiNavigationSpec(
       title: title ?? this.title,
       subtitle: subtitle ?? this.subtitle,
+      compactTitle: compactTitle ?? this.compactTitle,
+      showCompactTitle: showCompactTitle ?? this.showCompactTitle,
       brand: brand ?? this.brand,
       leading: leading ?? this.leading,
       back: back ?? this.back,
       actions: actions ?? this.actions,
+      actionsFollowTitleCollapse:
+          actionsFollowTitleCollapse ?? this.actionsFollowTitleCollapse,
       heroTag: heroTag ?? this.heroTag,
       largeTitle: largeTitle ?? this.largeTitle,
       surface: surface ?? this.surface,
@@ -136,10 +171,13 @@ class UiNavigationSpec {
     return other is UiNavigationSpec &&
         other.title == title &&
         other.subtitle == subtitle &&
+        other.compactTitle == compactTitle &&
+        other.showCompactTitle == showCompactTitle &&
         other.brand == brand &&
         other.leading == leading &&
         other.back == back &&
         _listEq(other.actions, actions) &&
+        other.actionsFollowTitleCollapse == actionsFollowTitleCollapse &&
         other.heroTag == heroTag &&
         other.largeTitle == largeTitle &&
         other.surface == surface &&
@@ -153,10 +191,13 @@ class UiNavigationSpec {
   int get hashCode => Object.hash(
         title,
         subtitle,
+        compactTitle,
+        showCompactTitle,
         brand,
         leading,
         back,
         Object.hashAll(actions),
+        actionsFollowTitleCollapse,
         heroTag,
         largeTitle,
         surface,

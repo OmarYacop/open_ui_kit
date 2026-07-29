@@ -7,6 +7,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
+import '../../foundation/motion/ui_motion_spec.dart';
+import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Lifecycle states shared by [UiRefresher] and [UiSliverRefresher].
@@ -138,9 +140,9 @@ class UiRefresher extends StatefulWidget {
     this.edgeOffset = 0,
     this.maxDragExtent,
     this.dragResistance = 0.55,
-    this.settleDuration,
+    this.settleDuration = UiMotionDuration.fast,
     this.feedbackDuration,
-    this.dismissDuration,
+    this.dismissDuration = UiMotionDuration.standard,
   })  : assert(triggerDistance > 0),
         assert(indicatorExtent > 0),
         assert(edgeOffset >= 0),
@@ -168,10 +170,12 @@ class UiRefresher extends StatefulWidget {
   /// Resistance applied when clamping physics report rejected overscroll.
   final double dragResistance;
 
-  /// Optional motion overrides. When omitted, ambient motion tokens are used.
-  final Duration? settleDuration;
+  final UiMotionDuration settleDuration;
+
+  /// How long completion/error feedback remains readable. This is a content
+  /// hold, not animation timing, so it intentionally remains a [Duration].
   final Duration? feedbackDuration;
-  final Duration? dismissDuration;
+  final UiMotionDuration dismissDuration;
 
   double _effectiveEdgeOffset(BuildContext context) {
     return MediaQuery.paddingOf(context).top + edgeOffset;
@@ -359,10 +363,7 @@ class _UiRefresherState extends State<UiRefresher>
     _error = null;
     _setStatus(UiRefreshStatus.refreshing);
 
-    final settle = widget.settleDuration ??
-        (mounted
-            ? UiThemeTokens.of(context).motion.fast
-            : const Duration(milliseconds: 120));
+    final settle = widget.settleDuration.resolve(context);
     unawaited(
       _animateExtentTo(widget.triggerDistance, settle),
     );
@@ -394,7 +395,7 @@ class _UiRefresherState extends State<UiRefresher>
 
     if (mounted) {
       final feedback =
-          widget.feedbackDuration ?? UiThemeTokens.of(context).motion.slow;
+          widget.feedbackDuration ?? UiThemeTokens.motionOf(context).slow;
       if (!_animationsDisabled && feedback > Duration.zero) {
         await Future<void>.delayed(feedback);
       }
@@ -406,8 +407,7 @@ class _UiRefresherState extends State<UiRefresher>
 
   Future<void> _dismissToIdle() async {
     if (!mounted) return;
-    final duration =
-        widget.dismissDuration ?? UiThemeTokens.of(context).motion.standard;
+    final duration = widget.dismissDuration.resolve(context);
     await _animateExtentTo(0, duration);
     if (!mounted) return;
     _error = null;
@@ -415,7 +415,7 @@ class _UiRefresherState extends State<UiRefresher>
   }
 
   bool get _animationsDisabled =>
-      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
   Future<void> _animateExtentTo(double target, Duration duration) async {
     if (!mounted) return;
@@ -429,7 +429,7 @@ class _UiRefresherState extends State<UiRefresher>
     _extentAnimation = Tween<double>(begin: _pulledExtent, end: target).animate(
       CurvedAnimation(
         parent: _motionController,
-        curve: UiThemeTokens.of(context).motion.standardCurve,
+        curve: UiThemeTokens.motionOf(context).standardCurve,
       ),
     );
     try {
@@ -627,7 +627,7 @@ class _UiRefreshOverlay extends StatelessWidget {
     final visible = details.status != UiRefreshStatus.idle;
     final tokens = UiThemeTokens.of(context);
     final animationsDisabled =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final reveal = Curves.easeOutCubic.transform(details.progress);
     final translateY = -indicatorExtent +
         edgeOffset +
@@ -638,18 +638,22 @@ class _UiRefreshOverlay extends StatelessWidget {
       start: 0,
       end: 0,
       height: indicatorExtent + edgeOffset + tokens.spacing.x2,
-      child: IgnorePointer(
-        child: Transform.translate(
-          offset: Offset(0, translateY),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: AnimatedOpacity(
-              opacity: visible ? 1 : 0,
-              duration: animationsDisabled ? Duration.zero : tokens.motion.fast,
-              curve: tokens.motion.standardCurve,
-              child: _RefreshSemantics(
-                details: details,
-                child: indicatorBuilder(context, details),
+      child: UiLayeredOverlayPortal(
+        layer: UiOverlayLayer.systemFeedback,
+        child: IgnorePointer(
+          child: Transform.translate(
+            offset: Offset(0, translateY),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: AnimatedOpacity(
+                opacity: visible ? 1 : 0,
+                duration:
+                    animationsDisabled ? Duration.zero : tokens.motion.fast,
+                curve: tokens.motion.standardCurve,
+                child: _RefreshSemantics(
+                  details: details,
+                  child: indicatorBuilder(context, details),
+                ),
               ),
             ),
           ),
@@ -749,10 +753,26 @@ class UiRefreshIndicator extends StatelessWidget {
       _ => tokens.colors.textPrimary,
     };
 
-    return _RefreshGlyph(
-      status: details.status,
-      progress: details.progress,
-      color: foreground,
+    return DecoratedBox(
+      key: const Key('refresh_indicator_surface'),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: tokens.colors.background.withValues(alpha: 0.96),
+            blurRadius: tokens.spacing.x3,
+            spreadRadius: tokens.spacing.x1,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.x1),
+        child: _RefreshGlyph(
+          status: details.status,
+          progress: details.progress,
+          color: foreground,
+        ),
+      ),
     );
   }
 }
@@ -791,12 +811,13 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
   );
   late final AnimationController _complete = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 360),
+    duration: Duration.zero,
   );
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _complete.duration = UiThemeTokens.motionOf(context).slow;
     _syncAnimation();
   }
 
@@ -808,7 +829,7 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
 
   void _syncAnimation() {
     final animationsDisabled =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     if (widget.status == UiRefreshStatus.refreshing && !animationsDisabled) {
       _spin.repeat();
     } else {

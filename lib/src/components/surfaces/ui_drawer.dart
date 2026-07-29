@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/layout/layout.dart';
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/motion/ui_stacked_motion.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
@@ -703,10 +704,9 @@ class UiDrawerScope {
     final effectiveBlurBackdrop =
         blurBackdrop ?? variant != UiDrawerVariant.standard;
     final navigator = Navigator.of(context, rootNavigator: true);
-    final motion = tokens.motion;
-    final drawerTransitionDuration = motion.standard == Duration.zero
-        ? Duration.zero
-        : UiStackedMotion.drawerDuration;
+    final drawerTransitionDuration = UiStackedMotion.drawerDuration.resolve(
+      context,
+    );
 
     final capturedThemes = InheritedTheme.capture(
       from: context,
@@ -1201,13 +1201,10 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
     final activeDragProgress = drag?.id == entry.id ? drag!.progress : 0.0;
     final dragControlsDepth = draggedIndex > index;
     final depthDragProgress = dragControlsDepth ? drag!.progress : 0.0;
-    final motion = UiThemeTokens.of(context).motion;
+    final motion = UiThemeTokens.motionOf(context);
     final drawerCurve = motion.standard == Duration.zero
         ? motion.standardCurve
         : UiStackedMotion.drawerCurve;
-    final drawerStackDuration = motion.standard == Duration.zero
-        ? Duration.zero
-        : UiStackedMotion.drawerStackDuration;
     final curved = CurvedAnimation(
       parent: entry.animation,
       curve: drawerCurve,
@@ -1235,7 +1232,9 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
           depth: depthValue,
           stackDirection: direction,
           depthOffsetStep: depthOffsetStep,
-          duration: dragControlsDepth ? Duration.zero : drawerStackDuration,
+          duration: dragControlsDepth
+              ? UiMotionDuration.instant
+              : UiStackedMotion.drawerStackDuration,
           curve: drawerCurve,
           scaleAlignment: isBottom
               ? Alignment.bottomCenter
@@ -1428,9 +1427,10 @@ class _DrawerBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget backdrop = ColoredBox(color: color);
-    if (blur) {
+    final blurSigma = UiThemeTokens.effectsOf(context).scaleBlur(12);
+    if (blur && blurSigma > 0) {
       backdrop = BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
         child: backdrop,
       );
     }

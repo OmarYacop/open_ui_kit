@@ -43,6 +43,36 @@ Future<void> _pull(
 }
 
 void main() {
+  testWidgets('default refresh indicator has a blending clearance shadow', (
+    tester,
+  ) async {
+    const details = UiRefreshIndicatorDetails(
+      status: UiRefreshStatus.refreshing,
+      progress: 1,
+      pulledExtent: 72,
+      triggerDistance: 72,
+    );
+
+    await tester.pumpWidget(
+      const UiApp(
+        mode: UiThemeMode.light,
+        home: MediaQuery(
+          data: MediaQueryData(size: Size(800, 600)),
+          child: Center(child: UiRefreshIndicator(details: details)),
+        ),
+      ),
+    );
+
+    final decorated = tester.widget<DecoratedBox>(
+      find.byKey(const Key('refresh_indicator_surface')),
+    );
+    final decoration = decorated.decoration as BoxDecoration;
+    expect(decoration.color, isNull);
+    expect(decoration.border, isNull);
+    expect(decoration.shape, BoxShape.circle);
+    expect(decoration.boxShadow, isNotEmpty);
+  });
+
   group('UiRefresher', () {
     testWidgets('disposes safely without prior pull interaction',
         (tester) async {

@@ -8,11 +8,11 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/overlay/overlay.dart';
 import '../../foundation/primitives/ui_box.dart';
-import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiButtonMetrics, UiSize;
+import 'input.dart';
 import 'select.dart'
     show
         UiSelectOption,
@@ -79,6 +79,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   StateSetter? _overlaySetState;
   bool _openAbove = false;
   bool _isDisposing = false;
+  bool _committingSelection = false;
   double _menuWidth = 200;
   double _menuMaxHeight = 280;
   double _horizontalOffset = 0;
@@ -127,7 +128,17 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   @override
   void initState() {
     super.initState();
+    _queryController.text = _selected?.label ?? '';
     _queryController.addListener(_handleQueryChange);
+    _searchFocusNode.addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant UiCombobox<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_searchFocusNode.hasFocus && widget.value != oldWidget.value) {
+      _queryController.text = _selected?.label ?? '';
+    }
   }
 
   @override
@@ -135,6 +146,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     _isDisposing = true;
     _hide(notify: false);
     _queryController.removeListener(_handleQueryChange);
+    _searchFocusNode.removeListener(_handleFocusChange);
     _queryController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -142,6 +154,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   }
 
   void _handleQueryChange() {
+    if (mounted) setState(() {});
     if (_entry == null) return;
     _overlaySetState?.call(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -150,12 +163,15 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     });
   }
 
-  void _toggle() {
-    if (!mounted || _isDisposing) return;
-    if (_entry == null) {
+  void _handleFocusChange() {
+    if (_searchFocusNode.hasFocus) {
+      _queryController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _queryController.text.length,
+      );
       _show();
-    } else {
-      _hide();
+    } else if (_entry != null) {
+      _hide(restoreSelection: !_committingSelection);
     }
   }
 
@@ -163,7 +179,6 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     if (!mounted || _isDisposing || _entry != null) return;
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
-    _queryController.clear();
     _resolveOverlayPlacement(overlay);
     _entry = OverlayEntry(
       builder: (_) => StatefulBuilder(
@@ -177,21 +192,27 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _entry == null) return;
-      _searchFocusNode.requestFocus();
       _overlaySetState?.call(() {});
       _scrollToSelected();
     });
   }
 
-  void _hide({bool notify = true}) {
+  void _hide({bool notify = true, bool restoreSelection = false}) {
     _entry?.remove();
     _entry = null;
     _overlaySetState = null;
+    if (restoreSelection) {
+      _queryController.text = _selected?.label ?? '';
+    }
     if (notify && mounted && !_isDisposing) setState(() {});
   }
 
   void _pick(UiSelectOption<T> option) {
     widget.onChanged?.call(option.value);
+    _queryController.text = option.label;
+    _committingSelection = true;
+    _searchFocusNode.unfocus();
+    _committingSelection = false;
     _hide();
   }
 
@@ -256,48 +277,36 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
                   border: Border.all(color: c.border),
                   borderRadius: tokens.radius.mdAll,
                   boxShadow: tokens.shadows.md,
-                  padding: EdgeInsets.all(tokens.spacing.x2),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _ComboboxSearchField(
-                        key: const ValueKey<String>('ui-combobox-search'),
-                        controller: _queryController,
-                        focusNode: _searchFocusNode,
-                        hint: widget.searchHint,
-                      ),
-                      SizedBox(height: tokens.spacing.x2),
-                      Flexible(
-                        child: indexes.isEmpty
-                            ? Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: tokens.spacing.x3,
-                                  vertical: tokens.spacing.x4,
-                                ),
-                                child: UiText(
-                                  widget.emptyText,
-                                  variant: UiTextVariant.body,
-                                  tone: UiTextTone.muted,
-                                ),
-                              )
-                            : ListView.separated(
-                                controller: _scrollController,
-                                primary: false,
-                                scrollCacheExtent: ScrollCacheExtent.pixels(
-                                  rowCacheExtent,
-                                ),
-                                itemCount: indexes.length,
-                                separatorBuilder: (_, __) =>
-                                    SizedBox(height: tokens.spacing.x1),
-                                itemBuilder: (context, i) {
-                                  final option = widget.options[indexes[i]];
-                                  return _buildRow(option);
-                                },
-                              ),
-                      ),
-                    ],
-                  ),
+                  padding: EdgeInsets.all(tokens.spacing.x1),
+                  child: indexes.isEmpty
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.spacing.x3,
+                            vertical: tokens.spacing.x4,
+                          ),
+                          child: UiText(
+                            widget.emptyText,
+                            variant: UiTextVariant.body,
+                            tone: UiTextTone.muted,
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: _scrollController,
+                          primary: false,
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          scrollCacheExtent: ScrollCacheExtent.pixels(
+                            rowCacheExtent,
+                          ),
+                          itemCount: indexes.length,
+                          separatorBuilder: (_, __) =>
+                              SizedBox(height: tokens.spacing.x1),
+                          itemBuilder: (context, i) {
+                            final option = widget.options[indexes[i]];
+                            return _buildRow(option);
+                          },
+                        ),
                 ),
               ),
             ),
@@ -309,11 +318,9 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
 
   void _handleOverlayPointerDown(PointerDownEvent event) {
     final targetRect = _targetGlobalRect;
-    if (targetRect == null || targetRect.contains(event.position)) {
-      _hide();
-      return;
-    }
-    _hide();
+    if (targetRect != null && targetRect.contains(event.position)) return;
+    _searchFocusNode.unfocus();
+    _hide(restoreSelection: true);
   }
 
   Widget _buildRow(UiSelectOption<T> option) {
@@ -385,14 +392,19 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
               ],
             );
 
-        return UiBox(
-          background: background,
-          borderRadius: tokens.radius.mdAll,
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.x3,
-            vertical: tokens.spacing.x2,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: UiButtonMetrics.minHeight(UiSize.sm),
           ),
-          child: content,
+          child: UiBox(
+            background: background,
+            borderRadius: tokens.radius.smAll,
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.x3,
+              vertical: tokens.spacing.x2,
+            ),
+            child: content,
+          ),
         );
       },
     );
@@ -401,9 +413,13 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final c = tokens.colors;
     final open = _entry != null;
     final selected = _selected;
+    final indexes = _visibleIndexes;
+    final preview =
+        _queryController.text.trim().isNotEmpty && indexes.isNotEmpty
+            ? widget.options[indexes.first].leading
+            : selected?.leading;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -418,85 +434,43 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
         CompositedTransformTarget(
           key: _targetKey,
           link: _link,
-          child: UiPressable(
-            enabled: !_disabled,
-            onPressed: _toggle,
-            semanticsLabel: widget.label ?? widget.hint,
-            builder: (context, state, _) {
-              final triggerRadius = tokens.radius.mdAll;
-              return UiFocusRing(
-                visible: state.focused || open,
-                borderRadius: triggerRadius,
-                child: AnimatedContainer(
-                  duration: tokens.motion.fast,
-                  curve: tokens.motion.standardCurve,
-                  decoration: BoxDecoration(
-                    color: _disabled ? c.muted : c.surface,
-                    border: Border.all(color: open ? c.ring : c.input),
-                    borderRadius: triggerRadius,
-                  ),
-                  constraints: BoxConstraints(
-                    minHeight: UiButtonMetrics.minHeight(widget.size),
-                    minWidth:
-                        widget.shrinkWrap && open ? _triggerWidth ?? 0 : 0,
-                  ),
-                  padding: _paddingFor(widget.size, tokens),
-                  child: Row(
-                    mainAxisSize:
-                        widget.shrinkWrap ? MainAxisSize.min : MainAxisSize.max,
-                    children: [
-                      Flexible(
-                        fit: widget.shrinkWrap ? FlexFit.loose : FlexFit.tight,
-                        child: widget.valueBuilder != null
-                            ? widget.valueBuilder!(context, selected)
-                            : UiText(
-                                selected?.label ?? widget.hint ?? '',
-                                variant: UiTextVariant.body,
-                                tone: selected == null
-                                    ? UiTextTone.muted
-                                    : UiTextTone.primary,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                      ),
-                      SizedBox(width: tokens.spacing.x2),
-                      AnimatedRotation(
-                        turns: open ? 0.5 : 0,
-                        duration: tokens.motion.fast,
-                        child: Icon(
-                          LucideIcons.chevronDown,
-                          size: 16,
-                          color: c.mutedForeground,
-                        ),
-                      ),
-                    ],
-                  ),
+          child: SizedBox(
+            key: const ValueKey<String>('ui-combobox-trigger'),
+            width: widget.shrinkWrap ? _triggerWidth : null,
+            child: UiInput(
+              controller: _queryController,
+              focusNode: _searchFocusNode,
+              enabled: !_disabled,
+              hint: widget.searchHint.isEmpty ? widget.hint : widget.searchHint,
+              size: widget.size,
+              leading: preview,
+              trailing: AnimatedRotation(
+                turns: open ? 0.5 : 0,
+                duration: tokens.motion.fast,
+                child: Icon(
+                  LucideIcons.chevronDown,
+                  size: 16,
+                  color: tokens.colors.mutedForeground,
                 ),
-              );
-            },
+              ),
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) {
+                if (indexes.isNotEmpty) {
+                  _pick(widget.options[indexes.first]);
+                }
+              },
+            ),
           ),
         ),
       ],
     );
   }
 
-  static EdgeInsets _paddingFor(UiSize size, UiThemeTokens t) {
-    switch (size) {
-      case UiSize.sm:
-      case UiSize.md:
-        return EdgeInsets.symmetric(horizontal: t.spacing.x3);
-      case UiSize.lg:
-        return EdgeInsets.symmetric(horizontal: t.spacing.x4);
-    }
-  }
-
   void _resolveOverlayPlacement(OverlayState overlay) {
     final tokens = UiThemeTokens.of(context);
     final rowHeight = _estimatedRowHeight();
     final visibleRows = math.min(widget.options.length, 7);
-    final desiredHeight = UiButtonMetrics.minHeight(UiSize.md) +
-        tokens.spacing.x2 +
-        tokens.spacing.x2 * 2 +
+    final desiredHeight = tokens.spacing.x1 * 2 +
         visibleRows * rowHeight +
         math.max(0, visibleRows - 1) * tokens.spacing.x1;
     final maxAllowed = math.min(360.0, desiredHeight);
@@ -523,12 +497,8 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
       final idx = _selectedVisibleIndex;
       if (idx >= 0) {
         final rowStride = rowHeight + tokens.spacing.x1;
-        final searchBlockHeight =
-            UiButtonMetrics.minHeight(UiSize.md) + tokens.spacing.x2;
-        final rowCenterOffset = tokens.spacing.x2 +
-            searchBlockHeight +
-            idx * rowStride +
-            rowHeight / 2;
+        final rowCenterOffset =
+            tokens.spacing.x1 + idx * rowStride + rowHeight / 2;
         final baseTop = geometry.openAbove
             ? geometry.targetOverlayRect.top - geometry.gap - geometry.maxHeight
             : geometry.targetOverlayRect.bottom + geometry.gap;
@@ -543,67 +513,6 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
         _anchorOffset = shift;
       }
     }
-  }
-}
-
-class _ComboboxSearchField extends StatelessWidget {
-  const _ComboboxSearchField({
-    super.key,
-    required this.controller,
-    required this.focusNode,
-    required this.hint,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String hint;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = UiThemeTokens.of(context);
-    final c = tokens.colors;
-    return UiBox(
-      background: c.surface,
-      border: Border.all(color: focusNode.hasFocus ? c.ring : c.input),
-      borderRadius: tokens.radius.mdAll,
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x3),
-      height: UiButtonMetrics.minHeight(UiSize.md),
-      child: Row(
-        children: [
-          Icon(LucideIcons.search, size: 16, color: c.mutedForeground),
-          SizedBox(width: tokens.spacing.x2),
-          Expanded(
-            child: Stack(
-              alignment: Alignment.centerLeft,
-              children: [
-                if (controller.text.isEmpty)
-                  IgnorePointer(
-                    child: UiText(
-                      hint,
-                      variant: UiTextVariant.body,
-                      tone: UiTextTone.muted,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                EditableText(
-                  controller: controller,
-                  focusNode: focusNode,
-                  style: tokens.typography.body.copyWith(color: c.foreground),
-                  cursorColor: c.primary,
-                  backgroundCursorColor: c.input,
-                  keyboardType: TextInputType.text,
-                  textInputAction: TextInputAction.search,
-                  maxLines: 1,
-                  showCursor: false,
-                  enableInteractiveSelection: false,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

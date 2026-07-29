@@ -5,7 +5,7 @@ import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'ui_date_picker.dart';
 import 'ui_picker_models.dart';
-import 'ui_time_picker.dart';
+import 'ui_time_grid_picker.dart';
 
 /// Combined date + time picker. Emits a single [DateTime] on change.
 class UiDateTimePicker extends StatefulWidget {
@@ -68,6 +68,7 @@ class _UiDateTimePickerState extends State<UiDateTimePicker> {
             min: widget.min,
             max: widget.max,
             disabled: widget.disabled,
+            showBorder: false,
             onChanged: (d) {
               setState(() => _date = DateTime(d.year, d.month, d.day));
               _emit();
@@ -82,10 +83,12 @@ class _UiDateTimePickerState extends State<UiDateTimePicker> {
           child: UiText('Time', variant: UiTextVariant.label),
         ),
         SizedBox(height: tokens.spacing.x1),
-        UiTimePicker(
+        UiTimeGridPicker(
           value: _time,
           minuteStep: widget.minuteStep,
           semanticsPrefix: 'Time',
+          showBorder: false,
+          boxShadow: const [],
           onChanged: (t) {
             setState(() => _time = t);
             _emit();

@@ -33,7 +33,154 @@ Tokens live in `lib/src/foundation/tokens` and are aggregated into the
 `UiThemeTokens` theme extension.
 
 Motion timing, easing, and reduced-motion behavior are documented in
-[`doc/motion.md`](doc/motion.md).
+[`doc/motion.md`](https://github.com/OmarYacop/open_ui_kit/blob/main/doc/motion.md).
+
+### Platform visual-effects budgets
+
+Open UI Kit defaults to reduced-cost effects on Android and full glass effects
+on iOS and macOS. The adaptive policy also removes backdrop filters when the
+user requests reduced motion or accessible navigation.
+
+Override the app-wide policy through the theme:
+
+```dart
+MaterialApp(
+  theme: UiThemeData.light(effects: UiEffectsTokens.reduced),
+  darkTheme: UiThemeData.dark(effects: UiEffectsTokens.reduced),
+);
+```
+
+Use `UiEffectsTokens.full` to force the complete treatment, or construct
+`UiEffectsTokens` to tune blur availability and scaling. Component options
+such as `blurred` and `blurBackdrop` remain local opt-outs; the theme policy is
+the upper performance limit.
+
+For build-time exclusion and tuning, pass compilation declarations to every
+`flutter run` or `flutter build` command:
+
+```bash
+# Android: remove BackdropFilter branches and use reduced effects.
+flutter build appbundle \
+  --dart-define=OPEN_UI_EFFECTS_LEVEL=reduced \
+  --dart-define=OPEN_UI_ENABLE_BACKDROP_FILTERS=false
+
+# iOS: retain the complete glass treatment.
+flutter build ipa \
+  --dart-define=OPEN_UI_EFFECTS_LEVEL=full \
+  --dart-define=OPEN_UI_ENABLE_BACKDROP_FILTERS=true
+```
+
+`OPEN_UI_BLUR_SCALE_PERCENT` optionally scales every kit-owned backdrop blur
+from `0` to `100`. Build declarations affect the whole application, including
+the package, because Flutter compiles package sources into the app binary.
+
+AI coding agents and developer assistants should also read
+[`AGENTS.md`](https://github.com/OmarYacop/open_ui_kit/blob/main/AGENTS.md) and [`doc/ai_usage_guide.md`](https://github.com/OmarYacop/open_ui_kit/blob/main/doc/ai_usage_guide.md)
+before generating UI with this package.
+
+### AI Agent Quick Start
+
+When generating app code with Open UI Kit, prefer this order:
+
+1. Import `package:open_ui_kit/open_ui_kit.dart`.
+2. Put `UiThemeData.light()` / `UiThemeData.dark()` on `MaterialApp`.
+3. Use existing `Ui*` widgets before writing custom Material controls.
+4. Resolve visual values through `UiThemeTokens.of(context)`.
+5. Keep app-specific widgets thin: compose kit components, pass callbacks,
+   and avoid hard-coded color, radius, spacing, and text-style values.
+
+Canonical choices for common UI:
+
+- Use `UiButton` for labeled actions and `UiIconButton` for icon-only actions.
+- Use experimental `UiSmartActionGroup` for inline "More" action groups when
+  the hidden actions should morph into place instead of opening a sheet. Test
+  it on the target screen before shipping or publishing the change.
+- Use experimental `UiConfirmActionGroup` for two-step save/delete confirmation
+  rows. It morphs the primary label/width into the confirm action while the
+  secondary button becomes the cancel action.
+- `UiButton()` defaults to the primary action. Use `intent: UiIntent.neutral`
+  for secondary/cancel actions.
+- Secondary and neutral buttons show a border by default. Pass
+  `showBorder: false` only when the button sits inside an already framed or
+  elevated surface.
+- Use `UiRadioGroup<T>` for grouped choices instead of arranging individual
+  radios by hand.
+- Use `UiTimePickerField` for form fields and `UiTimeGridPicker` for inline
+  drawer/sheet content. `UiTimePicker` is legacy and deprecated.
+- Use `showBorder: false` and `chromePadding: EdgeInsets.zero` on date/time
+  picker chrome when embedding inside a drawer, sheet, dialog, or card that
+  already provides the surrounding surface.
+- Use `UiSliverNavigationBar` with `UiNavigationSpec.back` for back affordances;
+  the back label adapts to available width and supports RTL icons.
+
+Minimal form example:
+
+```dart
+UiRadioGroup<String>(
+  label: 'Billing cadence',
+  value: cadence,
+  onChanged: (value) => setState(() => cadence = value),
+  options: const [
+    UiRadioGroupOption(value: 'monthly', label: 'Monthly'),
+    UiRadioGroupOption(value: 'yearly', label: 'Yearly'),
+  ],
+);
+
+UiTimePickerField(
+  label: 'Starts at',
+  value: startsAt,
+  minuteStep: 15,
+  onChanged: (value) => setState(() => startsAt = value),
+);
+```
+
+Embedded picker example:
+
+```dart
+UiDatePicker(
+  value: selectedDate,
+  onChanged: (value) => setState(() => selectedDate = value),
+  showBorder: false,
+  chromePadding: EdgeInsets.zero,
+);
+```
+
+Experimental inline actions:
+
+```dart
+UiSmartActionGroup(
+  expandedLayout: UiSmartActionGroupExpandedLayout.equal, // default
+  collapseOnAction: true, // optional; defaults to keeping the group expanded
+  actions: [
+    UiSmartActionGroupAction(
+      id: 'enter',
+      label: 'Enter',
+      onPressed: enterClass,
+    ),
+    UiSmartActionGroupAction(
+      id: 'cancel',
+      label: 'Cancel class',
+      intent: UiIntent.danger,
+      onPressed: cancelClass,
+    ),
+  ],
+);
+```
+
+Confirmation actions:
+
+```dart
+UiConfirmActionGroup(
+  actionLabel: 'Save',
+  confirmLabel: 'Confirm save',
+  secondaryLabel: 'Cancel',
+  cancelLabel: 'Keep editing',
+  onConfirm: save,
+);
+```
+
+More complete snippets live in
+[`example/lib/ai_usage_examples.dart`](https://github.com/OmarYacop/open_ui_kit/blob/main/example/lib/ai_usage_examples.dart).
 
 ### Variants
 
@@ -604,8 +751,8 @@ components remain usable in tests, web, and basic Flutter hosts.
 When replacing ad-hoc widgets with `open_ui_kit`, these mappings are useful
 starting points:
 
-- **Settings forms**: use `UiCheckbox`, `UiRadio<T>`, and
-  `UiSwitch` for boolean/single-choice inputs.
+- **Settings forms**: use `UiCheckbox`, `UiRadioGroup<T>`, `UiRadio<T>`,
+  and `UiSwitch` for boolean/single-choice inputs.
 - **Tabular pages**: use `UiDataTable` for token-driven layouts and row
   interactions.
 - **Large list pages**: add `UiPagination` for predictable page
@@ -626,6 +773,15 @@ Column(
       label: 'Email notifications',
       value: notificationsEnabled,
       onChanged: (v) => setState(() => notificationsEnabled = v),
+    ),
+    UiRadioGroup<String>(
+      label: 'Default view',
+      value: defaultView,
+      options: const [
+        UiRadioGroupOption(value: 'student', label: 'Student'),
+        UiRadioGroupOption(value: 'teacher', label: 'Teacher'),
+      ],
+      onChanged: (v) => setState(() => defaultView = v),
     ),
     UiDataTable(
       columns: const [
@@ -935,7 +1091,7 @@ collapsible.expand();     // or .collapse() / .toggle()
 collapsible.addListener(() => log(collapsible.isExpanded));
 ```
 
-**Composition.** The [header] is optional — omit it to animate a
+**Composition.** The `header` is optional — omit it to animate a
 region driven by an *external* trigger (tapping a button elsewhere
 on the screen, a menu item, etc.). When a header is provided, the
 widget wraps it in a `UiPressable`, so keyboard (Enter/Space),
@@ -1158,6 +1314,29 @@ UiTimePicker(
   minuteStep: 5,
   onChanged: (t) => setState(() => time = t),
 );
+
+UiTimePickerField(
+  label: 'Start time',
+  value: time,
+  minuteStep: 15,
+  onChanged: (t) => setState(() => time = t),
+);
+```
+
+`UiTimePicker` is deprecated. Prefer `UiTimePickerField` for form
+inputs and `UiTimeGridPicker` for inline drawer/sheet content.
+
+Picker surfaces expose outer chrome knobs such as `showBorder` and
+`chromePadding` so drawers, sheets, and cards can avoid nested framed
+surfaces:
+
+```dart
+UiDatePicker(
+  value: date,
+  showBorder: false,
+  chromePadding: EdgeInsets.zero,
+  onChanged: (d) => setState(() => date = d),
+);
 ```
 
 Ranges (`UiDateRangePicker`, `UiTimeRangePicker`, `UiDateTimeRangePicker`)
@@ -1189,6 +1368,10 @@ while keeping 32pt minimum tap targets on every cell.
 
 #### Time picker — wheel rebuild isolation
 
+`UiTimePicker` is the legacy wheel picker. It remains available for
+migration, but new surfaces should use `UiTimeGridPicker` or
+`UiTimePickerField`.
+
 `UiTimePicker` drives each wheel's active-item styling through a
 `ValueNotifier<int>` + `ValueListenableBuilder`, so a fling rebuilds
 only the one or two rows whose active/inactive state changed. The
@@ -1200,6 +1383,15 @@ devices.
 `onChanged` still fires once per snapped value during a fling, so
 host form state / dependent pickers see the full event stream — this
 is a purely internal rendering optimization.
+
+#### Time picker — compact field and grid
+
+Use `UiTimePickerField` when a form needs a compact trigger that opens
+an anchored time popover. The field renders a button-like input with a
+clock icon and opens `UiTimeGridPicker`, a column picker with hours,
+minutes, and AM/PM period options. Use `UiTimeGridPicker` directly
+inside drawers or sheets that already provide their own trigger and
+close action.
 
 ### 16. Integrating into an existing app
 

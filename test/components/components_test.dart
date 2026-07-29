@@ -21,21 +21,183 @@ Widget _reducedMotionHost(Widget child) {
   );
 }
 
+Widget _brightnessHost(Widget child, Brightness brightness) {
+  return MaterialApp(
+    theme: UiThemeData.light(),
+    builder: (context, appChild) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(platformBrightness: brightness),
+      child: appChild ?? const SizedBox.shrink(),
+    ),
+    home: Scaffold(body: Center(child: child)),
+  );
+}
+
 void _noop() {}
 
 void main() {
+  group('UiWavatar', () {
+    test('hashes seeds deterministically with the documented DJB2 variant', () {
+      expect(UiWavatar.hashSeed('ada@example.com'), 1330551142);
+      expect(UiWavatar.hashSeed('user-42'), 266928383);
+      expect(UiWavatar.hashSeed(''), 5381);
+    });
+
+    testWidgets('paints locally at the requested size', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const UiWavatar(seed: 'ada@example.com', size: 72),
+        ),
+      );
+
+      final avatarPaint = find.descendant(
+        of: find.byType(UiWavatar),
+        matching: find.byType(CustomPaint),
+      );
+      expect(avatarPaint, findsOneWidget);
+      expect(find.byType(Image), findsNothing);
+      expect(tester.getSize(avatarPaint), const Size.square(72));
+    });
+
+    testWidgets('supports circular and rounded rectangle silhouettes',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              UiWavatar(seed: 'circle'),
+              UiWavatar(
+                seed: 'rounded',
+                shape: BoxShape.rectangle,
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byType(ClipOval), findsOneWidget);
+      expect(find.byType(ClipRRect), findsOneWidget);
+    });
+
+    testWidgets('optional characteristics direct the generated recipe',
+        (tester) async {
+      Future<CustomPainter> pumpAvatar(
+        UiWavatarCharacteristics characteristics,
+      ) async {
+        await tester.pumpWidget(
+          _host(
+            UiWavatar(
+              seed: 'same-contact',
+              characteristics: characteristics,
+            ),
+          ),
+        );
+        final paint = tester.widget<CustomPaint>(
+          find.descendant(
+            of: find.byType(UiWavatar),
+            matching: find.byType(CustomPaint),
+          ),
+        );
+        return paint.painter!;
+      }
+
+      final child = await pumpAvatar(
+        const UiWavatarCharacteristics(
+          gender: UiWavatarGender.female,
+          ageGroup: UiWavatarAgeGroup.child,
+        ),
+      );
+      final adult = await pumpAvatar(
+        const UiWavatarCharacteristics(
+          gender: UiWavatarGender.male,
+          ageGroup: UiWavatarAgeGroup.adult,
+        ),
+      );
+
+      expect(adult.shouldRepaint(child), isTrue);
+    });
+
+    testWidgets(
+        'adaptive colors respond to brightness while fixed colors do not',
+        (tester) async {
+      Future<CustomPainter> painterFor(
+        Brightness brightness,
+        UiWavatarThemeMode themeMode,
+      ) async {
+        await tester.pumpWidget(
+          _brightnessHost(
+            UiWavatar(seed: 'theme-contact', themeMode: themeMode),
+            brightness,
+          ),
+        );
+        return tester
+            .widget<CustomPaint>(
+              find.descendant(
+                of: find.byType(UiWavatar),
+                matching: find.byType(CustomPaint),
+              ),
+            )
+            .painter!;
+      }
+
+      final adaptiveLight = await painterFor(
+        Brightness.light,
+        UiWavatarThemeMode.adaptive,
+      );
+      final adaptiveDark = await painterFor(
+        Brightness.dark,
+        UiWavatarThemeMode.adaptive,
+      );
+      expect(adaptiveDark.shouldRepaint(adaptiveLight), isTrue);
+
+      final fixedLight = await painterFor(
+        Brightness.light,
+        UiWavatarThemeMode.fixed,
+      );
+      final fixedDark = await painterFor(
+        Brightness.dark,
+        UiWavatarThemeMode.fixed,
+      );
+      expect(fixedDark.shouldRepaint(fixedLight), isFalse);
+    });
+
+    testWidgets('exposes an image semantic label', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        _host(
+          const UiWavatar(
+            seed: 'person-7',
+            semanticLabel: 'Profile avatar',
+          ),
+        ),
+      );
+
+      expect(
+        find.bySemanticsLabel('Profile avatar'),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+  });
+
   group('UiAvatar', () {
-    testWidgets('renders initials from a display name', (tester) async {
+    testWidgets('renders a generated avatar from a display name', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiAvatar(name: 'Ada Lovelace'),
         ),
       );
 
-      expect(find.text('AL'), findsOneWidget);
+      expect(find.byType(UiWavatar), findsOneWidget);
     });
 
-    testWidgets('renders fallback icon when no name or image is provided',
+    testWidgets('renders a generated fallback when no identity is provided',
         (tester) async {
       await tester.pumpWidget(
         _host(
@@ -43,7 +205,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.account_circle_rounded), findsOneWidget);
+      expect(find.byType(UiWavatar), findsOneWidget);
     });
 
     testWidgets('can render without a border', (tester) async {
@@ -91,9 +253,7 @@ void main() {
         ),
       );
 
-      expect(find.text('AL'), findsOneWidget);
-      expect(find.text('GH'), findsOneWidget);
-      expect(find.text('KJ'), findsNothing);
+      expect(find.byType(UiWavatar), findsNWidgets(2));
       expect(find.text('+1'), findsOneWidget);
     });
 
@@ -111,8 +271,9 @@ void main() {
         ),
       );
 
-      final first = tester.getTopLeft(find.text('AL'));
-      final second = tester.getTopLeft(find.text('GH'));
+      final avatars = find.byType(UiWavatar);
+      final first = tester.getTopLeft(avatars.at(0));
+      final second = tester.getTopLeft(avatars.at(1));
       expect(second.dx, greaterThan(first.dx));
       expect(second.dx - first.dx, lessThan(40));
     });
@@ -1473,14 +1634,19 @@ void main() {
         ),
       );
 
-      final triggerRectBefore = tester.getRect(find.text('Pick one'));
+      final triggerRectBefore = tester.getRect(
+        find.byKey(const ValueKey<String>('ui-select-trigger')),
+      );
 
       await tester.tap(find.text('Pick one'));
       await tester.pumpAndSettle();
       expect(find.text('One'), findsOneWidget);
 
-      final triggerRectOpen = tester.getRect(find.text('Pick one'));
+      final triggerRectOpen = tester.getRect(
+        find.byKey(const ValueKey<String>('ui-select-trigger')),
+      );
       expect(triggerRectOpen.width, triggerRectBefore.width);
+      expect(triggerRectOpen.height, triggerRectBefore.height);
 
       await tester.tapAt(tester.getCenter(find.text('Pick one')));
       await tester.pumpAndSettle();
@@ -1592,6 +1758,24 @@ void main() {
         twoRows.any((t) => t.style?.fontWeight == FontWeight.w600),
         isTrue,
       );
+
+      final list = tester.widget<ListView>(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('ui-select-menu')),
+          matching: find.byType(ListView),
+        ),
+      );
+      expect(list.padding, const EdgeInsets.all(4));
+
+      final optionSurfaces = tester
+          .widgetList<UiBox>(
+            find.ancestor(
+              of: find.text('One'),
+              matching: find.byType(UiBox),
+            ),
+          )
+          .where((box) => box.padding != null);
+      expect(optionSurfaces.first.borderRadius, UiRadiusTokens.standard.smAll);
     });
 
     testWidgets('large dropdown lazily builds visible option rows',
@@ -1632,11 +1816,28 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Search learner'));
+      final closedHeight = tester
+          .getSize(
+            find.byKey(const ValueKey<String>('ui-combobox-trigger')),
+          )
+          .height;
+      expect(find.byType(EditableText), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('ui-combobox-trigger')),
+      );
       await tester.pump();
 
       expect(find.byKey(const ValueKey<String>('ui-combobox-menu')),
           findsOneWidget);
+      expect(find.byType(EditableText), findsOneWidget);
+      expect(
+        tester
+            .getSize(
+              find.byKey(const ValueKey<String>('ui-combobox-trigger')),
+            )
+            .height,
+        closedHeight,
+      );
       expect(find.text('Option 0'), findsOneWidget);
       expect(find.text('Option 499'), findsNothing);
 

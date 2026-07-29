@@ -7,5 +7,6 @@ export 'ui_profile_summary.dart';
 export 'ui_settings_list.dart';
 export 'ui_dual_pane.dart';
 export 'ui_safe_viewport.dart';
+export 'ui_scroll_edge_fade.dart';
 export 'ui_surface_region.dart';
 export 'ui_system_bars.dart';

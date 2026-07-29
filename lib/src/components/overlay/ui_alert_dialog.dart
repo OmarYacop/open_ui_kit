@@ -105,22 +105,53 @@ class UiAlertDialog extends StatelessWidget {
                   ),
                 ],
                 SizedBox(height: tokens.spacing.x6),
-                Row(
-                  key: const ValueKey('ui-alert-dialog-actions'),
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    UiButton(
-                      label: cancelLabel,
-                      intent: UiIntent.ghost,
-                      onPressed: onCancel,
-                    ),
-                    SizedBox(width: tokens.spacing.x3),
-                    UiButton(
-                      label: confirmLabel,
-                      intent: confirmIntent,
-                      onPressed: onConfirm,
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final stackActions = constraints.maxWidth < 340;
+                    if (stackActions) {
+                      return Column(
+                        key: const ValueKey('ui-alert-dialog-actions-stacked'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: UiButton(
+                              label: confirmLabel,
+                              intent: confirmIntent,
+                              onPressed: onConfirm,
+                            ),
+                          ),
+                          SizedBox(height: tokens.spacing.x2),
+                          SizedBox(
+                            width: double.infinity,
+                            child: UiButton(
+                              label: cancelLabel,
+                              intent: UiIntent.neutral,
+                              onPressed: onCancel,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      key: const ValueKey('ui-alert-dialog-actions'),
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        UiButton(
+                          label: cancelLabel,
+                          intent: UiIntent.ghost,
+                          onPressed: onCancel,
+                        ),
+                        SizedBox(width: tokens.spacing.x3),
+                        UiButton(
+                          label: confirmLabel,
+                          intent: confirmIntent,
+                          onPressed: onConfirm,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -212,7 +243,7 @@ class _AlertDialogHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final motion = UiThemeTokens.of(context).motion;
+    final motion = UiThemeTokens.motionOf(context);
     final curved = CurvedAnimation(
       parent: animation,
       curve: motion.standardCurve,
@@ -248,16 +279,21 @@ class _AlertDialogBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final blurSigma = UiThemeTokens.effectsOf(context).scaleBlur(2.5);
+    Widget backdrop = ColoredBox(color: color);
+    if (blurSigma > 0) {
+      backdrop = BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: backdrop,
+      );
+    }
     // Static blur sigma, animated scrim opacity. Avoids rebuilding the
     // ImageFilter every frame during the route transition.
     return IgnorePointer(
       child: RepaintBoundary(
         child: FadeTransition(
           opacity: animation,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
-            child: ColoredBox(color: color),
-          ),
+          child: backdrop,
         ),
       ),
     );

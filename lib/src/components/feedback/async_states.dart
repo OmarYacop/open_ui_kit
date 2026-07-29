@@ -269,7 +269,7 @@ class _SpinnerState extends State<_Spinner>
 
   @override
   Widget build(BuildContext context) {
-    final color = UiThemeTokens.of(context).colors.textPrimary;
+    final color = UiThemeTokens.colorsOf(context).textPrimary;
     return SizedBox(
       width: 28,
       height: 28,
@@ -308,7 +308,7 @@ class _StaticSpinner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = UiThemeTokens.of(context).colors.textPrimary;
+    final color = UiThemeTokens.colorsOf(context).textPrimary;
     return SizedBox(
       width: 28,
       height: 28,

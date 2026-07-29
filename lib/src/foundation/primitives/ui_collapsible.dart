@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../motion/ui_motion_spec.dart';
 import '../theme/ui_theme_extensions.dart';
 import 'ui_pressable.dart';
 
@@ -58,7 +59,8 @@ class UiCollapsible extends StatefulWidget {
     this.onExpandedChanged,
     this.controller,
     this.initiallyExpanded = false,
-    this.duration,
+    this.duration = UiMotionDuration.standard,
+    this.reverseDuration = UiMotionDuration.standard,
     this.curve,
     this.semanticsLabel,
     this.maintainState = false,
@@ -93,9 +95,8 @@ class UiCollapsible extends StatefulWidget {
   /// [expanded] or [controller] is provided.
   final bool initiallyExpanded;
 
-  /// Expand/collapse animation duration. Falls back to
-  /// `theme.motion.standard` at build time.
-  final Duration? duration;
+  final UiMotionDuration duration;
+  final UiMotionDuration reverseDuration;
 
   /// Expand/collapse curve. Falls back to `theme.motion.standardCurve`.
   final Curve? curve;
@@ -142,7 +143,7 @@ class _UiCollapsibleState extends State<UiCollapsible>
         );
     _anim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 240),
+      duration: Duration.zero,
       value: _currentExpanded ? 1.0 : 0.0,
     );
     if (!_isControlled) {
@@ -182,7 +183,9 @@ class _UiCollapsibleState extends State<UiCollapsible>
     final tokens = UiThemeTokens.of(context);
     _anim.animateTo(
       expanded ? 1.0 : 0.0,
-      duration: widget.duration ?? tokens.motion.standard,
+      duration: (expanded ? widget.duration : widget.reverseDuration).resolve(
+        context,
+      ),
       curve: widget.curve ?? tokens.motion.standardCurve,
     );
   }

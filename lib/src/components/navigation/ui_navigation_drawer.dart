@@ -17,6 +17,7 @@ class UiNavigationDrawerDestination {
     this.selected = false,
     this.badge,
     this.badgeCount,
+    this.iconSize = 22,
   });
 
   final String label;
@@ -25,6 +26,7 @@ class UiNavigationDrawerDestination {
   final VoidCallback onPressed;
   final Widget? badge;
   final int? badgeCount;
+  final double iconSize;
 }
 
 /// Non-selectable command rendered by [UiNavigationDrawer].
@@ -88,12 +90,7 @@ class UiNavigationDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasFooter = footerActions.isNotEmpty || footerDestinations.isNotEmpty;
-    final itemRadius = UiDrawer.concentricContentBorderRadiusOf(
-      context,
-      side: side,
-      variant: variant,
-      inset: UiThemeTokens.of(context).spacing.x2,
-    );
+    final itemRadius = UiThemeTokens.radiusOf(context).lgAll;
 
     return UiDrawer(
       side: side,
@@ -123,6 +120,7 @@ class UiNavigationDrawer extends StatelessWidget {
                 label: destination.label,
                 icon: destination.icon,
                 badge: destination.badge ?? _badgeFor(destination.badgeCount),
+                iconSize: destination.iconSize,
                 selected: destination.selected,
                 onPressed: destination.onPressed,
                 borderRadius: itemRadius,
@@ -144,6 +142,7 @@ class UiNavigationDrawer extends StatelessWidget {
                       icon: destination.icon,
                       badge: destination.badge ??
                           _badgeFor(destination.badgeCount),
+                      iconSize: destination.iconSize,
                       selected: destination.selected,
                       onPressed: destination.onPressed,
                       borderRadius: itemRadius,
@@ -171,6 +170,7 @@ class UiNavigationDrawer extends StatelessWidget {
           label: destination.label,
           icon: destination.icon,
           badge: destination.badge ?? _badgeFor(destination.badgeCount),
+          iconSize: destination.iconSize,
           selected: destination.selected,
           onPressed: destination.onPressed,
           borderRadius: borderRadius,
@@ -192,6 +192,7 @@ class _NavigationDrawerRow extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.badge,
+    this.iconSize = 22,
     this.selected = false,
     required this.borderRadius,
   });
@@ -199,6 +200,7 @@ class _NavigationDrawerRow extends StatelessWidget {
   final String label;
   final Widget? icon;
   final Widget? badge;
+  final double iconSize;
   final bool selected;
   final VoidCallback onPressed;
   final BorderRadius borderRadius;
@@ -207,6 +209,8 @@ class _NavigationDrawerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final colors = tokens.colors;
+    final verticalInset =
+        ((38 - iconSize) / 2).clamp(1.0, tokens.spacing.x2).toDouble();
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.x1),
@@ -229,17 +233,22 @@ class _NavigationDrawerRow extends StatelessWidget {
               borderRadius: borderRadius,
               padding: EdgeInsets.symmetric(
                 horizontal: tokens.spacing.x4,
-                vertical: tokens.spacing.x2,
+                vertical: verticalInset,
               ),
               child: Row(
                 children: [
                   if (icon != null) ...[
-                    SizedBox.square(
-                      dimension: 22,
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: iconSize,
+                        minHeight: iconSize,
+                      ),
                       child: Center(
+                        widthFactor: 1,
+                        heightFactor: 1,
                         child: IconTheme.merge(
                           data: IconThemeData(
-                            size: 19,
+                            size: iconSize,
                             color: colors.textPrimary,
                           ),
                           child: icon!,

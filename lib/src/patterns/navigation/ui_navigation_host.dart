@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'ui_navigation_controller.dart';
 import 'ui_navigation_scope.dart';
@@ -54,6 +55,7 @@ class UiNavigationHost extends StatelessWidget {
     this.edgeSwipeMinDistance = 64,
     this.edgeSwipeMinVelocity = 400,
     this.edgeSwipeProgress,
+    this.edgeSwipeSettleDuration = UiMotionDuration.slow,
     this.backSwipeTransition = UiBackSwipeTransition.auto,
   });
 
@@ -87,11 +89,15 @@ class UiNavigationHost extends StatelessWidget {
   /// supplementary chrome during a pop.
   final ValueNotifier<double>? edgeSwipeProgress;
 
+  /// Timing used after an edge swipe is released.
+  final UiMotionDuration edgeSwipeSettleDuration;
+
   /// Back-swipe visual treatment. See [UiBackSwipeTransition].
   ///
   /// The [UiBackSwipeTransition.auto] default picks Cupertino parallax
-  /// on iOS/macOS and the simple slide elsewhere; pass [cupertino] or
-  /// [slide] to force a specific treatment regardless of platform.
+  /// on iOS/macOS and the simple slide elsewhere; pass
+  /// [UiBackSwipeTransition.cupertino] or [UiBackSwipeTransition.slide] to
+  /// force a specific treatment regardless of platform.
   final UiBackSwipeTransition backSwipeTransition;
 
   bool _shouldEnableSwipe(BuildContext context, int stackLength) {
@@ -137,6 +143,7 @@ class UiNavigationHost extends StatelessWidget {
           minDistance: edgeSwipeMinDistance,
           minVelocity: edgeSwipeMinVelocity,
           externalProgress: edgeSwipeProgress,
+          settleDuration: edgeSwipeSettleDuration.resolve(context),
           style: style,
           parallaxCurrent: parallaxCurrent,
           parallaxPrevious: parallaxPrevious,
@@ -185,6 +192,7 @@ class _EdgeSwipePopRegion extends StatefulWidget {
     required this.edgeWidth,
     required this.minDistance,
     required this.minVelocity,
+    required this.settleDuration,
     required this.child,
     required this.style,
     this.parallaxCurrent,
@@ -196,6 +204,7 @@ class _EdgeSwipePopRegion extends StatefulWidget {
   final double edgeWidth;
   final double minDistance;
   final double minVelocity;
+  final Duration settleDuration;
   final Widget child;
   final UiBackSwipeTransition style;
   final Widget? parallaxCurrent;
@@ -210,9 +219,17 @@ class _EdgeSwipePopRegionState extends State<_EdgeSwipePopRegion>
     with SingleTickerProviderStateMixin {
   late final AnimationController _drive = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 280),
+    duration: widget.settleDuration,
     value: 0,
   );
+
+  @override
+  void didUpdateWidget(covariant _EdgeSwipePopRegion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settleDuration != widget.settleDuration) {
+      _drive.duration = widget.settleDuration;
+    }
+  }
 
   double _dragDx = 0;
   double _viewportWidth = 1;
@@ -439,7 +456,7 @@ class _CupertinoBackSwipeStack extends StatelessWidget {
     // a ColoredBox painted with the theme's page-background token so
     // every host gets a solid surface regardless of how the page
     // content paints.
-    final pageBackground = UiThemeTokens.of(context).colors.background;
+    final pageBackground = UiThemeTokens.colorsOf(context).background;
 
     return Stack(
       children: [

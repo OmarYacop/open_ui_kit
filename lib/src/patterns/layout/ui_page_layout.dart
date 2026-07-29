@@ -231,7 +231,7 @@ class _PageActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = UiThemeTokens.of(context).spacing.x2;
+    final gap = UiThemeTokens.spacingOf(context).x2;
     final children = <Widget>[];
     for (var i = 0; i < actions.length; i += 1) {
       if (i > 0) children.add(SizedBox(width: gap));

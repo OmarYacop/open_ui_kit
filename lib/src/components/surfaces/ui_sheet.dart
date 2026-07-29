@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/intl.dart';
 import '../../foundation/layout/ui_form_factor.dart';
+import '../../foundation/layout/ui_keyboard_geometry.dart';
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -443,7 +445,7 @@ class UiPersistentSheet extends StatefulWidget {
     this.enableDrag = true,
     this.allowClose = false,
     this.onClose,
-    this.duration,
+    this.duration = UiMotionDuration.standard,
     this.curve,
   }) : assert(snaps.length > 0, 'snaps must be non-empty');
 
@@ -467,9 +469,7 @@ class UiPersistentSheet extends StatefulWidget {
   /// Fires when a dismiss gesture completes (only when [allowClose]).
   final VoidCallback? onClose;
 
-  /// Animation duration between snaps. Falls back to the theme's
-  /// `motion.standard`.
-  final Duration? duration;
+  final UiMotionDuration duration;
 
   /// Animation curve. Falls back to the theme's `motion.standardCurve`.
   final Curve? curve;
@@ -497,7 +497,7 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
   bool _scrollDriveActive = false;
   double _scrollAvailableHeight = 1;
   bool _dismissed = false;
-  Duration _resolvedDuration = const Duration(milliseconds: 200);
+  Duration _resolvedDuration = Duration.zero;
   Curve _resolvedCurve = Curves.easeOutCubic;
 
   @override
@@ -508,7 +508,7 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
     _controller._attach(widget.snaps.length);
     _anim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: Duration.zero,
       value: _fractionFor(_controller.snapIndex),
     );
     _controller.addListener(_handleControllerChange);
@@ -530,8 +530,8 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
   }
 
   void _resolveMotion() {
-    final motion = UiThemeTokens.of(context).motion;
-    _resolvedDuration = widget.duration ?? motion.standard;
+    final motion = UiThemeTokens.motionOf(context);
+    _resolvedDuration = widget.duration.resolve(context);
     _resolvedCurve = widget.curve ?? motion.standardCurve;
     _anim.duration = _resolvedDuration;
   }
@@ -738,7 +738,7 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
       builder: (context, constraints) {
         final available = constraints.maxHeight.isFinite
             ? constraints.maxHeight
-            : MediaQuery.of(context).size.height;
+            : MediaQuery.sizeOf(context).height;
         _scrollAvailableHeight = available;
         return AnimatedBuilder(
           animation: _anim,
@@ -822,8 +822,7 @@ class _SheetHostState<T> extends State<_SheetHost<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final keyboard = media.viewInsets.bottom;
+    final keyboard = UiKeyboardGeometry.currentInsetOf(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {

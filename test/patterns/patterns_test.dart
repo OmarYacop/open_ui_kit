@@ -6,7 +6,7 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
+    theme: UiThemeData.light(effects: UiEffectsTokens.full),
     home: Scaffold(body: Center(child: child)),
   );
 }
@@ -138,6 +138,66 @@ void main() {
 
       final input = tester.widget<UiInput>(find.byType(UiInput));
       expect(input.minLines, greaterThan(1));
+    });
+
+    testWidgets('compact composer supports context and an icon send action', (
+      tester,
+    ) async {
+      final messages = <String>[];
+      await tester.pumpWidget(
+        _host(
+          UiChatComposer(
+            header: const Text('Replying to Alex'),
+            compactSendAction: true,
+            sendLabel: 'Send message',
+            onSend: messages.add,
+          ),
+        ),
+      );
+
+      expect(find.text('Replying to Alex'), findsOneWidget);
+      expect(find.bySemanticsLabel('Send message'), findsOneWidget);
+
+      await tester.enterText(find.byType(UiInput), 'Hello');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Send message'));
+      await tester.pump();
+
+      expect(messages, ['Hello']);
+    });
+
+    testWidgets('composer synchronizes when its controller is replaced', (
+      tester,
+    ) async {
+      final empty = TextEditingController();
+      final ready = TextEditingController(text: 'Ready');
+      addTearDown(empty.dispose);
+      addTearDown(ready.dispose);
+      final messages = <String>[];
+
+      await tester.pumpWidget(
+        _host(UiChatComposer(controller: empty, onSend: messages.add)),
+      );
+      await tester.pumpWidget(
+        _host(UiChatComposer(controller: ready, onSend: messages.add)),
+      );
+      await tester.tap(find.text('Send'));
+      await tester.pump();
+
+      expect(messages, ['Ready']);
+      expect(ready.text, isEmpty);
+
+      await tester.pumpWidget(
+        _host(UiChatComposer(controller: empty, onSend: messages.add)),
+      );
+      await tester.tap(find.text('Send'));
+      await tester.pump();
+      expect(messages, ['Ready']);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      ready.text = 'Changed after composer disposal';
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -455,7 +515,7 @@ void main() {
         ),
       );
 
-      expect(find.text('ACCOUNT'), findsOneWidget);
+      expect(find.text('Account'), findsOneWidget);
       expect(find.text('Devices'), findsOneWidget);
       expect(find.text('Need help?'), findsOneWidget);
     });
@@ -487,7 +547,7 @@ void main() {
       expect(selected, 'devices');
     });
 
-    testWidgets('selected item uses the standard card variant on desktop',
+    testWidgets('settings group uses a standard surface on desktop',
         (tester) async {
       await tester.pumpWidget(
         _host(
@@ -508,10 +568,13 @@ void main() {
         ),
       );
 
-      final card = tester.widget<UiCard>(
+      final cards = tester.widgetList<UiCard>(
         find.ancestor(of: find.text('Devices'), matching: find.byType(UiCard)),
       );
-      expect(card.variant, UiCardVariant.standard);
+      expect(
+        cards.map((card) => card.variant),
+        contains(UiCardVariant.standard),
+      );
     });
 
     testWidgets('renders item descriptions, trailing controls, and actions',
@@ -550,7 +613,7 @@ void main() {
   });
 
   group('UiProfileSummary', () {
-    testWidgets('renders initials avatar and name', (tester) async {
+    testWidgets('renders generated avatar and name', (tester) async {
       await tester.pumpWidget(
         _host(
           const SizedBox(
@@ -562,7 +625,7 @@ void main() {
       );
 
       expect(find.text('Ada Lovelace'), findsOneWidget);
-      expect(find.text('AL'), findsOneWidget);
+      expect(find.byType(UiWavatar), findsOneWidget);
     });
 
     testWidgets('renders custom avatar, subtitle, and actions', (tester) async {
@@ -937,6 +1000,16 @@ void main() {
       );
       expect(scaffold.scrollFadeHorizontalInset, 0);
       expect(scaffold.scrollFadeUsesSafeArea, isTrue);
+      expect(
+        scaffold.scrollFadeBottomExtent,
+        lessThan(scaffold.scrollFadeExtent),
+      );
+
+      final fade = tester.widget<UiScrollEdgeFade>(
+        find.byType(UiScrollEdgeFade),
+      );
+      expect(fade.topExtent ?? fade.extent, scaffold.scrollFadeWideExtent);
+      expect(fade.bottomExtent, scaffold.scrollFadeBottomExtent);
     });
 
     testWidgets('UiSafeViewport none does not inject SafeArea', (tester) async {
@@ -1175,7 +1248,61 @@ void main() {
       expect(find.text('Inbox'), findsWidgets);
     });
 
-    testWidgets('UiSliverNavigationBar default surface is frosted on iOS',
+    testWidgets(
+        'title-following actions stay end aligned and pin without fading',
+        (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            controller: controller,
+            slivers: [
+              UiSliverNavigationBar(
+                spec: const UiNavigationSpec(
+                  title: 'Chats',
+                  actionsFollowTitleCollapse: true,
+                  actions: [
+                    SizedBox(
+                      key: Key('tracked-title-action'),
+                      width: 44,
+                      height: 44,
+                    ),
+                  ],
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 1000)),
+            ],
+          ),
+        ),
+      );
+
+      final resting = tester.getTopRight(
+        find.byKey(const Key('tracked-title-action')),
+      );
+      controller.jumpTo(24);
+      await tester.pump();
+      final moving = tester.getTopRight(
+        find.byKey(const Key('tracked-title-action')),
+      );
+      controller.jumpTo(200);
+      await tester.pump();
+      final pinned = tester.getTopRight(
+        find.byKey(const Key('tracked-title-action')),
+      );
+      controller.jumpTo(260);
+      await tester.pump();
+      final stillPinned = tester.getTopRight(
+        find.byKey(const Key('tracked-title-action')),
+      );
+
+      expect(moving.dx, resting.dx);
+      expect(moving.dy, lessThan(resting.dy));
+      expect(stillPinned, pinned);
+    });
+
+    testWidgets('UiSliverNavigationBar defaults to an edge fade on iOS',
         (tester) async {
       const nav = CustomScrollView(
         slivers: [
@@ -1191,10 +1318,19 @@ void main() {
           _host(nav),
         );
         expect(
-          find.byType(BackdropFilter),
+          find.byType(UiScrollEdgeFade),
           findsWidgets,
-          reason: 'iOS default should resolve adaptive surface to blurred.',
+          reason: 'iOS default should resolve adaptive surface to edgeFade.',
         );
+        final edgeFade = tester.widget<UiScrollEdgeFade>(
+          find.byType(UiScrollEdgeFade).first,
+        );
+        final context = tester.element(find.byType(UiSliverNavigationBar));
+        expect(
+          edgeFade.backgroundColor,
+          UiThemeTokens.of(context).colors.background,
+        );
+        expect(find.byType(BackdropFilter), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = previous;
       }
@@ -1227,7 +1363,7 @@ void main() {
       }
     });
 
-    testWidgets('collapse progress morphs title size in large-title mode',
+    testWidgets('collapse progress crossfades into the centered compact title',
         (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
@@ -1246,26 +1382,49 @@ void main() {
         ),
       );
 
-      double maxInboxFontSize() {
-        final textWidgets =
-            tester.widgetList<Text>(find.text('Inbox')).toList();
-        return textWidgets
-            .map((t) => t.style?.fontSize ?? 0)
-            .fold<double>(0, (m, v) => v > m ? v : m);
+      double titleOpacity(Key key) {
+        return tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: find.byKey(key),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity;
       }
 
-      final restSize = maxInboxFontSize();
-      expect(restSize, greaterThan(20));
+      expect(
+        titleOpacity(const Key('ui_navigation_large_title')),
+        greaterThan(0.9),
+      );
+      expect(
+        find.byKey(const Key('ui_navigation_compact_title')),
+        findsNothing,
+      );
+
+      final restTop = tester
+          .getRect(find.byKey(const Key('ui_navigation_large_title')))
+          .top;
+      controller.jumpTo(20);
+      await tester.pump();
+      final scrolledTop = tester
+          .getRect(find.byKey(const Key('ui_navigation_large_title')))
+          .top;
+      expect(scrolledTop, lessThan(restTop));
 
       // Scroll enough to collapse the bar fully.
       controller.jumpTo(80);
       await tester.pump();
 
-      final collapsedSize = maxInboxFontSize();
       expect(
-        collapsedSize,
-        lessThan(restSize),
-        reason: 'Large title should collapse down to compact title size.',
+        titleOpacity(const Key('ui_navigation_large_title')),
+        0,
+      );
+      expect(
+        titleOpacity(const Key('ui_navigation_compact_title')),
+        greaterThan(0.9),
       );
     });
 
@@ -1289,7 +1448,9 @@ void main() {
       controller.jumpTo(600);
       await tester.pump();
 
-      final titleRect = tester.getRect(find.text('Inbox'));
+      final titleRect = tester.getRect(
+        find.byKey(const Key('ui_navigation_compact_title')),
+      );
       expect(titleRect.bottom, greaterThan(0));
       expect(titleRect.top, lessThan(tester.view.physicalSize.height));
     });
@@ -1331,7 +1492,8 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pump();
 
-      expect(find.byType(BackdropFilter), findsOneWidget);
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byType(UiScrollEdgeFade), findsOneWidget);
       expect(find.byType(SliverPersistentHeader), findsOneWidget);
     });
 
@@ -1455,7 +1617,7 @@ void main() {
       expect(decoration.border!.bottom.color.a, 0);
     });
 
-    testWidgets('subtitle renders for both large and compact configurations',
+    testWidgets('subtitle renders only with the expanded large title',
         (tester) async {
       await tester.pumpWidget(
         _host(
@@ -1469,7 +1631,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Recent conversations'), findsWidgets);
+      expect(find.text('Recent conversations'), findsOneWidget);
 
       const compactSpec = UiNavigationSpec(
         title: 'Inbox',
@@ -1490,7 +1652,53 @@ void main() {
         ),
       );
 
-      expect(find.text('Recent conversations'), findsOneWidget);
+      expect(find.text('Recent conversations'), findsNothing);
+    });
+
+    testWidgets('compact title can differ from or omit the large title',
+        (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            controller: controller,
+            slivers: const [
+              UiSliverNavigationBar(
+                spec: UiNavigationSpec(
+                  title: 'Welcome, Albaraa',
+                  compactTitle: 'Albaraa',
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 1000)),
+            ],
+          ),
+        ),
+      );
+      controller.jumpTo(80);
+      await tester.pump();
+      expect(find.text('Albaraa'), findsOneWidget);
+
+      await tester.pumpWidget(
+        _host(
+          const CustomScrollView(
+            slivers: [
+              UiSliverNavigationBar(
+                spec: UiNavigationSpec(
+                  title: 'Welcome, Albaraa',
+                  showCompactTitle: false,
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 1000)),
+            ],
+          ),
+        ),
+      );
+      expect(
+        find.byKey(const Key('ui_navigation_compact_title')),
+        findsNothing,
+      );
     });
 
     testWidgets(

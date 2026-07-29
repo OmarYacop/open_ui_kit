@@ -5,14 +5,14 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
+    theme: UiThemeData.light(effects: UiEffectsTokens.full),
     home: Scaffold(body: child),
   );
 }
 
 Widget _reducedMotionHost(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
+    theme: UiThemeData.light(effects: UiEffectsTokens.full),
     builder: (context, appChild) => MediaQuery(
       data: MediaQuery.of(context).copyWith(disableAnimations: true),
       child: appChild ?? const SizedBox.shrink(),
@@ -1187,7 +1187,7 @@ void main() {
     expect(clipRect.bottom, greaterThan(820));
   });
 
-  testWidgets('floating drawer and navigation rows use concentric radii', (
+  testWidgets('navigation drawer rows use a consistent medium radius', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -1216,18 +1216,10 @@ void main() {
       ),
     );
 
-    final clip = tester.widget<ClipRRect>(
-      find.descendant(
-        of: find.byType(UiDrawer),
-        matching: find.byType(ClipRRect),
-      ),
-    );
-    final outer = clip.borderRadius.resolve(TextDirection.ltr);
     final focus = tester.widget<UiFocusRing>(find.byType(UiFocusRing));
     final inner = focus.borderRadius!.resolve(TextDirection.ltr);
 
-    expect(outer.topLeft.x, greaterThan(24));
-    expect(inner.topLeft.x, closeTo(outer.topLeft.x - 8, 0.1));
+    expect(inner, UiRadiusTokens.standard.lgAll);
   });
 
   testWidgets('navigation drawer renders numeric destination badges', (

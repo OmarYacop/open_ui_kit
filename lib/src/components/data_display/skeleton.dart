@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Shared loading placeholder surface and animation scope.
@@ -16,7 +17,9 @@ class UiSkeleton extends StatefulWidget {
     this.borderRadius,
     this.background,
     this.border,
-    this.duration = const Duration(milliseconds: 1200),
+    this.duration = const UiMotionDuration.custom(
+      Duration(milliseconds: 1200),
+    ),
     this.animate = true,
     this.child,
   });
@@ -28,7 +31,7 @@ class UiSkeleton extends StatefulWidget {
   final BorderRadiusGeometry? borderRadius;
   final Color? background;
   final BoxBorder? border;
-  final Duration duration;
+  final UiMotionDuration duration;
   final bool animate;
   final Widget? child;
 
@@ -39,22 +42,24 @@ class UiSkeleton extends StatefulWidget {
 class _UiSkeletonState extends State<UiSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  Duration _resolvedDuration = Duration.zero;
 
   bool get _shouldAnimate {
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return widget.animate && !reduceMotion && widget.duration > Duration.zero;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    return widget.animate && !reduceMotion && _resolvedDuration > Duration.zero;
   }
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _controller = AnimationController(vsync: this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _resolvedDuration = widget.duration.resolve(context);
+    _controller.duration = _resolvedDuration;
     _syncAnimation();
   }
 
@@ -62,7 +67,8 @@ class _UiSkeletonState extends State<UiSkeleton>
   void didUpdateWidget(UiSkeleton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.duration != widget.duration) {
-      _controller.duration = widget.duration;
+      _resolvedDuration = widget.duration.resolve(context);
+      _controller.duration = _resolvedDuration;
     }
     _syncAnimation();
   }

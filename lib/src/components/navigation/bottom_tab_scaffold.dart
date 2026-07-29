@@ -16,6 +16,7 @@ import 'ui_navigation_drawer.dart';
 const _kBottomTabScaffoldControlWidth = 72.0;
 const _kBottomTabScaffoldDockPadding = 6.0;
 const _kBottomTabScaffoldBarHeight = 54.0;
+const _kBottomTabScaffoldAccessoryGap = 12.0;
 
 class UiBottomTabRailConfig {
   const UiBottomTabRailConfig({
@@ -68,6 +69,7 @@ class UiBottomTabScaffold extends StatelessWidget {
     this.maxVisibleBottomItems = 3,
     this.moreLabel,
     this.overflowDrawerBuilder,
+    this.bottomAccessory,
   })  : assert(
           items.length == pages.length,
           'items and pages must have the same length',
@@ -131,6 +133,7 @@ class UiBottomTabScaffold extends StatelessWidget {
   /// The scaffold still owns presentation and selection state; the builder
   /// only supplies the structured drawer content.
   final UiBottomTabOverflowDrawerBuilder? overflowDrawerBuilder;
+  final UiBottomTabAccessory? bottomAccessory;
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +188,7 @@ class UiBottomTabScaffold extends StatelessWidget {
             floatingBottomMargin: tabBarFloatingBottomMargin,
             moreLabel: moreLabel,
             overflowDrawerBuilder: overflowDrawerBuilder,
+            accessory: bottomAccessory,
           );
         },
       );
@@ -208,6 +212,7 @@ class UiBottomTabScaffold extends StatelessWidget {
       floatingBottomMargin: tabBarFloatingBottomMargin,
       moreLabel: moreLabel,
       overflowDrawerBuilder: overflowDrawerBuilder,
+      accessory: bottomAccessory,
     );
   }
 
@@ -320,6 +325,7 @@ class _BottomTabBody extends StatefulWidget {
     required this.floatingBottomMargin,
     required this.moreLabel,
     required this.overflowDrawerBuilder,
+    required this.accessory,
   });
 
   final Widget body;
@@ -339,13 +345,71 @@ class _BottomTabBody extends StatefulWidget {
   final double floatingBottomMargin;
   final String? moreLabel;
   final UiBottomTabOverflowDrawerBuilder? overflowDrawerBuilder;
+  final UiBottomTabAccessory? accessory;
 
   @override
   State<_BottomTabBody> createState() => _BottomTabBodyState();
 }
 
-class _BottomTabBodyState extends State<_BottomTabBody> {
+class _BottomTabBodyState extends State<_BottomTabBody>
+    with SingleTickerProviderStateMixin {
   bool _moreDrawerOpen = false;
+  late final AnimationController _accessoryPresence = AnimationController(
+    vsync: this,
+    value: widget.accessory == null ? 0 : 1,
+  )
+    ..addListener(_handleAccessoryTick)
+    ..addStatusListener(_handleAccessoryStatus);
+  UiBottomTabAccessory? _visibleAccessory;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleAccessory = widget.accessory;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final motion = UiThemeTokens.motionOf(context);
+    _accessoryPresence
+      ..duration = motion.fast
+      ..reverseDuration = motion.fast;
+  }
+
+  @override
+  void didUpdateWidget(covariant _BottomTabBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.accessory;
+    if (next != null) {
+      _visibleAccessory = next;
+      _accessoryPresence.forward();
+      return;
+    }
+    if (_visibleAccessory != null) {
+      _visibleAccessory = _visibleAccessory!.copyWith(expanded: false);
+      _accessoryPresence.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _accessoryPresence
+      ..removeListener(_handleAccessoryTick)
+      ..removeStatusListener(_handleAccessoryStatus)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleAccessoryTick() {
+    if (mounted) setState(() {});
+  }
+
+  void _handleAccessoryStatus(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed && widget.accessory == null) {
+      setState(() => _visibleAccessory = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -371,26 +435,36 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
           ),
           child: widget.body,
         );
+        final keyboardInset = (_visibleAccessory?.expanded ?? false)
+            ? UiKeyboardGeometry.currentInsetOf(context)
+            : 0.0;
 
         return Stack(
           fit: StackFit.expand,
           children: [
             Positioned.fill(child: paddedBody),
-            PositionedDirectional(
-              start: 0,
-              end: 0,
+            Positioned(
+              left: 0,
+              right: 0,
               bottom: 0,
-              child: UiBottomTabBar(
-                items: resolvedItems,
-                currentIndex: resolvedCurrentIndex,
-                onChanged: resolvedChanged,
-                backgroundColor: widget.backgroundColor,
-                layout: widget.layout,
-                adaptiveBreakpoint: widget.adaptiveBreakpoint,
-                floatingMaxWidth: widget.floatingMaxWidth,
-                floatingHorizontalMargin: widget.floatingHorizontalMargin,
-                floatingBottomMargin: widget.floatingBottomMargin,
-                equalWidthsWhenLastSelected: overflow != null,
+              child: Transform.translate(
+                offset: Offset(0, -keyboardInset),
+                child: RepaintBoundary(
+                  child: UiBottomTabBar(
+                    items: resolvedItems,
+                    currentIndex: resolvedCurrentIndex,
+                    onChanged: resolvedChanged,
+                    backgroundColor: widget.backgroundColor,
+                    layout: widget.layout,
+                    adaptiveBreakpoint: widget.adaptiveBreakpoint,
+                    floatingMaxWidth: widget.floatingMaxWidth,
+                    floatingHorizontalMargin: widget.floatingHorizontalMargin,
+                    floatingBottomMargin: widget.floatingBottomMargin,
+                    equalWidthsWhenLastSelected: overflow != null,
+                    accessory: _visibleAccessory,
+                    accessoryPresence: _accessoryPresence.value,
+                  ),
+                ),
               ),
             ),
           ],
@@ -405,7 +479,10 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
   ) {
     if (widget.canonicalItems.length <= 1) return null;
 
-    final capacity = _resolveBottomControlCapacity(constraints.maxWidth);
+    final capacity = _resolveBottomControlCapacity(
+      constraints.maxWidth,
+      accessoryReservation: _resolveAccessoryReservation(constraints),
+    );
     final directLimit = widget.maxVisibleItems.clamp(
       1,
       widget.canonicalItems.length,
@@ -439,15 +516,38 @@ class _BottomTabBodyState extends State<_BottomTabBody> {
     );
   }
 
-  int _resolveBottomControlCapacity(double availableWidth) {
+  int _resolveBottomControlCapacity(
+    double availableWidth, {
+    required double accessoryReservation,
+  }) {
     final resolvedWidth = availableWidth.isFinite
         ? (availableWidth - widget.floatingHorizontalMargin * 2)
             .clamp(0.0, widget.floatingMaxWidth)
         : widget.floatingMaxWidth;
-    final capacity = ((resolvedWidth - _kBottomTabScaffoldDockPadding * 2) /
+    final mainDockWidth = (resolvedWidth - accessoryReservation).clamp(
+      0.0,
+      resolvedWidth,
+    );
+    final capacity = ((mainDockWidth - _kBottomTabScaffoldDockPadding * 2) /
             _kBottomTabScaffoldControlWidth)
         .floor();
     return capacity.clamp(2, widget.maxVisibleItems + 1);
+  }
+
+  double _resolveAccessoryReservation(BoxConstraints constraints) {
+    final accessory = _visibleAccessory;
+    if (accessory == null) return 0;
+
+    final isWide = constraints.maxWidth.isFinite &&
+        constraints.maxWidth >= widget.adaptiveBreakpoint;
+    final floating = switch (widget.layout) {
+      UiBottomTabBarLayout.edgeToEdge => false,
+      UiBottomTabBarLayout.floatingDock => true,
+      UiBottomTabBarLayout.adaptive => isWide,
+    };
+    if (!floating) return 0;
+    return (accessory.collapsedWidth + _kBottomTabScaffoldAccessoryGap) *
+        _accessoryPresence.value;
   }
 
   double _resolveBodyBottomInset(

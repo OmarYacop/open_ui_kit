@@ -17,6 +17,8 @@ class UiDateRangePicker extends StatefulWidget {
     this.max,
     this.disabled,
     this.onChanged,
+    this.showBorder = true,
+    this.chromePadding,
   });
 
   final UiDateRange? value;
@@ -24,6 +26,8 @@ class UiDateRangePicker extends StatefulWidget {
   final DateTime? max;
   final UiDatePredicate? disabled;
   final ValueChanged<UiDateRange>? onChanged;
+  final bool showBorder;
+  final EdgeInsetsGeometry? chromePadding;
 
   @override
   State<UiDateRangePicker> createState() => _UiDateRangePickerState();
@@ -92,9 +96,9 @@ class _UiDateRangePickerState extends State<UiDateRangePicker> {
             constraints.hasBoundedWidth && constraints.maxWidth < twoMonthWidth;
         final surface = UiBox(
           background: colors.surface,
-          border: Border.all(color: colors.border),
-          borderRadius: BorderRadius.circular(8),
-          padding: EdgeInsets.all(tokens.spacing.x3),
+          border: widget.showBorder ? Border.all(color: colors.border) : null,
+          borderRadius: tokens.radius.lgAll,
+          padding: widget.chromePadding ?? EdgeInsets.all(tokens.spacing.x2),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +116,7 @@ class _UiDateRangePickerState extends State<UiDateRangePicker> {
                 onChanged: _onTap,
                 showChrome: false,
                 showNextMonthButton: useSingleMonth,
-                enableHeaderModeSelection: false,
+                enableHeaderModeSelection: true,
               ),
               if (!useSingleMonth) ...[
                 SizedBox(width: monthGap),
@@ -134,7 +138,7 @@ class _UiDateRangePickerState extends State<UiDateRangePicker> {
                   onChanged: _onTap,
                   showChrome: false,
                   showPreviousMonthButton: false,
-                  enableHeaderModeSelection: false,
+                  enableHeaderModeSelection: true,
                 ),
               ],
             ],

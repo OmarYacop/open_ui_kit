@@ -104,6 +104,10 @@ void main() {
   group('UiNavigationBackButton history behavior', () {
     testWidgets('sliver nav caps long back labels before the title',
         (tester) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(
         _host(
           CustomScrollView(
@@ -132,6 +136,43 @@ void main() {
       final screenCenter = tester.getSize(find.byType(MaterialApp)).width / 2;
 
       expect(labelRect.width, lessThanOrEqualTo(112));
+      expect(titleRect.center.dx, closeTo(screenCenter, 1));
+    });
+
+    testWidgets('sliver nav lets back labels use tablet width when available',
+        (tester) async {
+      tester.view.physicalSize = const Size(900, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            slivers: [
+              UiSliverNavigationBar(
+                spec: UiNavigationSpec(
+                  title: 'Current title',
+                  back: UiNavigationBackConfig(
+                    label: 'Extremely long parent page title',
+                    onPressed: () {},
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 200)),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final labelRect = tester.getRect(
+        find.text('Extremely long parent page title'),
+      );
+      final titleRect = tester.getRect(find.text('Current title'));
+      final screenCenter = tester.getSize(find.byType(MaterialApp)).width / 2;
+
+      expect(labelRect.width, greaterThan(112));
+      expect(labelRect.width, lessThanOrEqualTo(260));
       expect(titleRect.center.dx, closeTo(screenCenter, 1));
     });
 

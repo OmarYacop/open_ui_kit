@@ -183,6 +183,26 @@ void main() {
       expect(find.text('2020'), findsOneWidget);
     });
 
+    testWidgets(
+        'month selection belongs only to the selected date year, not every '
+        'browsed year', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiDatePicker(
+            value: DateTime(2026, 4, 22),
+            visibleMonth: DateTime(2020, 4),
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+      await tester.pumpAndSettle();
+
+      final april = find.bySemanticsLabel('April');
+      expect(tester.getSemantics(april).label, isNot(contains('selected')));
+    });
+
     testWidgets('year grid arrows paginate forward/back by 12 years',
         (tester) async {
       await tester.pumpWidget(
@@ -202,11 +222,11 @@ void main() {
       // Starting anchor = 2016..2027. Next arrow should shift to
       // 2028..2039.
       expect(find.text('2016 – 2027'), findsOneWidget);
-      await tester.tap(find.text('›'));
+      await tester.tap(find.bySemanticsLabel('Next'));
       await tester.pumpAndSettle();
       expect(find.text('2028 – 2039'), findsOneWidget);
 
-      await tester.tap(find.text('‹'));
+      await tester.tap(find.bySemanticsLabel('Previous'));
       await tester.pumpAndSettle();
       expect(find.text('2016 – 2027'), findsOneWidget);
     });
@@ -230,6 +250,22 @@ void main() {
         find.bySemanticsLabel(RegExp(r'April 2026.*opens month picker')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('month navigation uses icon buttons instead of text glyphs',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiDatePicker(
+            value: DateTime(2026, 4, 22),
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.byType(UiIconButton), findsNWidgets(2));
+      expect(find.text('‹'), findsNothing);
+      expect(find.text('›'), findsNothing);
     });
   });
 
@@ -262,6 +298,103 @@ void main() {
         find.bySemanticsLabel(RegExp(r'Start time, minute 30, selected')),
       );
       expect(selectedMinute.label, contains('selected'));
+    });
+  });
+
+  group('UiTimeGridPicker', () {
+    testWidgets('selects hour, minute, and period from option columns',
+        (tester) async {
+      var selected = const UiTimeValue(hour: 9, minute: 0);
+
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              return UiTimeGridPicker(
+                value: selected,
+                minuteStep: 15,
+                semanticsPrefix: 'Start time',
+                onChanged: (value) => setState(() => selected = value),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'Start time, hour 03')));
+      await tester.pump();
+      expect(selected, const UiTimeValue(hour: 3, minute: 0));
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'Start time, PM')));
+      await tester.pump();
+      expect(selected, const UiTimeValue(hour: 15, minute: 0));
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'Start time, minute 30')));
+      await tester.pump();
+      expect(selected, const UiTimeValue(hour: 15, minute: 30));
+      expect(find.text('3:30 PM'), findsOneWidget);
+    });
+
+    testWidgets('disabled hours do not emit a new value', (tester) async {
+      var selected = const UiTimeValue(hour: 9, minute: 0);
+
+      await tester.pumpWidget(
+        _host(
+          UiTimeGridPicker(
+            value: selected,
+            minuteStep: 15,
+            semanticsPrefix: 'Start time',
+            hourDisabled: (hour) => hour == 4,
+            onChanged: (value) => selected = value,
+          ),
+        ),
+      );
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'Start time, hour 04')));
+      await tester.pump();
+      expect(selected, const UiTimeValue(hour: 9, minute: 0));
+
+      final disabledHour = tester.getSemantics(
+        find.bySemanticsLabel(RegExp(r'Start time, hour 04')),
+      );
+      expect(disabledHour.label, contains('disabled'));
+    });
+  });
+
+  group('UiTimePickerField', () {
+    testWidgets('opens a grid picker and closes from Done', (tester) async {
+      UiTimeValue? selected;
+
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              return UiTimePickerField(
+                label: 'Start time',
+                value: selected,
+                minuteStep: 15,
+                onChanged: (value) => setState(() => selected = value),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Choose time'), findsOneWidget);
+
+      await tester.tap(find.text('Choose time'));
+      await tester.pumpAndSettle();
+      expect(find.byType(UiTimeGridPicker), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'minute 15')));
+      await tester.pumpAndSettle();
+      expect(selected, const UiTimeValue(hour: 9, minute: 15));
+      expect(find.text('9:15 AM'), findsWidgets);
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.byType(UiTimeGridPicker), findsNothing);
+      expect(find.text('9:15 AM'), findsOneWidget);
     });
   });
 
@@ -382,8 +515,117 @@ void main() {
 
       expect(find.text('January 2026'), findsOneWidget);
       expect(find.text('February 2026'), findsNothing);
-      expect(find.text('‹'), findsOneWidget);
-      expect(find.text('›'), findsOneWidget);
+      expect(find.bySemanticsLabel('Previous'), findsOneWidget);
+      expect(find.bySemanticsLabel('Next'), findsOneWidget);
+    });
+
+    testWidgets('range header opens month and year quick selection', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 320,
+            child: UiDateRangePicker(
+              value: UiDateRange(
+                start: DateTime(2026, 1, 13),
+                end: DateTime(2026, 1, 25),
+              ),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+      await tester.pumpAndSettle();
+      expect(find.byKey(datePickerMonthGridKey), findsOneWidget);
+
+      await tester.tap(find.text('Mar'));
+      await tester.pumpAndSettle();
+      expect(find.text('March 2026'), findsOneWidget);
+
+      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+      await tester.pumpAndSettle();
+      expect(find.byKey(datePickerYearGridKey), findsOneWidget);
+    });
+
+    testWidgets('range picker swipes between months and years', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 320,
+            child: UiDateRangePicker(
+              value: UiDateRange(
+                start: DateTime(2026, 1, 13),
+                end: DateTime(2026, 1, 25),
+              ),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.fling(
+        find.byKey(datePickerDayGridKey),
+        const Offset(-220, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('February 2026'), findsOneWidget);
+
+      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+      await tester.pumpAndSettle();
+      expect(find.text('2026'), findsOneWidget);
+
+      await tester.fling(
+        find.byKey(datePickerMonthGridKey),
+        const Offset(-220, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('2027'), findsOneWidget);
+    });
+
+    testWidgets('range picker page follows the drag before settling', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 320,
+            child: UiDateRangePicker(
+              value: UiDateRange(
+                start: DateTime(2026, 1, 13),
+                end: DateTime(2026, 1, 25),
+              ),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final pageView = tester.widget<PageView>(
+        find.byKey(const ValueKey('ui_date_picker_day_pages')),
+      );
+      final initialPage = pageView.controller!.page!;
+      final gesture = await tester.startGesture(
+        tester.getCenter(
+          find.byKey(const ValueKey('ui_date_picker_day_pages')),
+        ),
+      );
+      await gesture.moveBy(const Offset(-48, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.moveBy(const Offset(-48, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(pageView.controller!.page!, greaterThan(initialPage));
+      expect(pageView.controller!.page!, lessThan(initialPage + 1));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('date range labels mark range start and end', (tester) async {
@@ -410,7 +652,7 @@ void main() {
       expect(endDay.label, contains('range end'));
     });
 
-    testWidgets('date-time range exposes start/end time wheel context',
+    testWidgets('date-time range exposes start/end time grid context',
         (tester) async {
       await tester.pumpWidget(
         _host(
@@ -430,7 +672,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.bySemanticsLabel(RegExp(r'End time, hour 17, selected')),
+        find.bySemanticsLabel(RegExp(r'End time, hour 05, selected')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp(r'End time, PM, selected')),
         findsOneWidget,
       );
     });

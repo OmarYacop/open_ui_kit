@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import 'ui_motion_spec.dart';
+
 /// Shared depth geometry for stacked overlay surfaces.
 ///
 /// Used by drawers, toasts, and future overlay primitives so stacked
@@ -14,8 +16,10 @@ class UiStackedMotion {
   static const double offsetStep = 8;
   static const double opacityStep = 0.18;
   static const double drawerNestedOffsetStep = 24;
-  static const Duration drawerDuration = Duration(milliseconds: 500);
-  static const Duration drawerStackDuration = Duration(milliseconds: 650);
+  static const UiMotionDuration drawerDuration = UiMotionDuration.xslow;
+  static const UiMotionDuration drawerStackDuration = UiMotionDuration.custom(
+    Duration(milliseconds: 650),
+  );
   static const Curve drawerCurve = Cubic(0.32, 0.72, 0, 1);
 
   static double scaleForDepth(double depth) {
@@ -69,7 +73,9 @@ class UiStackedOverlaySurface extends StatelessWidget {
     this.entranceDistance = 20,
     this.visible = true,
     this.depthOffsetStep = UiStackedMotion.offsetStep,
-    this.duration = const Duration(milliseconds: 180),
+    this.duration = const UiMotionDuration.custom(
+      Duration(milliseconds: 180),
+    ),
     this.curve = Curves.easeOutCubic,
     this.scaleAlignment = Alignment.center,
     this.applyOpacity = true,
@@ -84,7 +90,7 @@ class UiStackedOverlaySurface extends StatelessWidget {
   final double entranceDistance;
   final bool visible;
   final double depthOffsetStep;
-  final Duration duration;
+  final UiMotionDuration duration;
   final Curve curve;
   final AlignmentGeometry scaleAlignment;
   final bool applyOpacity;
@@ -95,9 +101,10 @@ class UiStackedOverlaySurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = entranceProgress.clamp(0.0, 1.0);
+    final resolvedDuration = duration.resolve(context);
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(end: depth),
-      duration: duration,
+      duration: resolvedDuration,
       curve: curve,
       builder: (context, depthValue, child) {
         final entranceOffset = entranceDirection == null
@@ -119,7 +126,7 @@ class UiStackedOverlaySurface extends StatelessWidget {
         );
         final scaled = implicitScaleAnimation
             ? AnimatedScale(
-                duration: duration,
+                duration: resolvedDuration,
                 curve: curve,
                 alignment: resolvedScaleAlignment,
                 scale: depthScale * (visible ? 1.0 : 0.98),
@@ -136,7 +143,7 @@ class UiStackedOverlaySurface extends StatelessWidget {
         );
         if (applyOpacity) {
           current = AnimatedOpacity(
-            duration: duration,
+            duration: resolvedDuration,
             curve: curve,
             opacity: visible ? depthOpacity * progress : 0.0,
             child: current,

@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-import '../../foundation/intl/intl.dart';
+import '../../foundation/icons/ui_directional_icons.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import '../forms/icon_button.dart';
+import '../forms/button.dart' show UiIntent, UiSize;
 
 /// Predicate the picker consults before accepting a date — return
 /// `true` for dates that should be non-selectable (e.g. weekends).
@@ -34,6 +36,7 @@ const double _kDayButtonSize = 28;
 const double _kMonthWidth = _kDaySize * 7;
 const double _kDayRowGap = 4;
 const double _kHeaderHeight = 28;
+const double _kPickerPageHeight = 252;
 const double _kSelectedRadius = 8;
 const Color _kTransparent = Color(0x00000000);
 
@@ -46,6 +49,20 @@ const Color _kTransparent = Color(0x00000000);
 ///
 /// Fully token-driven visuals — selected day uses `primary`, disabled
 /// days mute via `textMuted`, today is outlined with `borderStrong`.
+///
+/// For standalone popovers, keep the default chrome and border. When embedding
+/// inside a drawer, sheet, dialog, or card, keep [showChrome] enabled but pass
+/// [showBorder] as `false` and [chromePadding] as [EdgeInsets.zero] so the
+/// parent surface owns the outer frame:
+///
+/// ```dart
+/// UiDatePicker(
+///   value: selectedDate,
+///   onChanged: onDateChanged,
+///   showBorder: false,
+///   chromePadding: EdgeInsets.zero,
+/// )
+/// ```
 class UiDatePicker extends StatefulWidget {
   const UiDatePicker({
     super.key,
@@ -90,6 +107,8 @@ class UiDatePicker extends StatefulWidget {
     this.firstDayOfWeek = DateTime.sunday,
     this.daySemanticsPrefix,
     this.showChrome = true,
+    this.showBorder = true,
+    this.chromePadding,
     this.showPreviousMonthButton = true,
     this.showNextMonthButton = true,
     this.enableHeaderModeSelection = true,
@@ -130,6 +149,16 @@ class UiDatePicker extends StatefulWidget {
   /// Whether to render the outer shadcn-style calendar surface.
   final bool showChrome;
 
+  /// Whether [showChrome] includes an outline.
+  ///
+  /// Set this to false when the picker already sits inside a drawer, sheet, or
+  /// card surface and an extra border would create a nested-frame look.
+  final bool showBorder;
+
+  /// Padding applied by [showChrome]. Defaults to the kit's compact picker
+  /// padding.
+  final EdgeInsetsGeometry? chromePadding;
+
   /// Month navigation controls. Range pickers show one previous button on the
   /// first month and one next button on the last month.
   final bool showPreviousMonthButton;
@@ -153,6 +182,9 @@ class _UiDatePickerState extends State<UiDatePicker> {
   // `_yearPageAnchor`. Re-anchored whenever the visible month year
   // changes so the selected year sits inside the currently-shown page.
   late int _yearPageAnchor;
+  late final PageController _dayPageController;
+  late final PageController _monthPageController;
+  late final PageController _yearPageController;
 
   @override
   void initState() {
@@ -160,6 +192,21 @@ class _UiDatePickerState extends State<UiDatePicker> {
     final seed = widget.visibleMonth ?? widget.value ?? DateTime.now();
     _visibleMonth = DateTime(seed.year, seed.month);
     _yearPageAnchor = _pageAnchorFor(seed.year);
+    _dayPageController = PageController(
+      initialPage: _monthPageFor(_visibleMonth),
+    );
+    _monthPageController = PageController(initialPage: _visibleMonth.year);
+    _yearPageController = PageController(
+      initialPage: _yearPageAnchor ~/ 12,
+    );
+  }
+
+  @override
+  void dispose() {
+    _dayPageController.dispose();
+    _monthPageController.dispose();
+    _yearPageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -171,24 +218,75 @@ class _UiDatePickerState extends State<UiDatePicker> {
     if (_visibleMonth != normalized) {
       _visibleMonth = normalized;
       _yearPageAnchor = _pageAnchorFor(normalized.year);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncPageControllers();
+      });
     }
   }
 
   static int _pageAnchorFor(int year) => year - (year % 12);
+  static int _monthPageFor(DateTime month) => month.year * 12 + month.month - 1;
+  static DateTime _monthForPage(int page) =>
+      DateTime(page ~/ 12, page % 12 + 1);
 
-  void _shiftMonth(int delta) {
-    final next = DateTime(_visibleMonth.year, _visibleMonth.month + delta);
-    if (widget.visibleMonth != null) {
-      widget.onVisibleMonthChanged?.call(next);
+  void _syncPageControllers() {
+    _jumpToPage(_dayPageController, _monthPageFor(_visibleMonth));
+    _jumpToPage(_monthPageController, _visibleMonth.year);
+    _jumpToPage(_yearPageController, _yearPageAnchor ~/ 12);
+  }
+
+  void _jumpToPage(PageController controller, int page) {
+    if (!controller.hasClients || controller.page?.round() == page) {
       return;
     }
-    setState(() => _visibleMonth = next);
+    controller.jumpToPage(page);
+  }
+
+  void _animateToPage(PageController controller, int page) {
+    if (!controller.hasClients) return;
+    final tokens = UiThemeTokens.of(context);
+    controller.animateToPage(
+      page,
+      duration: tokens.motion.standard,
+      curve: tokens.motion.standardCurve,
+    );
+  }
+
+  void _shiftMonth(int delta) {
+    _animateToPage(
+      _dayPageController,
+      _monthPageFor(_visibleMonth) + delta,
+    );
   }
 
   void _shiftYearPage(int delta) {
+    _animateToPage(_yearPageController, _yearPageAnchor ~/ 12 + delta);
+  }
+
+  void _onDayPageChanged(int page) {
+    final next = _monthForPage(page);
+    if (next == _visibleMonth) return;
     setState(() {
-      _yearPageAnchor += delta * 12;
+      _visibleMonth = next;
+      _yearPageAnchor = _pageAnchorFor(next.year);
     });
+    widget.onVisibleMonthChanged?.call(next);
+  }
+
+  void _onMonthPageChanged(int year) {
+    if (year == _visibleMonth.year) return;
+    final next = DateTime(year, _visibleMonth.month);
+    setState(() {
+      _visibleMonth = next;
+      _yearPageAnchor = _pageAnchorFor(year);
+    });
+    widget.onVisibleMonthChanged?.call(next);
+  }
+
+  void _onYearPageChanged(int page) {
+    final anchor = page * 12;
+    if (anchor == _yearPageAnchor) return;
+    setState(() => _yearPageAnchor = anchor);
   }
 
   void _cycleView() {
@@ -208,18 +306,28 @@ class _UiDatePickerState extends State<UiDatePicker> {
     });
   }
 
-  void _pickMonth(int month) {
+  void _pickMonth(int month, {int? year}) {
+    final next = DateTime(year ?? _visibleMonth.year, month);
+    widget.onVisibleMonthChanged?.call(next);
     setState(() {
-      _visibleMonth = DateTime(_visibleMonth.year, month);
+      _visibleMonth = next;
       _view = _DateView.days;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncPageControllers();
     });
   }
 
   void _pickYear(int year) {
+    final next = DateTime(year, _visibleMonth.month);
+    widget.onVisibleMonthChanged?.call(next);
     setState(() {
-      _visibleMonth = DateTime(year, _visibleMonth.month);
+      _visibleMonth = next;
       _yearPageAnchor = _pageAnchorFor(year);
       _view = _DateView.months;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncPageControllers();
     });
   }
 
@@ -283,9 +391,47 @@ class _UiDatePickerState extends State<UiDatePicker> {
             labelInteractive: widget.enableHeaderModeSelection,
           ),
           SizedBox(height: tokens.spacing.x3),
-          if (_view == _DateView.days) ..._buildDaysView(tokens),
-          if (_view == _DateView.months) _buildMonthsView(tokens),
-          if (_view == _DateView.years) _buildYearsView(tokens),
+          SizedBox(
+            height: _kPickerPageHeight,
+            child: switch (_view) {
+              _DateView.days => PageView.builder(
+                  key: const ValueKey('ui_date_picker_day_pages'),
+                  controller: _dayPageController,
+                  onPageChanged: _onDayPageChanged,
+                  itemBuilder: (context, page) {
+                    final month = _monthForPage(page);
+                    return _buildDaysView(
+                      tokens,
+                      month,
+                      current: month == _visibleMonth,
+                    );
+                  },
+                ),
+              _DateView.months => PageView.builder(
+                  key: const ValueKey('ui_date_picker_month_pages'),
+                  controller: _monthPageController,
+                  onPageChanged: _onMonthPageChanged,
+                  itemBuilder: (context, year) => _buildMonthsView(
+                    tokens,
+                    year,
+                    current: year == _visibleMonth.year,
+                  ),
+                ),
+              _DateView.years => PageView.builder(
+                  key: const ValueKey('ui_date_picker_year_pages'),
+                  controller: _yearPageController,
+                  onPageChanged: _onYearPageChanged,
+                  itemBuilder: (context, page) {
+                    final anchor = page * 12;
+                    return _buildYearsView(
+                      tokens,
+                      anchor,
+                      current: anchor == _yearPageAnchor,
+                    );
+                  },
+                ),
+            },
+          ),
         ],
       ),
     );
@@ -294,9 +440,9 @@ class _UiDatePickerState extends State<UiDatePicker> {
 
     return UiBox(
       background: c.surface,
-      border: Border.all(color: c.border),
-      borderRadius: BorderRadius.circular(8),
-      padding: EdgeInsets.all(tokens.spacing.x3),
+      border: widget.showBorder ? Border.all(color: c.border) : null,
+      borderRadius: tokens.radius.lgAll,
+      padding: widget.chromePadding ?? EdgeInsets.all(tokens.spacing.x2),
       child: calendar,
     );
   }
@@ -313,81 +459,98 @@ class _UiDatePickerState extends State<UiDatePicker> {
     }
   }
 
-  List<Widget> _buildDaysView(UiThemeTokens tokens) {
-    final month = _visibleMonth;
+  Widget _buildDaysView(
+    UiThemeTokens tokens,
+    DateTime month, {
+    required bool current,
+  }) {
     final monthStart = DateTime(month.year, month.month, 1);
     final nextMonthStart = DateTime(month.year, month.month + 1, 1);
     final daysInMonth = nextMonthStart.difference(monthStart).inDays;
     final leadingBlanks = (monthStart.weekday - widget.firstDayOfWeek) % 7;
     final totalCells = ((leadingBlanks + daysInMonth) / 7).ceil() * 7;
 
-    return [
-      _WeekdayRow(labels: widget.weekdayLabels),
-      SizedBox(height: tokens.spacing.x2),
-      _DayGrid(
-        key: datePickerDayGridKey,
-        totalCells: totalCells,
-        leadingBlanks: leadingBlanks,
-        daysInMonth: daysInMonth,
-        showOutsideDays: widget.showOutsideDays,
-        dayBuilder: (dayIdx, outsideMonth) {
-          final day = DateTime(month.year, month.month, dayIdx + 1);
-          final selected = _isSelected(day);
-          final rangeStartSelected = _isSameDay(day, widget.rangeStart);
-          final rangeEndSelected = _isSameDay(day, widget.rangeEnd);
-          final inRange = _isInRange(day);
-          final disabled = _isDisabled(day);
-          final today = _isToday(day);
-          final weekEnd = widget.firstDayOfWeek == DateTime.monday
-              ? DateTime.sunday
-              : widget.firstDayOfWeek - 1;
-          return _DayCell(
-            day: day,
-            selected: selected || rangeStartSelected || rangeEndSelected,
-            inRange: inRange,
-            disabled: disabled,
-            today: today,
-            outsideMonth: outsideMonth,
-            rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
-            rangeStartSelected: rangeStartSelected,
-            rangeEndSelected: rangeEndSelected,
-            startsWeek: day.weekday == widget.firstDayOfWeek,
-            endsWeek: day.weekday == weekEnd,
-            semanticsPrefix: widget.daySemanticsPrefix,
-            onTap: disabled ? null : () => widget.onChanged?.call(day),
-          );
-        },
-      ),
-    ];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _WeekdayRow(labels: widget.weekdayLabels),
+        SizedBox(height: tokens.spacing.x2),
+        _DayGrid(
+          key: current ? datePickerDayGridKey : null,
+          totalCells: totalCells,
+          leadingBlanks: leadingBlanks,
+          daysInMonth: daysInMonth,
+          showOutsideDays: widget.showOutsideDays,
+          dayBuilder: (dayIdx, outsideMonth) {
+            final day = DateTime(month.year, month.month, dayIdx + 1);
+            final selected = _isSelected(day);
+            final rangeStartSelected = _isSameDay(day, widget.rangeStart);
+            final rangeEndSelected = _isSameDay(day, widget.rangeEnd);
+            final inRange = _isInRange(day);
+            final disabled = _isDisabled(day);
+            final today = _isToday(day);
+            final weekEnd = widget.firstDayOfWeek == DateTime.monday
+                ? DateTime.sunday
+                : widget.firstDayOfWeek - 1;
+            return _DayCell(
+              day: day,
+              selected: selected || rangeStartSelected || rangeEndSelected,
+              inRange: inRange,
+              disabled: disabled,
+              today: today,
+              outsideMonth: outsideMonth,
+              rangeStart: widget.rangeStart,
+              rangeEnd: widget.rangeEnd,
+              rangeStartSelected: rangeStartSelected,
+              rangeEndSelected: rangeEndSelected,
+              startsWeek: day.weekday == widget.firstDayOfWeek,
+              endsWeek: day.weekday == weekEnd,
+              semanticsPrefix: widget.daySemanticsPrefix,
+              onTap: disabled ? null : () => widget.onChanged?.call(day),
+            );
+          },
+        ),
+      ],
+    );
   }
 
-  Widget _buildMonthsView(UiThemeTokens tokens) {
+  Widget _buildMonthsView(
+    UiThemeTokens tokens,
+    int year, {
+    required bool current,
+  }) {
     return _GridView(
-      key: datePickerMonthGridKey,
+      key: current ? datePickerMonthGridKey : null,
       rows: 4,
       cols: 3,
       itemBuilder: (index) {
         final month = index + 1;
-        final isSelected = _visibleMonth.month == month;
+        final selectedDate = widget.value;
+        final isSelected = selectedDate != null &&
+            selectedDate.year == year &&
+            selectedDate.month == month;
         return _GridCell(
           label: widget.monthShortLabels[index],
           selected: isSelected,
-          onTap: () => _pickMonth(month),
+          onTap: () => _pickMonth(month, year: year),
           semanticsLabel: widget.monthLabels[index],
         );
       },
     );
   }
 
-  Widget _buildYearsView(UiThemeTokens tokens) {
+  Widget _buildYearsView(
+    UiThemeTokens tokens,
+    int anchor, {
+    required bool current,
+  }) {
     return _GridView(
-      key: datePickerYearGridKey,
+      key: current ? datePickerYearGridKey : null,
       rows: 4,
       cols: 3,
       itemBuilder: (index) {
-        final year = _yearPageAnchor + index;
-        final isSelected = _visibleMonth.year == year;
+        final year = anchor + index;
+        final isSelected = widget.value?.year == year;
         return _GridCell(
           label: '$year',
           selected: isSelected,
@@ -446,7 +609,8 @@ class _Header extends StatelessWidget {
         if (prev != null)
           _NavArrow(
             onPressed: prev,
-            glyph: UiDirectionalGlyphs.backwards(context),
+            icon: UiDirectionalIcons.chevronBack(context),
+            semanticsLabel: 'Previous',
           )
         else
           const SizedBox(width: _kHeaderHeight),
@@ -473,7 +637,8 @@ class _Header extends StatelessWidget {
         if (next != null)
           _NavArrow(
             onPressed: next,
-            glyph: UiDirectionalGlyphs.forwards(context),
+            icon: UiDirectionalIcons.chevronForward(context),
+            semanticsLabel: 'Next',
           )
         else
           const SizedBox(width: _kHeaderHeight),
@@ -538,28 +703,24 @@ class _HeaderLabelTrigger extends StatelessWidget {
 }
 
 class _NavArrow extends StatelessWidget {
-  const _NavArrow({required this.onPressed, required this.glyph});
+  const _NavArrow({
+    required this.onPressed,
+    required this.icon,
+    required this.semanticsLabel,
+  });
+
   final VoidCallback onPressed;
-  final String glyph;
+  final IconData icon;
+  final String semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = UiThemeTokens.of(context);
-    return UiPressable(
+    return UiIconButton(
+      icon: Icon(icon),
+      semanticsLabel: semanticsLabel,
       onPressed: onPressed,
-      minTapSize: _kHeaderHeight,
-      builder: (context, state, _) => UiBox(
-        background: state.hovered ? tokens.colors.surfaceMuted : _kTransparent,
-        borderRadius: BorderRadius.circular(6),
-        width: _kHeaderHeight,
-        height: _kHeaderHeight,
-        alignment: Alignment.center,
-        child: UiText(
-          glyph,
-          variant: UiTextVariant.body,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
-      ),
+      intent: UiIntent.ghost,
+      size: UiSize.sm,
     );
   }
 }
@@ -680,7 +841,7 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = UiThemeTokens.of(context).colors;
+    final c = UiThemeTokens.colorsOf(context);
     return Semantics(
       container: true,
       button: true,

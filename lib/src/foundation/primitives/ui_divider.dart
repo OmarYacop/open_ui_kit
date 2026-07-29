@@ -21,7 +21,7 @@ class UiDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedColor = color ?? UiThemeTokens.of(context).colors.border;
+    final resolvedColor = color ?? UiThemeTokens.colorsOf(context).border;
 
     if (axis == Axis.horizontal) {
       return Padding(

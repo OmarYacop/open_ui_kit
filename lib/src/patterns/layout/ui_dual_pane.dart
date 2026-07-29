@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/layout/ui_form_factor.dart';
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../navigation/ui_navigation_transition.dart';
@@ -59,6 +60,18 @@ typedef UiDualPaneBuilder<T> = Widget Function(
   void Function(T? value) select,
 );
 
+/// How a tablet-width master/detail surface should use constrained width.
+enum UiDualPaneTabletMode {
+  /// Keep both panes visible.
+  split,
+
+  /// Keep the primary pane mounted and slide the selected detail over it.
+  ///
+  /// This preserves useful working width in portrait while the detail's own
+  /// back/close action returns focus to the primary pane.
+  overlayDetail,
+}
+
 /// Adaptive master-detail layout.
 ///
 /// - Phone: pushes the detail pane as a full-screen route so it covers shell
@@ -76,8 +89,11 @@ class UiDualPane<T> extends StatefulWidget {
     this.showDivider = true,
     this.breakpoints = UiBreakpoints.standard,
     this.phoneTransitionStyle = UiNavigationTransitionStyle.softShift,
-    this.transitionDuration,
+    this.transitionDuration = UiMotionDuration.standard,
+    this.reverseTransitionDuration = UiMotionDuration.standard,
     this.phoneUsesRootNavigator = true,
+    this.tabletMode = UiDualPaneTabletMode.split,
+    this.collapseDetailWithoutSelection = false,
   });
 
   final UiDualPaneController<T> controller;
@@ -89,13 +105,20 @@ class UiDualPane<T> extends StatefulWidget {
   final bool showDivider;
   final UiBreakpoints breakpoints;
   final UiNavigationTransitionStyle phoneTransitionStyle;
-  final Duration? transitionDuration;
+  final UiMotionDuration transitionDuration;
+  final UiMotionDuration reverseTransitionDuration;
 
   /// When true, phone details are pushed on the root navigator.
   ///
   /// This lets master-detail pages inside app shells cover bottom navigation
   /// bars and own their full safe area, which is the expected mobile behavior.
   final bool phoneUsesRootNavigator;
+  final UiDualPaneTabletMode tabletMode;
+
+  /// Lets overview-style primary panes use the full width until a detail is
+  /// selected. Chat-style layouts generally leave this false so their empty
+  /// detail state remains visible.
+  final bool collapseDetailWithoutSelection;
 
   @override
   State<UiDualPane<T>> createState() => _UiDualPaneState<T>();
@@ -118,7 +141,11 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
         builder: (context, _) {
           return switch (formFactor) {
             UiFormFactor.phone => _buildPhone(context),
-            UiFormFactor.tablet || UiFormFactor.desktop => _buildWide(context),
+            UiFormFactor.tablet =>
+              widget.tabletMode == UiDualPaneTabletMode.overlayDetail
+                  ? _buildTabletOverlay(context)
+                  : _buildWide(context),
+            UiFormFactor.desktop => _buildWide(context),
           };
         },
       ),
@@ -139,31 +166,143 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
 
   Widget _buildWide(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
+    final selected = widget.controller.selected;
+    final animateCollapsedDetail = widget.collapseDetailWithoutSelection;
+    final detailVisible = selected != null || !animateCollapsedDetail;
+    final totalFlex = widget.primaryFlex + widget.detailFlex;
+    final splitFraction = totalFlex <= 0 ? 0.5 : widget.primaryFlex / totalFlex;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return TweenAnimationBuilder<double>(
+          duration: detailVisible
+              ? widget.transitionDuration.resolve(context)
+              : widget.reverseTransitionDuration.resolve(context),
+          curve: tokens.motion.standardCurve,
+          tween: Tween<double>(end: detailVisible ? splitFraction : 1),
+          builder: (context, primaryFraction, _) {
+            final dividerWidth = widget.showDivider ? 1.0 : 0.0;
+            final separation = detailVisible || primaryFraction < 0.999
+                ? widget.gap + dividerWidth
+                : 0.0;
+            final usableWidth =
+                (constraints.maxWidth - separation).clamp(0.0, double.infinity);
+            final primaryWidth = usableWidth * primaryFraction;
+            final detailWidth =
+                (usableWidth - primaryWidth).clamp(0.0, double.infinity);
+            final settledDetailWidth = usableWidth * (1 - splitFraction);
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  key: detailVisible
+                      ? const ValueKey('ui-dual-pane-wide-primary')
+                      : const ValueKey('ui-dual-pane-wide-primary-only'),
+                  width: primaryWidth,
+                  child: ClipRect(
+                    child: _Pane<T>(
+                      controller: widget.controller,
+                      builder: widget.primaryBuilder,
+                    ),
+                  ),
+                ),
+                if (separation > 0) ...[
+                  if (widget.showDivider)
+                    const SizedBox(
+                      width: 1,
+                      child: UiDivider(axis: Axis.vertical),
+                    ),
+                  if (widget.gap > 0) SizedBox(width: widget.gap),
+                ],
+                if (detailWidth > 0)
+                  SizedBox(
+                    key: const ValueKey('ui-dual-pane-wide-detail'),
+                    width: detailWidth,
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: AlignmentDirectional.centerStart,
+                        minWidth: settledDetailWidth,
+                        maxWidth: settledDetailWidth,
+                        child: AnimatedSwitcher(
+                          duration: widget.transitionDuration.resolve(context),
+                          reverseDuration:
+                              widget.reverseTransitionDuration.resolve(context),
+                          switchInCurve: tokens.motion.standardCurve,
+                          switchOutCurve: tokens.motion.standardCurve,
+                          child: selected == null
+                              ? const SizedBox.shrink(
+                                  key: ValueKey(
+                                    'ui-dual-pane-wide-detail-empty',
+                                  ),
+                                )
+                              : DecoratedBox(
+                                  key: ValueKey<Object>(selected as Object),
+                                  decoration: BoxDecoration(
+                                    color: tokens.colors.background,
+                                  ),
+                                  child: _Pane<T>(
+                                    controller: widget.controller,
+                                    builder: widget.detailBuilder,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTabletOverlay(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    final selected = widget.controller.selected;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        Expanded(
-          flex: widget.primaryFlex,
-          child: _Pane<T>(
-            controller: widget.controller,
-            builder: widget.primaryBuilder,
-          ),
+        _Pane<T>(
+          key: const ValueKey('ui-dual-pane-tablet-primary'),
+          controller: widget.controller,
+          builder: widget.primaryBuilder,
         ),
-        if (widget.showDivider)
-          const UiDivider(
-            axis: Axis.vertical,
-          ),
-        if (widget.gap > 0) SizedBox(width: widget.gap),
-        Expanded(
-          flex: widget.detailFlex,
-          child: DecoratedBox(
-            decoration: BoxDecoration(color: tokens.colors.background),
-            child: _Pane<T>(
-              controller: widget.controller,
-              builder: widget.detailBuilder,
-            ),
-          ),
+        AnimatedSwitcher(
+          duration: widget.transitionDuration.resolve(context),
+          reverseDuration: widget.reverseTransitionDuration.resolve(context),
+          switchInCurve: tokens.motion.standardCurve,
+          switchOutCurve: tokens.motion.standardCurve,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(isRtl ? -0.08 : 0.08, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: selected == null
+              ? const SizedBox.shrink(
+                  key: ValueKey('ui-dual-pane-tablet-detail-empty'),
+                )
+              : DecoratedBox(
+                  key: ValueKey<Object>(selected as Object),
+                  decoration: BoxDecoration(
+                    color: tokens.colors.background,
+                    boxShadow: tokens.shadows.lg,
+                  ),
+                  child: _Pane<T>(
+                    controller: widget.controller,
+                    builder: widget.detailBuilder,
+                  ),
+                ),
         ),
       ],
     );
@@ -213,10 +352,9 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
               child: child,
             );
           },
-          transitionDuration: widget.transitionDuration ??
-              UiThemeTokens.of(context).motion.standard,
-          reverseTransitionDuration: widget.transitionDuration ??
-              UiThemeTokens.of(context).motion.fast,
+          transitionDuration: widget.transitionDuration.resolve(context),
+          reverseTransitionDuration:
+              widget.reverseTransitionDuration.resolve(context),
         ),
       )
           .whenComplete(() {

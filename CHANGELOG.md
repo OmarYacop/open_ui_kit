@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.0 - 2026-07-29
+
+- Added adaptive visual-effects budgets with reduced Android defaults, full
+  iOS/macOS glass effects, compile-time backdrop-filter exclusion, theme
+  overrides, accessibility reduction, and coverage across kit-owned blur
+  surfaces.
+- Added `UiRadioGroup<T>` and `UiRadioGroupOption<T>` for typed grouped radio
+  selection with labels, helper text, error text, disabled state, and
+  horizontal or vertical layout.
+- Added `UiTimeGridPicker` and `UiTimePickerField` for compact column-based
+  time selection in drawers, forms, and anchored popovers.
+- Deprecated legacy `UiTimePicker` in favor of `UiTimeGridPicker` and
+  `UiTimePickerField`.
+- Added picker chrome controls for suppressing nested borders and adjusted date
+  picker month navigation to use `UiIconButton` chevrons instead of text glyphs.
+- Made compact navigation back labels adapt to wider tablet and desktop
+  navigation bars while preserving the tighter phone cap.
+- Added experimental `UiSmartActionGroup` for inline "More" action groups that
+  morph into additional buttons without opening a sheet, now using a coordinated
+  group-level layout animation with equal expanded slots by default.
+- Added experimental `UiConfirmActionGroup` for two-button save/delete
+  confirmation rows with coordinated width and label morphs.
+- Added AI-agent guidance through `AGENTS.md`, `doc/ai_usage_guide.md`, README
+  quick-start rules, public Dartdoc, and `example/lib/ai_usage_examples.dart`
+  so tools like Codex can follow package conventions and best practices.
+
 ## 0.3.1 - 2026-07-22
 
 - Added `UiButton.showBorder` so bordered button variants can opt out when used

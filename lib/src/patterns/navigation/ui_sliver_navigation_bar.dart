@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +8,10 @@ import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/layout/ui_navigation_chrome_scope.dart';
 import '../../foundation/motion/ui_motion_transitions.dart';
+import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import '../layout/ui_scroll_edge_fade.dart';
 import '../layout/ui_system_bars.dart';
 import 'ui_navigation_back_button.dart';
 import 'ui_navigation_scope.dart';
@@ -36,6 +36,23 @@ import 'ui_route_entry.dart';
 ///
 /// Visual treatment (blur/tint/divider) is driven by the spec so one
 /// screen declaration controls both chrome and content.
+///
+/// Prefer [UiNavigationSpec.back] over supplying a custom [UiNavigationSpec.leading]
+/// back button. The built-in back affordance handles RTL chevrons, long-press
+/// history, compact phones, and wider tablet layouts where the label can use
+/// more available width.
+///
+/// ```dart
+/// UiSliverNavigationBar(
+///   spec: UiNavigationSpec(
+///     title: 'Invoice details',
+///     back: UiNavigationBackConfig(
+///       label: 'Invoices',
+///       onPressed: () => Navigator.of(context).maybePop(),
+///     ),
+///   ),
+/// )
+/// ```
 class UiSliverNavigationBar extends StatelessWidget {
   const UiSliverNavigationBar({
     super.key,
@@ -79,7 +96,7 @@ class UiSliverNavigationBar extends StatelessWidget {
       return SliverToBoxAdapter(child: _RailPageHeader(spec: spec));
     }
 
-    final effectiveSpec = (hasPersistentRail || isDesktop)
+    final effectiveSpec = (hasPersistentRail || isDesktop) && spec.back == null
         ? spec.copyWith(
             surface: UiNavigationSurface.solid,
             blurSigma: 0,
@@ -123,8 +140,13 @@ class _RailPageHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compactPane = constraints.maxWidth < 520;
+          final animateTypography = !MediaQuery.disableAnimationsOf(context);
+          final responsiveDuration =
+              animateTypography ? tokens.motion.standard : Duration.zero;
 
-          return Padding(
+          return AnimatedPadding(
+            duration: responsiveDuration,
+            curve: tokens.motion.standardCurve,
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.x4,
               compactPane ? tokens.spacing.x4 : tokens.spacing.x6,
@@ -143,13 +165,18 @@ class _RailPageHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      UiText(
-                        spec.title,
-                        variant: compactPane
-                            ? UiTextVariant.heading
-                            : UiTextVariant.displayMd,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      AnimatedDefaultTextStyle(
+                        duration: responsiveDuration,
+                        curve: tokens.motion.standardCurve,
+                        style: (compactPane
+                                ? tokens.typography.heading
+                                : tokens.typography.displayMd)
+                            .copyWith(color: tokens.colors.textPrimary),
+                        child: Text(
+                          spec.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (spec.subtitle != null &&
                           spec.subtitle!.isNotEmpty) ...[
@@ -220,8 +247,9 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
       surface: resolvedSurface,
       overlapsContent: overlapsContent,
     );
-    final showBlur =
-        resolvedSurface == UiNavigationSurface.blurred && spec.blurSigma > 0;
+    final showEdgeFade = (resolvedSurface == UiNavigationSurface.edgeFade ||
+            resolvedSurface == UiNavigationSurface.blurred) &&
+        spec.blurSigma > 0;
     final dividerOpacity =
         spec.showDivider ? (overlapsContent ? 1.0 : _dividerOpacity(t)) : 0.0;
     final useHero = spec.largeTitle && spec.back == null;
@@ -236,19 +264,29 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
           child: _CompactRow(
             spec: spec,
             collapseT: t,
-            showTitle: !useHero,
+            showTitle: spec.showCompactTitle && (!useHero || t > 0.001),
+            titleOpacity: useHero ? ((t - 0.5) / 0.36).clamp(0.0, 1.0) : 1,
           ),
         ),
         if (useHero)
-          // _ShrinkingTitle uses Positioned internally, which requires
+          // _LargeTitle uses Positioned internally, which requires
           // a direct Stack parent — so the RepaintBoundary lives
           // *inside* the Positioned, not around it.
-          _ShrinkingTitle(
+          _LargeTitle(
             spec: spec,
             collapseT: t,
-            topInset: topInset,
-            collapsedBarHeight: minExtent - topInset,
             expandedHeight: maxExtent,
+            scrollOffset: shrinkOffset,
+          ),
+        if (useHero &&
+            spec.actionsFollowTitleCollapse &&
+            spec.actions.isNotEmpty)
+          _TitleTrackingActions(
+            spec: spec,
+            expandedHeight: maxExtent,
+            collapsedHeight: minExtent,
+            topInset: topInset,
+            scrollOffset: shrinkOffset,
           ),
       ],
     );
@@ -272,50 +310,35 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
       child: content,
     );
 
-    if (showBlur) {
-      // Frosted-glass treatment: keep blur present across scroll states,
-      // then slightly intensify as the bar collapses.
-      final sigma = 8 + (spec.blurSigma - 8).clamp(0.0, double.infinity) * t;
-      content = ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              content,
-              IgnorePointer(
-                child: AnimatedContainer(
-                  duration: tokens.motion.standard,
-                  curve: tokens.motion.standardCurve,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        c.textPrimary.withValues(
-                          alpha: overlapsContent ? 0.045 : 0.018,
-                        ),
-                        c.textPrimary.withValues(
-                          alpha: overlapsContent ? 0.012 : 0.0,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+    if (showEdgeFade) {
+      content = UiScrollEdgeFade(
+        backgroundColor: c.background,
+        extent: minExtent,
+        maxOpacity: overlapsContent ? 0.92 : 0.78,
+        showBottom: false,
+        paintOverChild: false,
+        child: content,
       );
     }
 
     // Publish a system-bar annotation scoped to the bar's pinned region
     // so the OS status icons contrast against *this* surface even when
     // the page background differs (dark hero over a light page, etc.).
-    final overlaySample = surfaceColor.withValues(alpha: 1);
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: UiSystemBarsStyle.inferFromBackground(overlaySample),
-      child: content,
+    final overlaySample = switch (resolvedSurface) {
+      UiNavigationSurface.transparent ||
+      UiNavigationSurface.edgeFade ||
+      UiNavigationSurface.blurred =>
+        c.background,
+      UiNavigationSurface.adaptive ||
+      UiNavigationSurface.solid =>
+        surfaceColor.withValues(alpha: 1),
+    };
+    return UiLayeredOverlayPortal(
+      layer: UiOverlayLayer.navigationChrome,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: UiSystemBarsStyle.inferFromBackground(overlaySample),
+        child: content,
+      ),
     );
   }
 
@@ -331,11 +354,9 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
         return base;
       case UiNavigationSurface.solid:
         return base;
+      case UiNavigationSurface.edgeFade:
       case UiNavigationSurface.blurred:
-        final alpha = overlapsContent
-            ? (0.1 + math.pow(t, 0.7) * 0.28).clamp(0.0, 1.0)
-            : (math.pow(t, 2.3) * 0.1).clamp(0.0, 1.0);
-        return base.withValues(alpha: alpha.clamp(0.0, 1.0));
+        return const Color(0x00000000);
       case UiNavigationSurface.transparent:
         return const Color(0x00000000);
     }
@@ -344,7 +365,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
   UiNavigationSurface _resolveSurface(BuildContext context) {
     if (spec.surface != UiNavigationSurface.adaptive) return spec.surface;
     return defaultTargetPlatform == TargetPlatform.iOS
-        ? UiNavigationSurface.blurred
+        ? UiNavigationSurface.edgeFade
         : UiNavigationSurface.solid;
   }
 
@@ -368,15 +389,14 @@ class _CompactRow extends StatelessWidget {
     required this.spec,
     required this.collapseT,
     required this.showTitle,
+    required this.titleOpacity,
   });
 
   final UiNavigationSpec spec;
   final double collapseT;
 
-  /// When false, the middle slot is rendered empty so a sibling
-  /// shrinking-title overlay can occupy the title position without
-  /// clashing with a second title widget.
   final bool showTitle;
+  final double titleOpacity;
 
   @override
   Widget build(BuildContext context) {
@@ -431,14 +451,17 @@ class _CompactRow extends StatelessWidget {
           0.0,
           constraints.maxWidth - horizontalPadding,
         );
+        final compactBackMaxWidth = math.min(112.0, contentWidth * 0.28);
+        final roomyBackMaxWidth = math.min(260.0, contentWidth * 0.32);
         final backMaxWidth = math.max(
           44.0,
-          math.min(112.0, contentWidth * 0.28),
+          contentWidth >= 600 ? roomyBackMaxWidth : compactBackMaxWidth,
         );
-        final trailingWidth = spec.actions.isEmpty
-            ? 0.0
-            : 44.0 * spec.actions.length +
-                tokens.spacing.x2 * (spec.actions.length - 1);
+        final trailingWidth =
+            spec.actions.isEmpty || spec.actionsFollowTitleCollapse
+                ? 0.0
+                : 44.0 * spec.actions.length +
+                    tokens.spacing.x2 * (spec.actions.length - 1);
         final middleSideReserve =
             math.max(backMaxWidth, trailingWidth) + tokens.spacing.x2;
         final leading = spec.back != null
@@ -460,7 +483,7 @@ class _CompactRow extends StatelessWidget {
                 ),
               )
             : spec.leading;
-        final trailing = spec.actions.isEmpty
+        final trailing = spec.actions.isEmpty || spec.actionsFollowTitleCollapse
             ? null
             : AnimatedSwitcher(
                 duration: tokens.motion.standard,
@@ -488,7 +511,7 @@ class _CompactRow extends StatelessWidget {
                 transitionBuilder: _chromeTransition,
                 child: Row(
                   key: ValueKey(
-                    'titlegroup:${spec.title}|${spec.subtitle ?? ''}|${spec.brand?.displayName ?? ''}',
+                    'titlegroup:${spec.compactTitle ?? spec.title}|${spec.brand?.displayName ?? ''}',
                   ),
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -506,29 +529,24 @@ class _CompactRow extends StatelessWidget {
                     ],
                     if (showTitle)
                       Flexible(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            UiText(
-                              spec.title,
-                              variant: UiTextVariant.heading,
-                              style: TextStyle(color: c.textPrimary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                            ),
-                            if (spec.subtitle != null && spec.back == null)
+                        child: Opacity(
+                          opacity: titleOpacity,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               UiText(
-                                spec.subtitle!,
-                                variant: UiTextVariant.caption,
-                                tone: UiTextTone.muted,
+                                spec.compactTitle ?? spec.title,
+                                key: const Key('ui_navigation_compact_title'),
+                                variant: UiTextVariant.heading,
+                                style: TextStyle(color: c.textPrimary),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
                               ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                   ],
@@ -586,29 +604,73 @@ Future<void> _popNavigatorTimes(NavigatorState navigator, int count) async {
   }
 }
 
-/// Single title that smoothly shrinks and re-positions as the user
-/// scrolls.
-///
-/// At rest (t=0) the title is rendered at `displayMd` size, anchored to
-/// the bottom-left of the expanded bar region. As t grows the title's
-/// font size interpolates to `subheading` and its position lerps to the
-/// vertical center of the collapsed nav row. At t=1 it sits exactly
-/// where the compact-row title would have been, so the whole collapse
-/// reads as one continuous resize rather than a cross-fade.
-class _ShrinkingTitle extends StatelessWidget {
-  const _ShrinkingTitle({
+class _TitleTrackingActions extends StatelessWidget {
+  const _TitleTrackingActions({
+    required this.spec,
+    required this.expandedHeight,
+    required this.collapsedHeight,
+    required this.topInset,
+    required this.scrollOffset,
+  });
+
+  final UiNavigationSpec spec;
+  final double expandedHeight;
+  final double collapsedHeight;
+  final double topInset;
+  final double scrollOffset;
+
+  double _lineHeightFor(TextStyle style) =>
+      (style.fontSize ?? 16) * (style.height ?? 1.2);
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    final largeLine = _lineHeightFor(tokens.typography.displayMd);
+    final subtitleLine = _lineHeightFor(tokens.typography.bodySm);
+    final expandedBlockHeight = largeLine +
+        (spec.subtitle == null ? 0 : tokens.spacing.x1 + subtitleLine);
+    final expandedTitleTop =
+        expandedHeight - tokens.spacing.x1 - expandedBlockHeight;
+    const actionExtent = 44.0;
+    final expandedActionTop = expandedTitleTop + (largeLine - actionExtent) / 2;
+    final compactActionTop =
+        topInset + (collapsedHeight - topInset - actionExtent) / 2;
+    final top = math.max(
+      compactActionTop,
+      expandedActionTop - scrollOffset,
+    );
+
+    return PositionedDirectional(
+      key: const Key('ui_navigation_tracking_actions'),
+      end: tokens.spacing.x3,
+      top: top,
+      height: actionExtent,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < spec.actions.length; i++) ...[
+            if (i > 0) SizedBox(width: tokens.spacing.x2),
+            spec.actions[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Large page title that yields to the centered compact navigation title.
+class _LargeTitle extends StatelessWidget {
+  const _LargeTitle({
     required this.spec,
     required this.collapseT,
-    required this.topInset,
-    required this.collapsedBarHeight,
     required this.expandedHeight,
+    required this.scrollOffset,
   });
 
   final UiNavigationSpec spec;
   final double collapseT;
-  final double topInset;
-  final double collapsedBarHeight;
   final double expandedHeight;
+  final double scrollOffset;
 
   double _lineHeightFor(TextStyle s) => (s.fontSize ?? 16) * (s.height ?? 1.2);
 
@@ -616,18 +678,9 @@ class _ShrinkingTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
-    // Collapsed endpoint is `heading` (20pt) rather than `subheading`
-    // (16pt) so the compact title reads as a proper page title at rest
-    // and lines up with `_CompactRow`, which now also renders the
-    // compact title at `heading` size.
-    final titleStyle = TextStyle.lerp(
-      tokens.typography.displayMd,
-      tokens.typography.heading,
-      collapseT,
-    )!;
+    final titleStyle = tokens.typography.displayMd;
 
     final largeLine = _lineHeightFor(tokens.typography.displayMd);
-    final compactLine = _lineHeightFor(tokens.typography.heading);
     final subtitleLine = _lineHeightFor(tokens.typography.bodySm);
     final hasTopWidgets =
         spec.back != null || spec.leading != null || spec.actions.isNotEmpty;
@@ -642,69 +695,49 @@ class _ShrinkingTitle extends StatelessWidget {
         expandedHeight - tokens.spacing.x1 - expandedBlockHeight;
     final expandedY = baseExpandedY - (hasTopWidgets ? 0 : tokens.spacing.x1);
 
-    // Collapsed anchor: vertical center of the compact nav row.
-    final compactY = topInset + (collapsedBarHeight - compactLine) / 2;
-
-    final y = lerpDouble(expandedY, compactY, collapseT)!.clamp(
-      topInset + tokens.spacing.x1,
-      compactY,
-    );
-
-    // Horizontal: start-aligned with page padding (reading-direction
-    // "start" — the left edge in LTR, the right edge in RTL), sliding
-    // toward centre as we collapse. The compact row handles its own
-    // leading (if any); we only need to stay clear of the trailing
-    // actions. Switched from `Positioned(left:, right:)` to
-    // `PositionedDirectional(start:, end:)` so the title block mirrors
-    // correctly in RTL.
     final trailingReserved = spec.actions.isEmpty
         ? tokens.spacing.x4
-        : tokens.spacing.x4 + 44.0 * spec.actions.length;
-    final startAtRest = tokens.spacing.x4;
-    final hasLeading = spec.back != null || spec.leading != null;
-    final startCollapsed =
-        hasLeading ? tokens.spacing.x4 + 32 : tokens.spacing.x4;
-    final startOffset = lerpDouble(startAtRest, startCollapsed, collapseT)!;
-    final endOffset =
-        lerpDouble(tokens.spacing.x4, trailingReserved, collapseT)!;
-
-    // Subtitle fades first so the user feels the bar compacting before
-    // the title finishes its shrink.
-    final subtitleOpacity = ((0.55 - collapseT) / 0.5).clamp(0.0, 1.0);
+        : tokens.spacing.x4 +
+            44.0 * spec.actions.length +
+            tokens.spacing.x2 * (spec.actions.length - 1);
+    final titleOpacity = ((0.62 - collapseT) / 0.48).clamp(0.0, 1.0);
+    final subtitleOpacity = ((0.46 - collapseT) / 0.36).clamp(0.0, 1.0);
 
     return PositionedDirectional(
-      start: startOffset,
-      end: endOffset,
-      top: y,
-      // Own raster layer — the title rebuilds every scroll frame as
-      // the size/position interpolation advances; isolating it keeps
-      // the surrounding bar background off the repaint list.
+      start: tokens.spacing.x4,
+      end: trailingReserved,
+      top: expandedY - scrollOffset,
       child: RepaintBoundary(
         child: IgnorePointer(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                spec.title,
-                style: titleStyle.copyWith(color: c.textPrimary),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (spec.subtitle != null && subtitleOpacity > 0.02) ...[
-                SizedBox(height: tokens.spacing.x1),
-                Opacity(
-                  opacity: subtitleOpacity,
-                  child: UiText(
-                    spec.subtitle!,
-                    variant: UiTextVariant.bodySm,
-                    tone: UiTextTone.muted,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          ignoring: titleOpacity < 0.05,
+          child: Opacity(
+            opacity: titleOpacity,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  spec.title,
+                  key: const Key('ui_navigation_large_title'),
+                  style: titleStyle.copyWith(color: c.textPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                if (spec.subtitle != null && subtitleOpacity > 0.02) ...[
+                  SizedBox(height: tokens.spacing.x1),
+                  Opacity(
+                    opacity: subtitleOpacity,
+                    child: UiText(
+                      spec.subtitle!,
+                      variant: UiTextVariant.bodySm,
+                      tone: UiTextTone.muted,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

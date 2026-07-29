@@ -742,7 +742,7 @@ class _ToastSlotState extends State<_ToastSlot> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final motion = UiThemeTokens.of(context).motion;
+    final motion = UiThemeTokens.motionOf(context);
     if (_started) return;
     _started = true;
     if (motion.standard == Duration.zero) {

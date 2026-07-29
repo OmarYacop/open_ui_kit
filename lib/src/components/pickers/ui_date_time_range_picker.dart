@@ -78,6 +78,7 @@ class _UiDateTimeRangePickerState extends State<UiDateTimeRangePicker> {
             min: widget.min,
             max: widget.max,
             disabled: widget.disabled,
+            showBorder: false,
             onChanged: (r) {
               setState(() => _dates = r);
               _emit();

@@ -13,6 +13,14 @@ import 'button.dart' show UiSize, UiButtonMetrics;
 
 typedef UiInputValidator = String? Function(String value);
 
+enum UiInputVariant {
+  standard,
+
+  /// Removes the input's own surface, border, and focus ring so a parent
+  /// control can own the complete visual container.
+  embedded,
+}
+
 /// Text input component.
 ///
 /// Exposes the usual controller/value knobs plus label/hint/error slots so
@@ -43,6 +51,7 @@ class UiInput extends StatefulWidget {
     this.size = UiSize.lg,
     this.leading,
     this.trailing,
+    this.variant = UiInputVariant.standard,
   }) : assert(
           controller == null || initialValue == null,
           'Provide controller OR initialValue, not both.',
@@ -71,6 +80,7 @@ class UiInput extends StatefulWidget {
   final UiSize size;
   final Widget? leading;
   final Widget? trailing;
+  final UiInputVariant variant;
 
   @override
   State<UiInput> createState() => UiInputState();
@@ -127,6 +137,33 @@ class UiInputState extends State<UiInput>
   }
 
   @override
+  void didUpdateWidget(covariant UiInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.controller != widget.controller) {
+      final previousController = oldWidget.controller ?? _ownController;
+      previousController?.removeListener(_handleTextChange);
+      if (oldWidget.controller == null) {
+        _ownController?.dispose();
+        _ownController = null;
+      }
+      _controller.addListener(_handleTextChange);
+      _lastEmpty = _controller.text.isEmpty;
+    }
+
+    if (oldWidget.focusNode != widget.focusNode) {
+      final previousFocusNode = oldWidget.focusNode ?? _ownFocusNode;
+      previousFocusNode?.removeListener(_handleFocusChange);
+      if (oldWidget.focusNode == null) {
+        _ownFocusNode?.dispose();
+        _ownFocusNode = null;
+      }
+      _focusNode.addListener(_handleFocusChange);
+      _focused = _focusNode.hasFocus;
+    }
+  }
+
+  @override
   void dispose() {
     _focusNode.removeListener(_handleFocusChange);
     _controller.removeListener(_handleTextChange);
@@ -148,7 +185,7 @@ class UiInputState extends State<UiInput>
     }
   }
 
-  /// Runs [widget.validator] and returns whether the value is valid.
+  /// Runs [UiInput.validator] and returns whether the value is valid.
   bool validate() {
     final v = widget.validator;
     if (v == null) return true;
@@ -185,14 +222,11 @@ class UiInputState extends State<UiInput>
     // disabled/read-only rows stay visually quiet.
     final canFocus = !disabled && !widget.readOnly;
     final ringActive = _focused && canFocus;
-    // Focus = a single thin border recolored to the brand colour. No outer
-    // ring, no glow/halo, no background or size change — keeps the field calm
-    // and avoids a focus ring + border stacking into one oversized border.
-    final borderColor = hasError
-        ? c.destructive
-        : ringActive
-            ? c.ring
-            : c.input;
+    final embedded = widget.variant == UiInputVariant.embedded;
+    // Keep the resting border stable and add a low-opacity one-pixel focus
+    // ring. This preserves shadcn-style focus visibility without producing a
+    // high-contrast double outline in light or dark mode.
+    final borderColor = hasError ? c.destructive : c.input;
 
     final bg = disabled ? c.muted : c.surface;
     final textColor = disabled ? c.mutedForeground : c.foreground;
@@ -238,6 +272,8 @@ class UiInputState extends State<UiInput>
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment:
+          embedded ? MainAxisAlignment.center : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.label != null) ...[
@@ -251,8 +287,11 @@ class UiInputState extends State<UiInput>
         _buildTappable(
           disabled: disabled,
           child: UiFocusRing(
-            visible: ringActive && !hasError,
+            visible: !embedded && ringActive && !hasError,
             borderRadius: tokens.radius.mdAll,
+            color: c.ring.withValues(alpha: 0.32),
+            width: 1,
+            offset: 1,
             child: AnimatedContainer(
               duration: tokens.motion.fast,
               curve: tokens.motion.standardCurve,
@@ -260,11 +299,13 @@ class UiInputState extends State<UiInput>
                 minHeight: UiButtonMetrics.minHeight(widget.size),
               ),
               decoration: BoxDecoration(
-                color: bg,
-                border: Border.all(
-                  color: borderColor,
-                  width: hasError ? 1.5 : 1,
-                ),
+                color: embedded ? const Color(0x00000000) : bg,
+                border: embedded
+                    ? null
+                    : Border.all(
+                        color: borderColor,
+                        width: hasError ? 1.5 : 1,
+                      ),
                 borderRadius: tokens.radius.mdAll,
               ),
               padding: padding,

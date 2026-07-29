@@ -92,7 +92,7 @@ class UiText extends StatelessWidget {
   }
 
   static Color _resolveTone(BuildContext context, UiTextTone tone) {
-    final c = UiThemeTokens.of(context).colors;
+    final c = UiThemeTokens.colorsOf(context);
     switch (tone) {
       case UiTextTone.primary:
         return c.textPrimary;

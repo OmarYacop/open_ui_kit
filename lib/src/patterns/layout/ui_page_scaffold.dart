@@ -3,8 +3,11 @@ import 'package:flutter/widgets.dart';
 
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
+import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import '../../foundation/layout/ui_keyboard_geometry.dart';
 import 'ui_safe_viewport.dart';
+import 'ui_scroll_edge_fade.dart';
 import 'ui_system_bars.dart';
 
 /// Preferred page shell: coordinates background, top/bottom bars, safe
@@ -38,17 +41,21 @@ class UiPageScaffold extends StatelessWidget {
     this.syncSystemBars = true,
     this.leftSafeInset = true,
     this.rightSafeInset = true,
-    this.showTopDivider = true,
-    this.showBottomDivider = true,
+    this.showTopDivider = false,
+    this.showBottomDivider = false,
     this.paintTopInsetWithTopBar = false,
     this.topInsetColor,
     this.scrollFade = true,
+    this.scrollFadeBackgroundColor,
     this.scrollFadeTop = true,
     this.scrollFadeBottom = true,
-    this.scrollFadeExtent = 48,
+    this.scrollFadeExtent = 128,
+    this.scrollFadeWideExtent = 72,
+    this.scrollFadeBottomExtent = 48,
     this.scrollFadeHorizontalInset = 0,
     this.scrollFadeMaxOpacity = 0.74,
     this.scrollFadeUsesSafeArea = true,
+    this.resizeBodyForKeyboard = false,
   });
 
   final Widget body;
@@ -89,7 +96,7 @@ class UiPageScaffold extends StatelessWidget {
 
   /// Color used when [paintTopInsetWithTopBar] is true.
   ///
-  /// Defaults to [UiThemeTokens.colors.surface].
+  /// Defaults to the ambient [UiThemeTokens] `colors.surface` value.
   final Color? topInsetColor;
 
   /// Applies a soft top/bottom edge mask to the page body.
@@ -97,6 +104,12 @@ class UiPageScaffold extends StatelessWidget {
   /// This is intended for pages whose scrollable content moves below floating
   /// chrome. Top/bottom bars are not masked.
   final bool scrollFade;
+
+  /// Surface color sampled by the edge fade.
+  ///
+  /// Defaults to [backgroundColor]. Set this when the page layer itself is
+  /// transparent but the fade should match an opaque surface behind it.
+  final Color? scrollFadeBackgroundColor;
 
   /// Paint the fade at the top edge of [body]. Disable this when an in-scroll
   /// sticky region owns the transition into scrolling content.
@@ -107,6 +120,16 @@ class UiPageScaffold extends StatelessWidget {
 
   /// Physical fade distance in logical pixels.
   final double scrollFadeExtent;
+
+  /// Top fade distance used on tablet and desktop viewports.
+  ///
+  /// A shorter wide-screen fade prevents large navigation titles from veiling
+  /// the first content row after a persistent rail reduces the content pane.
+  final double scrollFadeWideExtent;
+
+  /// Physical fade distance at the bottom edge. Kept shorter than the top by
+  /// default so resting content is not unnecessarily veiled.
+  final double scrollFadeBottomExtent;
 
   /// Optional horizontal inset for the fade overlay.
   ///
@@ -126,10 +149,22 @@ class UiPageScaffold extends StatelessWidget {
   /// [UiSafeViewport] instead.
   final bool scrollFadeUsesSafeArea;
 
+  /// Reduces the body's layout height by the live keyboard inset.
+  ///
+  /// This is useful for search and selection pages whose centered empty state
+  /// should remain centered in the visible area above the keyboard. Leave it
+  /// disabled for pages that already use [UiKeyboardDock] or otherwise own
+  /// their keyboard geometry.
+  final bool resizeBodyForKeyboard;
+
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final bg = backgroundColor ?? tokens.colors.background;
+    final effectiveTopFadeExtent =
+        MediaQuery.sizeOf(context).shortestSide >= 600
+            ? scrollFadeWideExtent
+            : scrollFadeExtent;
 
     // The background is painted full-bleed under system hardware. When scroll
     // fade is enabled, safe insets belong to the faded body layer instead of a
@@ -158,9 +193,33 @@ class UiPageScaffold extends StatelessWidget {
     final scrollFadeSafePadding = EdgeInsets.only(
       top: consumeFadeTopInset ? _effectiveTopSafeInset(media) : 0,
       bottom: consumeFadeBottomInset
-          ? _effectiveBottomSafeInset(media, safeViewportMode)
+          ? _effectiveBottomSafeInset(context, media, safeViewportMode)
           : 0,
     );
+
+    Widget pageBody = UiPageBodyInsets(
+      insets: scrollFadeSafePadding,
+      child: scrollFade
+          ? UiScrollEdgeFade(
+              extent: effectiveTopFadeExtent,
+              bottomExtent: scrollFadeBottomExtent,
+              horizontalInset: scrollFadeHorizontalInset,
+              maxOpacity: scrollFadeMaxOpacity,
+              backgroundColor: scrollFadeBackgroundColor ?? bg,
+              showTop: scrollFadeTop,
+              showBottom: scrollFadeBottom,
+              child: body,
+            )
+          : body,
+    );
+    if (resizeBodyForKeyboard) {
+      pageBody = Padding(
+        padding: EdgeInsets.only(
+          bottom: UiKeyboardGeometry.currentInsetOf(context),
+        ),
+        child: pageBody,
+      );
+    }
 
     Widget content = Column(
       mainAxisSize: MainAxisSize.max,
@@ -173,22 +232,7 @@ class UiPageScaffold extends StatelessWidget {
           ),
         if (topBar != null) topBar!,
         if (topBar != null && showTopDivider) const UiDivider(),
-        Expanded(
-          child: UiPageBodyInsets(
-            insets: scrollFadeSafePadding,
-            child: scrollFade
-                ? _UiScrollFade(
-                    extent: scrollFadeExtent,
-                    horizontalInset: scrollFadeHorizontalInset,
-                    maxOpacity: scrollFadeMaxOpacity,
-                    backgroundColor: bg,
-                    showTop: scrollFadeTop,
-                    showBottom: scrollFadeBottom,
-                    child: body,
-                  )
-                : body,
-          ),
-        ),
+        Expanded(child: pageBody),
         if (bottomBar != null && showBottomDivider) const UiDivider(),
         if (bottomBar != null) bottomBar!,
       ],
@@ -227,7 +271,7 @@ class UiPageScaffold extends StatelessWidget {
       background: bg,
       width: double.infinity,
       height: double.infinity,
-      child: content,
+      child: UiLayeredOverlayHost(child: content),
     );
 
     if (syncSystemBars) {
@@ -305,13 +349,15 @@ class UiPageScaffold extends StatelessWidget {
           : safeAreaMinimum.top;
 
   double _effectiveBottomSafeInset(
+    BuildContext context,
     MediaQueryData media,
     UiSafeViewportMode mode,
   ) {
     final keyboardAware = mode == UiSafeViewportMode.keyboardAware ||
         mode == UiSafeViewportMode.keyboardAwareNoTop;
-    final systemInset = keyboardAware && media.viewInsets.bottom > 0
-        ? media.viewInsets.bottom
+    final keyboardInset = UiKeyboardGeometry.currentInsetOf(context);
+    final systemInset = keyboardAware && keyboardInset > 0
+        ? keyboardInset
         : media.padding.bottom;
     return systemInset > safeAreaMinimum.bottom
         ? systemInset
@@ -325,7 +371,9 @@ class UiPageScaffold extends StatelessWidget {
 /// The scaffold itself stays visually full-bleed. Scrollable page patterns use
 /// these values to keep content clear of hardware insets while the fade remains
 /// painted at the physical edges.
-class UiPageBodyInsets extends InheritedWidget {
+enum UiPageBodyInsetsAspect { top, right, bottom, left }
+
+class UiPageBodyInsets extends InheritedModel<UiPageBodyInsetsAspect> {
   const UiPageBodyInsets({
     super.key,
     required this.insets,
@@ -335,9 +383,30 @@ class UiPageBodyInsets extends InheritedWidget {
   final EdgeInsets insets;
 
   static EdgeInsets of(BuildContext context) {
-    return context
-            .dependOnInheritedWidgetOfExactType<UiPageBodyInsets>()
-            ?.insets ??
+    return InheritedModel.inheritFrom<UiPageBodyInsets>(context)?.insets ??
+        EdgeInsets.zero;
+  }
+
+  static double topOf(BuildContext context) =>
+      _of(context, UiPageBodyInsetsAspect.top).top;
+
+  static double rightOf(BuildContext context) =>
+      _of(context, UiPageBodyInsetsAspect.right).right;
+
+  static double bottomOf(BuildContext context) =>
+      _of(context, UiPageBodyInsetsAspect.bottom).bottom;
+
+  static double leftOf(BuildContext context) =>
+      _of(context, UiPageBodyInsetsAspect.left).left;
+
+  static EdgeInsets _of(
+    BuildContext context,
+    UiPageBodyInsetsAspect aspect,
+  ) {
+    return InheritedModel.inheritFrom<UiPageBodyInsets>(
+          context,
+          aspect: aspect,
+        )?.insets ??
         EdgeInsets.zero;
   }
 
@@ -345,84 +414,20 @@ class UiPageBodyInsets extends InheritedWidget {
   bool updateShouldNotify(UiPageBodyInsets oldWidget) {
     return insets != oldWidget.insets;
   }
-}
-
-class _UiScrollFade extends StatelessWidget {
-  const _UiScrollFade({
-    required this.child,
-    required this.extent,
-    required this.horizontalInset,
-    required this.maxOpacity,
-    required this.backgroundColor,
-    required this.showTop,
-    required this.showBottom,
-  });
-
-  final Widget child;
-  final double extent;
-  final double horizontalInset;
-  final double maxOpacity;
-  final Color backgroundColor;
-  final bool showTop;
-  final bool showBottom;
 
   @override
-  Widget build(BuildContext context) {
-    final edgeColor = backgroundColor.withValues(
-      alpha: maxOpacity.clamp(0.0, 0.72),
-    );
-    final transparentEdgeColor = backgroundColor.withValues(alpha: 0);
-    final direction = Directionality.maybeOf(context) ?? TextDirection.ltr;
-    final view = View.of(context);
-    final leftSafeBleed = view.padding.left / view.devicePixelRatio;
-    final rightSafeBleed = view.padding.right / view.devicePixelRatio;
-    final startBleed =
-        direction == TextDirection.ltr ? leftSafeBleed : rightSafeBleed;
-    final endBleed =
-        direction == TextDirection.ltr ? rightSafeBleed : leftSafeBleed;
-
-    return Stack(
-      fit: StackFit.expand,
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        if (showTop)
-          PositionedDirectional(
-            start: horizontalInset - startBleed,
-            end: horizontalInset - endBleed,
-            top: 0,
-            height: extent,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [edgeColor, transparentEdgeColor],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (showBottom)
-          PositionedDirectional(
-            start: horizontalInset - startBleed,
-            end: horizontalInset - endBleed,
-            bottom: 0,
-            height: extent,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [edgeColor, transparentEdgeColor],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
+  bool updateShouldNotifyDependent(
+    UiPageBodyInsets oldWidget,
+    Set<UiPageBodyInsetsAspect> dependencies,
+  ) {
+    final old = oldWidget.insets;
+    return dependencies.any(
+      (aspect) => switch (aspect) {
+        UiPageBodyInsetsAspect.top => insets.top != old.top,
+        UiPageBodyInsetsAspect.right => insets.right != old.right,
+        UiPageBodyInsetsAspect.bottom => insets.bottom != old.bottom,
+        UiPageBodyInsetsAspect.left => insets.left != old.left,
+      },
     );
   }
 }

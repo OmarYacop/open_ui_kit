@@ -56,7 +56,30 @@ class _ButtonStyle {
   final double opacity;
 }
 
-/// Variant-driven button built on [UiPressable] + [UiBox] + [UiText].
+/// Token-driven labeled action button.
+///
+/// Use this for commands with visible text such as "Save", "Cancel", and
+/// "Create invoice". For icon-only commands, prefer [UiIconButton] so the
+/// fixed hit target, icon sizing, and semantics stay consistent.
+///
+/// Button intent has one important package convention:
+///
+/// - Omitted [intent] / [UiIntent.defaultIntent] renders as
+///   [UiIntent.primary].
+/// - Use [UiIntent.neutral] for secondary or cancel actions.
+/// - Neutral, secondary, and destructive styles include their normal outline by
+///   default. Pass [showBorder] as `false` only when the button is placed inside
+///   an already framed or elevated surface and the extra outline would be
+///   visually noisy.
+///
+/// ```dart
+/// UiButton(
+///   label: 'Cancel',
+///   intent: UiIntent.neutral,
+///   showBorder: false, // embedded in an already bordered drawer/footer
+///   onPressed: onCancel,
+/// )
+/// ```
 class UiButton extends StatelessWidget {
   const UiButton({
     super.key,
@@ -75,18 +98,47 @@ class UiButton extends StatelessWidget {
     this.showBorder = true,
   });
 
+  /// Visible button text.
   final String label;
+
+  /// Called when the button is activated. `null` disables the button.
   final VoidCallback? onPressed;
+
+  /// Visual role of the button. Defaults to the primary call-to-action.
   final UiIntent intent;
+
+  /// Button height, padding, text, and icon scale.
   final UiSize size;
+
+  /// Optional icon or small widget shown before [label].
   final Widget? leading;
+
+  /// Optional icon or small widget shown after [label].
   final Widget? trailing;
+
+  /// Replaces the label content with a spinner and disables activation.
   final bool loading;
+
+  /// Whether the button should fill the available horizontal space.
   final bool expand;
+
+  /// Optional focus node for externally managed focus.
   final FocusNode? focusNode;
+
+  /// Whether this button should request focus when first built.
   final bool autofocus;
+
+  /// Spoken label. Defaults to [label].
   final String? semanticsLabel;
+
+  /// Optional custom shadow for floating action surfaces.
   final List<BoxShadow>? boxShadow;
+
+  /// Whether to paint the resolved variant outline.
+  ///
+  /// Defaults to `true`. Keep the default for standalone neutral and secondary
+  /// buttons. Set to `false` for floating/embedded secondary buttons that live
+  /// inside a drawer, sheet, or card that already supplies its own border.
   final bool showBorder;
 
   bool get _enabled => onPressed != null && !loading;

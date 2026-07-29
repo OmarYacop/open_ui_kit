@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -32,6 +33,64 @@ class UiBottomTabItem {
   /// Numeric badge drawn in the top-right corner. Non-positive values
   /// are treated as "no badge".
   final int? badge;
+}
+
+/// A contextual control that sits beside a floating bottom tab dock.
+///
+/// In its resting state [child] is presented in a compact, separate island.
+/// When [expanded] is true, the selected destination moves into its own island
+/// and [child] receives the remaining width. This lets applications introduce
+/// focused tools such as search without stacking controls over page content.
+@immutable
+class UiBottomTabAccessory {
+  const UiBottomTabAccessory({
+    required this.child,
+    this.expanded = false,
+    this.leadingItem,
+    this.onLeadingPressed,
+    this.collapsedWidth = 56,
+    this.collapsedHeight,
+    this.height = 56,
+  }) : assert(
+          !expanded || leadingItem != null,
+          'An expanded accessory needs a leadingItem.',
+        );
+
+  final Widget child;
+  final bool expanded;
+  final UiBottomTabItem? leadingItem;
+  final VoidCallback? onLeadingPressed;
+  final double collapsedWidth;
+
+  /// Resting island height. Defaults to [height].
+  ///
+  /// Set this to the bottom dock's outer height when the compact accessory
+  /// should match the dock at rest and shrink into a denser search field while
+  /// expanding.
+  final double? collapsedHeight;
+
+  /// Height used in expanded accessory mode.
+  final double height;
+
+  UiBottomTabAccessory copyWith({
+    Widget? child,
+    bool? expanded,
+    UiBottomTabItem? leadingItem,
+    VoidCallback? onLeadingPressed,
+    double? collapsedWidth,
+    double? collapsedHeight,
+    double? height,
+  }) {
+    return UiBottomTabAccessory(
+      child: child ?? this.child,
+      expanded: expanded ?? this.expanded,
+      leadingItem: leadingItem ?? this.leadingItem,
+      onLeadingPressed: onLeadingPressed ?? this.onLeadingPressed,
+      collapsedWidth: collapsedWidth ?? this.collapsedWidth,
+      collapsedHeight: collapsedHeight ?? this.collapsedHeight,
+      height: height ?? this.height,
+    );
+  }
 }
 
 /// Bottom tab bar.
@@ -78,6 +137,8 @@ class UiBottomTabBar extends StatelessWidget {
     this.blurSigma = 8,
     this.detachLastItem = false,
     this.equalWidthsWhenLastSelected = false,
+    this.accessory,
+    this.accessoryPresence = 1,
   });
 
   final List<UiBottomTabItem> items;
@@ -92,7 +153,11 @@ class UiBottomTabBar extends StatelessWidget {
   final double floatingMaxWidth;
   final double floatingHorizontalMargin;
   final double floatingBottomMargin;
+
+  /// Applies a bounded backdrop blur to the floating dock.
   final bool blurred;
+
+  /// Backdrop blur radius for the floating dock.
   final double blurSigma;
   final bool detachLastItem;
 
@@ -102,12 +167,28 @@ class UiBottomTabBar extends StatelessWidget {
   /// previously selected tab remains visually dominant while its drawer is
   /// open.
   final bool equalWidthsWhenLastSelected;
+  final UiBottomTabAccessory? accessory;
+  final double accessoryPresence;
 
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
     final bottomInset = MediaQuery.maybePaddingOf(context)?.bottom ?? 0;
+    final textScaler = MediaQuery.textScalerOf(context);
+    final captionFontSize = tokens.typography.caption.fontSize ?? 12;
+    final captionHeight = textScaler.scale(captionFontSize) *
+        (tokens.typography.caption.height ?? 1);
+    final resolvedHeight = math
+            .max(
+              height,
+              _kLiquidTabIconSize +
+                  _kLiquidTabIconGap +
+                  captionHeight +
+                  tokens.spacing.x1,
+            )
+            .ceilToDouble() +
+        1;
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth.isFinite &&
@@ -121,7 +202,15 @@ class UiBottomTabBar extends StatelessWidget {
               : UiBottomTabBarLayout.edgeToEdge,
         };
 
-        final shouldDetachLastItem = detachLastItem &&
+        final resolvedAccessory =
+            resolvedLayout == UiBottomTabBarLayout.floatingDock
+                ? accessory
+                : null;
+        final presence =
+            resolvedAccessory == null ? 0.0 : accessoryPresence.clamp(0.0, 1.0);
+        final accessoryExpanded = resolvedAccessory?.expanded ?? false;
+        final shouldDetachLastItem = !accessoryExpanded &&
+            detachLastItem &&
             resolvedLayout != UiBottomTabBarLayout.edgeToEdge &&
             items.length > 1;
         final mainItems =
@@ -131,15 +220,37 @@ class UiBottomTabBar extends StatelessWidget {
             currentIndex < mainItems.length ? currentIndex : -1;
         final detachedSelected =
             shouldDetachLastItem && currentIndex == items.length - 1;
+        final tabSetEndAlignment =
+            Directionality.of(context) == TextDirection.rtl
+                ? Alignment.centerLeft
+                : Alignment.centerRight;
 
-        final tabsRow = _TabRow(
-          items: mainItems,
-          currentIndex: mainCurrentIndex,
-          onChanged: onChanged,
-          height: height,
-          equalWidths: equalWidthsWhenLastSelected &&
-              !shouldDetachLastItem &&
-              currentIndex == items.length - 1,
+        final tabsRow = AnimatedSwitcher(
+          duration: tokens.motion.fast,
+          reverseDuration: tokens.motion.fast,
+          switchInCurve: tokens.motion.standardCurve,
+          switchOutCurve: tokens.motion.standardCurve,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              alignment: tabSetEndAlignment,
+              scale: Tween<double>(begin: 0.96, end: 1).animate(animation),
+              child: child,
+            ),
+          ),
+          child: _TabRow(
+            key: ValueKey<int>(
+              Object.hashAll(mainItems.map((item) => item.label)),
+            ),
+            items: mainItems,
+            currentIndex: mainCurrentIndex,
+            onChanged: onChanged,
+            height: resolvedHeight,
+            animateLayout: resolvedAccessory == null,
+            equalWidths: equalWidthsWhenLastSelected &&
+                !shouldDetachLastItem &&
+                currentIndex == items.length - 1,
+          ),
         );
 
         if (resolvedLayout == UiBottomTabBarLayout.edgeToEdge) {
@@ -162,18 +273,41 @@ class UiBottomTabBar extends StatelessWidget {
         final detachedDockWidth = shouldDetachLastItem
             ? _kLiquidTabWidth + _kLiquidDockPadding * 2
             : 0.0;
-        final totalGap = shouldDetachLastItem ? _kDetachedTabGap : 0.0;
-        final preferredTotalWidth =
-            preferredDockWidth + detachedDockWidth + totalGap;
+        final accessoryDockWidth = resolvedAccessory == null
+            ? 0.0
+            : accessoryExpanded
+                ? 0.0
+                : resolvedAccessory.collapsedWidth * presence;
+        final accessoryCollapsedHeight =
+            resolvedAccessory?.collapsedHeight ?? resolvedAccessory?.height;
+        final hasSeparateIsland =
+            shouldDetachLastItem || (resolvedAccessory != null && presence > 0);
+        final totalGap = shouldDetachLastItem
+            ? _kDetachedTabGap
+            : resolvedAccessory == null
+                ? 0.0
+                : _kDetachedTabGap * presence;
+        final preferredTotalWidth = preferredDockWidth +
+            detachedDockWidth +
+            accessoryDockWidth +
+            totalGap;
         final dockWidth = isWide
             ? preferredTotalWidth.clamp(0.0, widthCap)
             : widthCap.toDouble();
-        final mainDockWidth = shouldDetachLastItem
-            ? (dockWidth - detachedDockWidth - totalGap).clamp(
+        final collapsedMainDockWidth = hasSeparateIsland
+            ? (dockWidth - detachedDockWidth - accessoryDockWidth - totalGap)
+                .clamp(
                 _kLiquidTabWidth + _kLiquidDockPadding * 2,
                 dockWidth,
               )
             : dockWidth;
+        final expandedAccessoryWidth = resolvedAccessory == null
+            ? 0.0
+            : (dockWidth - resolvedAccessory.height - totalGap).clamp(
+                _kLiquidTabWidth + _kLiquidDockPadding * 2,
+                dockWidth,
+              );
+        final dockMorphDuration = tokens.motion.standard;
 
         final bottomOffset = resolveUiEdgeAwareBottomOffset(
           context,
@@ -191,59 +325,250 @@ class UiBottomTabBar extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: SizedBox(
               width: dockWidth,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
                 children: [
-                  SizedBox(
-                    width: mainDockWidth,
-                    child: _BlurredTabSurface(
-                      key: const Key('ui_bottom_tab_dock'),
-                      background: (backgroundColor ?? c.surface).withValues(
-                        alpha:
-                            tokens.brightness == Brightness.dark ? 0.72 : 0.68,
-                      ),
-                      borderColor: c.border.withValues(alpha: 0.78),
-                      borderRadius: tokens.radius.pillAll,
-                      boxShadow: tokens.shadows.lg,
-                      blurred: blurred,
-                      blurSigma: blurSigma,
-                      padding: const EdgeInsets.all(_kLiquidDockPadding),
-                      child: tabsRow,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(end: accessoryExpanded ? 1 : 0),
+                    duration:
+                        presence < 0.999 ? Duration.zero : dockMorphDuration,
+                    curve: tokens.motion.standardCurve,
+                    builder: (context, morphProgress, _) => Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            key: const Key('ui_bottom_tab_dock'),
+                            height: lerpDouble(
+                              resolvedHeight + _kLiquidDockPadding * 2,
+                              resolvedAccessory?.height ??
+                                  resolvedHeight + _kLiquidDockPadding * 2,
+                              morphProgress,
+                            ),
+                            child: _buildSurface(
+                              context,
+                              padding: EdgeInsets.lerp(
+                                const EdgeInsets.all(_kLiquidDockPadding),
+                                EdgeInsets.zero,
+                                morphProgress,
+                              )!,
+                              child: _MorphingTabDock(
+                                progress: morphProgress,
+                                expandedWidth: math.max(
+                                  0,
+                                  collapsedMainDockWidth -
+                                      _kLiquidDockPadding * 2,
+                                ),
+                                tabs: tabsRow,
+                                leading: resolvedAccessory?.leadingItem == null
+                                    ? null
+                                    : _AccessoryLeadingCell(
+                                        item: resolvedAccessory!.leadingItem!,
+                                        onPressed:
+                                            resolvedAccessory.onLeadingPressed,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (shouldDetachLastItem) ...[
+                          const SizedBox(width: _kDetachedTabGap),
+                          SizedBox(
+                            width: detachedDockWidth,
+                            child: _buildSurface(
+                              context,
+                              key: const Key('ui_bottom_tab_detached_dock'),
+                              child: _TabRow(
+                                items: [detachedItem!],
+                                currentIndex: detachedSelected ? 0 : -1,
+                                onChanged: (_) => onChanged(items.length - 1),
+                                height: height,
+                                equalWidths: false,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (resolvedAccessory != null) ...[
+                          SizedBox(width: totalGap),
+                          Opacity(
+                            opacity: presence,
+                            child: ImageFiltered(
+                              imageFilter: ImageFilter.blur(
+                                sigmaX: tokens.effects.scaleBlur(4) *
+                                    (1 - presence),
+                                sigmaY: tokens.effects.scaleBlur(4) *
+                                    (1 - presence),
+                              ),
+                              child: SizedBox(
+                                key: const Key('ui_bottom_tab_accessory'),
+                                width: lerpDouble(
+                                  accessoryDockWidth,
+                                  expandedAccessoryWidth,
+                                  morphProgress,
+                                ),
+                                height: lerpDouble(
+                                  accessoryCollapsedHeight!,
+                                  resolvedAccessory.height,
+                                  morphProgress,
+                                ),
+                                child: _buildSurface(
+                                  context,
+                                  padding: EdgeInsets.zero,
+                                  child: resolvedAccessory.child,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (shouldDetachLastItem) ...[
-                    const SizedBox(width: _kDetachedTabGap),
-                    SizedBox(
-                      width: detachedDockWidth,
-                      child: _BlurredTabSurface(
-                        key: const Key('ui_bottom_tab_detached_dock'),
-                        background: (backgroundColor ?? c.surface).withValues(
-                          alpha: tokens.brightness == Brightness.dark
-                              ? 0.72
-                              : 0.68,
-                        ),
-                        borderColor: c.border.withValues(alpha: 0.78),
-                        borderRadius: tokens.radius.pillAll,
-                        boxShadow: tokens.shadows.lg,
-                        blurred: blurred,
-                        blurSigma: blurSigma,
-                        padding: const EdgeInsets.all(_kLiquidDockPadding),
-                        child: _TabRow(
-                          items: [detachedItem!],
-                          currentIndex: detachedSelected ? 0 : -1,
-                          onChanged: (_) => onChanged(items.length - 1),
-                          height: height,
-                          equalWidths: false,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSurface(
+    BuildContext context, {
+    required Widget child,
+    Key? key,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(_kLiquidDockPadding),
+  }) {
+    final tokens = UiThemeTokens.of(context);
+    final colors = tokens.colors;
+    final resolvedBlurSigma = tokens.effects.scaleBlur(blurSigma);
+    return _BlurredTabSurface(
+      key: key,
+      background: (backgroundColor ?? colors.surface).withValues(
+        alpha: tokens.brightness == Brightness.dark ? 0.72 : 0.68,
+      ),
+      borderColor: colors.border.withValues(alpha: 0.78),
+      borderRadius: tokens.radius.pillAll,
+      boxShadow: tokens.shadows.lg,
+      blurred: blurred && resolvedBlurSigma > 0,
+      blurSigma: resolvedBlurSigma,
+      padding: padding,
+      child: child,
+    );
+  }
+}
+
+class _AccessoryLeadingCell extends StatelessWidget {
+  const _AccessoryLeadingCell({
+    required this.item,
+    required this.onPressed,
+  });
+
+  final UiBottomTabItem item;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    final icon = item.activeIcon ?? item.icon;
+    return UiPressable(
+      onPressed: onPressed,
+      semanticsLabel: item.label,
+      minTapSize: 44,
+      builder: (context, state, _) => UiFocusRing(
+        visible: state.focused,
+        borderRadius: tokens.radius.pillAll,
+        child: AnimatedScale(
+          duration: tokens.motion.fast,
+          curve: tokens.motion.standardCurve,
+          scale: state.pressed ? 0.94 : 1,
+          child: Center(
+            child: IconTheme(
+              data: IconThemeData(
+                color: tokens.colors.textPrimary,
+                size: _kLiquidTabIconSize,
+              ),
+              child: SizedBox.square(
+                dimension: _kLiquidTabIconSize,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: icon,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MorphingTabDock extends StatelessWidget {
+  const _MorphingTabDock({
+    required this.progress,
+    required this.expandedWidth,
+    required this.tabs,
+    required this.leading,
+  });
+
+  final double progress;
+  final double expandedWidth;
+  final Widget tabs;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (progress <= 0.001 || leading == null) {
+      return tabs;
+    }
+    if (progress >= 0.999) {
+      return KeyedSubtree(
+        key: const Key('ui_bottom_tab_accessory_leading'),
+        child: leading!,
+      );
+    }
+
+    final fullDockOpacity = ((0.44 - progress) / 0.44).clamp(0.0, 1.0);
+    final leadingOpacity = ((progress - 0.3) / 0.4).clamp(0.0, 1.0);
+
+    return ClipRect(
+      child: Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [
+          IgnorePointer(
+            ignoring: progress > 0.12,
+            child: ExcludeSemantics(
+              excluding: progress > 0.12,
+              child: Opacity(
+                opacity: fullDockOpacity,
+                child: Transform.scale(
+                  scale: lerpDouble(1, 0.97, progress)!,
+                  child: OverflowBox(
+                    alignment: AlignmentDirectional.centerStart,
+                    minWidth: expandedWidth,
+                    maxWidth: expandedWidth,
+                    child: tabs,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          IgnorePointer(
+            ignoring: progress < 0.78,
+            child: ExcludeSemantics(
+              excluding: progress < 0.78,
+              child: Opacity(
+                key: const Key('ui_bottom_tab_accessory_leading'),
+                opacity: leadingOpacity,
+                child: Transform.scale(
+                  scale: lerpDouble(0.9, 1, leadingOpacity)!,
+                  child: leading!,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -302,11 +627,13 @@ class _BlurredTabSurface extends StatelessWidget {
 
 class _TabRow extends StatefulWidget {
   const _TabRow({
+    super.key,
     required this.items,
     required this.currentIndex,
     required this.onChanged,
     required this.height,
     required this.equalWidths,
+    this.animateLayout = true,
   });
 
   final List<UiBottomTabItem> items;
@@ -314,6 +641,7 @@ class _TabRow extends StatefulWidget {
   final ValueChanged<int> onChanged;
   final double height;
   final bool equalWidths;
+  final bool animateLayout;
 
   @override
   State<_TabRow> createState() => _TabRowState();
@@ -339,6 +667,7 @@ class _TabRowState extends State<_TabRow> {
     if (oldWidget.currentIndex != widget.currentIndex ||
         oldWidget.items.length != widget.items.length ||
         oldWidget.height != widget.height ||
+        oldWidget.animateLayout != widget.animateLayout ||
         oldWidget.equalWidths != widget.equalWidths) {
       _drag = TabDragState.idle;
       _dragRowBox = null;
@@ -472,7 +801,9 @@ class _TabRowState extends State<_TabRow> {
             children: [
               if (selectedIndex != null)
                 AnimatedPositioned(
-                  duration: dragging ? Duration.zero : tokens.motion.standard,
+                  duration: dragging || !widget.animateLayout
+                      ? Duration.zero
+                      : tokens.motion.standard,
                   curve: tokens.motion.standardCurve,
                   left: indicatorLeft,
                   top: 0,
@@ -497,7 +828,9 @@ class _TabRowState extends State<_TabRow> {
                 ),
               for (var i = 0; i < widget.items.length; i++)
                 AnimatedPositioned(
-                  duration: tokens.motion.standard,
+                  duration: widget.animateLayout
+                      ? tokens.motion.standard
+                      : Duration.zero,
                   curve: tokens.motion.standardCurve,
                   left: _physicalLeftForDirectionalStart(
                     start: layout.lefts[i],
@@ -519,7 +852,9 @@ class _TabRowState extends State<_TabRow> {
                 ),
               if (selectedIndex != null)
                 AnimatedPositioned(
-                  duration: dragging ? Duration.zero : tokens.motion.standard,
+                  duration: dragging || !widget.animateLayout
+                      ? Duration.zero
+                      : tokens.motion.standard,
                   curve: tokens.motion.standardCurve,
                   left: indicatorLeft,
                   top: 0,

@@ -14,7 +14,7 @@ import '../../foundation/theme/ui_theme_extensions.dart';
 ///   a solid surface color — [UiSystemBars] picks icon brightness so the
 ///   OS icons stay legible on top of that surface.
 /// - **Pass neither** to let [UiSystemBars] read the ambient
-///   [UiThemeTokens.colors.background]. This is the right default for a
+///   [UiThemeTokens] `colors.background` value. This is the right default for a
 ///   page that uses the theme's base surface.
 class UiSystemBars extends StatelessWidget {
   const UiSystemBars({
@@ -30,7 +30,7 @@ class UiSystemBars extends StatelessWidget {
   final SystemUiOverlayStyle? style;
 
   /// Background used to pick icon brightness when [style] is null. If
-  /// also null, the surrounding [UiThemeTokens.colors.background] is
+  /// also null, the surrounding [UiThemeTokens] `colors.background` value is
   /// used.
   final Color? backgroundColor;
 

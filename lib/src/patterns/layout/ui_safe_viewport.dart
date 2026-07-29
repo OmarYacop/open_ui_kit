@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/layout/ui_keyboard_geometry.dart';
+
 /// Safe-area policy for a page subtree.
 ///
 /// Each mode maps to a specific `SafeArea` configuration so screen-level
@@ -91,8 +93,7 @@ class UiSafeViewport extends StatelessWidget {
         // supersedes the gesture-bar inset. When it's down, we still
         // want the home-indicator padding so the page doesn't run under
         // the OS affordance.
-        final media = MediaQuery.of(context);
-        final keyboard = media.viewInsets.bottom;
+        final keyboard = UiKeyboardGeometry.currentInsetOf(context);
         final keyboardOpen = keyboard > 0;
         return SafeArea(
           top: true,
@@ -106,8 +107,7 @@ class UiSafeViewport extends StatelessWidget {
           ),
         );
       case UiSafeViewportMode.keyboardAwareNoTop:
-        final media = MediaQuery.of(context);
-        final keyboard = media.viewInsets.bottom;
+        final keyboard = UiKeyboardGeometry.currentInsetOf(context);
         final keyboardOpen = keyboard > 0;
         return SafeArea(
           top: false,

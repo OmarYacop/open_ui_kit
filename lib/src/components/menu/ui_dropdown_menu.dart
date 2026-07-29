@@ -593,7 +593,7 @@ class _ScaleFadeState extends State<_ScaleFade>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final motion = UiThemeTokens.of(context).motion;
+    final motion = UiThemeTokens.motionOf(context);
     _c.duration = motion.fast;
     if (_started) return;
     _started = true;
@@ -615,7 +615,7 @@ class _ScaleFadeState extends State<_ScaleFade>
     // Isolate the menu surface in its own layer — the scale/opacity
     // animation would otherwise invalidate the page content below
     // every frame.
-    final motion = UiThemeTokens.of(context).motion;
+    final motion = UiThemeTokens.motionOf(context);
     final curved = CurvedAnimation(parent: _c, curve: motion.standardCurve);
     return UiFadeScaleTransition(
       animation: curved,

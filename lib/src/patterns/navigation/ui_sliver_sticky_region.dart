@@ -10,7 +10,11 @@ enum UiStickyRegionSurface {
   /// Glass without a rail and a quiet solid page surface beside a rail.
   adaptive,
 
-  /// Translucent tint with backdrop blur.
+  /// Token surface with a trailing edge fade and no backdrop sampling.
+  edgeFade,
+
+  /// Compatibility alias for the former backdrop-blurred treatment.
+  @Deprecated('Use UiStickyRegionSurface.edgeFade.')
   glass,
 
   /// Opaque page-background surface.
@@ -122,6 +126,7 @@ class _UiStickyRegionDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final tokens = UiThemeTokens.of(context);
     final colors = tokens.colors;
+    final resolvedBlurSigma = tokens.effects.scaleBlur(blurSigma);
     final hasRail = UiNavigationChromeScope.hasPersistentRailOf(context);
     final resolvedSurface = surface == UiStickyRegionSurface.adaptive
         ? hasRail
@@ -131,6 +136,13 @@ class _UiStickyRegionDelegate extends SliverPersistentHeaderDelegate {
     final activated = overlapsContent || shrinkOffset > 0;
     final surfaceColor = switch (resolvedSurface) {
       UiStickyRegionSurface.adaptive => colors.background,
+      UiStickyRegionSurface.edgeFade => colors.surface.withValues(
+          alpha: activated
+              ? tokens.brightness == Brightness.dark
+                  ? 0.94
+                  : 0.92
+              : 0.82,
+        ),
       UiStickyRegionSurface.glass => colors.surface.withValues(
           alpha: activated
               ? tokens.brightness == Brightness.dark
@@ -142,7 +154,9 @@ class _UiStickyRegionDelegate extends SliverPersistentHeaderDelegate {
       UiStickyRegionSurface.transparent => const Color(0x00000000),
     };
     final transitionColor = switch (resolvedSurface) {
-      UiStickyRegionSurface.glass => colors.surface,
+      UiStickyRegionSurface.edgeFade ||
+      UiStickyRegionSurface.glass =>
+        colors.surface,
       UiStickyRegionSurface.adaptive ||
       UiStickyRegionSurface.solid ||
       UiStickyRegionSurface.transparent =>
@@ -164,10 +178,14 @@ class _UiStickyRegionDelegate extends SliverPersistentHeaderDelegate {
       child: child,
     );
 
-    if (resolvedSurface == UiStickyRegionSurface.glass && blurSigma > 0) {
+    if (resolvedSurface == UiStickyRegionSurface.glass &&
+        resolvedBlurSigma > 0) {
       control = ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+          filter: ImageFilter.blur(
+            sigmaX: resolvedBlurSigma,
+            sigmaY: resolvedBlurSigma,
+          ),
           child: control,
         ),
       );

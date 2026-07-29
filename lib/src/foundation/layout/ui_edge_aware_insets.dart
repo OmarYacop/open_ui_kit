@@ -7,7 +7,8 @@ import 'package:flutter/widgets.dart';
 ///
 /// On devices with a home indicator / rounded physical bottom edge, the safe
 /// area bottom inset is usually larger than the visually useful gap. This
-/// helper infers a conservative device-edge radius from [MediaQuery.viewPadding]
+/// helper infers a conservative device-edge radius from
+/// [MediaQueryData.viewPadding]
 /// and lets components sit closer to that edge while preserving a caller-defined
 /// minimum.
 double resolveUiEdgeAwareBottomOffset(

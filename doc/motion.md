@@ -7,9 +7,12 @@ of hardcoding durations or curves for structural UI transitions.
 ## Tokens
 
 - `instant` is for no-transition state changes.
+- `faster` is for very small state handoffs and occluded content swaps.
 - `fast` is for direct interaction feedback and small affordance changes.
 - `standard` is for component entrance, exit, expansion, collapse, and route-like transitions.
 - `slow` is for larger layout or navigation chrome changes where users need to track position.
+- `xslow` is an opt-in inspection or highly deliberate transition slot. It is
+  not the default for ordinary controls.
 - `standardCurve` is the default easing for structural UI motion.
 - `emphasizedCurve` is reserved for deliberate, small emphasized feedback.
 - `linearCurve` is for progress, deterministic reduced motion, and non-eased values.
@@ -20,19 +23,43 @@ of hardcoding durations or curves for structural UI transitions.
 preference is enabled, resolved motion tokens use zero durations and linear
 curves. Components that use `tokens.motion` inherit the behavior automatically.
 
-Custom component code should not read `MediaQuery.disableAnimations` directly
-unless it is implementing a behavior that cannot be expressed with duration
-and curve tokens. Prefer:
+Public component timing inputs use `UiMotionDuration`. This lets callers use
+the design system by default or provide an intentional custom duration without
+losing reduced-motion behavior:
 
 ```dart
-final motion = UiThemeTokens.of(context).motion;
-
-AnimatedContainer(
-  duration: motion.standard,
-  curve: motion.standardCurve,
-  // ...
+UiCollapsible(
+  duration: UiMotionDuration.standard,
+  reverseDuration: const UiMotionDuration.custom(
+    Duration(milliseconds: 180),
+  ),
+  child: content,
 )
 ```
+
+External animations can resolve a complete token-or-custom contract:
+
+```dart
+final motion = UiMotionSpec.resolveTiming(
+  context,
+  duration: UiMotionDuration.slow,
+  reverseDuration: const UiMotionDuration.custom(
+    Duration(milliseconds: 240),
+  ),
+);
+
+motion.configure(controller);
+```
+
+`UiMotionSpec.resolve` remains the concise token-only API, while
+`UiMotionSpec.resolveCustom` accepts raw authored durations. Prefer
+`resolveTiming` for reusable APIs because it keeps both choices in one type.
+Plain `Duration` remains appropriate for already-resolved private controller
+timing and non-visual clocks.
+
+Custom component code should not read `MediaQuery.disableAnimations` directly
+unless it is implementing behavior that cannot be expressed by
+`UiMotionDuration` or `UiMotionSpec`.
 
 ## Component Guidance
 
