@@ -152,10 +152,18 @@ void main() {
     await tester.pump();
 
     expect(controller.unseenCount, 1);
-    expect(find.text('1 new message'), findsOneWidget);
+    expect(controller.firstUnseenMessageId, '30');
+    expect(find.byType(UiMessageQueueBadge), findsOneWidget);
 
-    await tester.tap(find.text('1 new message'));
+    final jumpToQueued = controller.jumpToFirstUnseen();
     await tester.pumpAndSettle();
+    expect(await jumpToQueued, isTrue);
+    expect(controller.isAtLiveEdge, isTrue);
+    expect(controller.unseenCount, 0);
+
+    final jumpToLatest = controller.jumpToLatest();
+    await tester.pumpAndSettle();
+    await jumpToLatest;
     expect(controller.isAtLiveEdge, isTrue);
     expect(controller.unseenCount, 0);
   });
@@ -191,6 +199,162 @@ void main() {
     expect(await jump, isTrue);
     expect(find.text('Variable 47'), findsOneWidget);
   });
+
+  testWidgets('scroller keeps an unread boundary until an outgoing append', (
+    tester,
+  ) async {
+    final controller = UiMessageScrollerController();
+    final key = GlobalKey<_ScrollerHarnessState>();
+    await tester.pumpWidget(
+      _host(
+        _ScrollerHarness(
+          key: key,
+          controller: controller,
+          initialUnreadMessageId: '24',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(UiUnreadMessagesMarker), findsOneWidget);
+    expect(controller.hasUnreadMarker, isTrue);
+    expect(
+      tester.getTopLeft(find.text('Unread messages')).dy,
+      lessThan(tester.getTopLeft(find.text('Message 24')).dy),
+    );
+
+    key.currentState!.append();
+    await tester.pumpAndSettle();
+    expect(find.byType(UiUnreadMessagesMarker), findsOneWidget);
+
+    key.currentState!.append(outgoing: true);
+    await tester.pumpAndSettle();
+    expect(find.byType(UiUnreadMessagesMarker), findsNothing);
+    expect(controller.hasUnreadMarker, isFalse);
+  });
+
+  testWidgets('scroller controller can dismiss the unread boundary', (
+    tester,
+  ) async {
+    final controller = UiMessageScrollerController();
+    await tester.pumpWidget(
+      _host(
+        _ScrollerHarness(
+          controller: controller,
+          initialUnreadMessageId: '24',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    controller.dismissUnreadMarker();
+    await tester.pump();
+
+    expect(find.byType(UiUnreadMessagesMarker), findsNothing);
+  });
+
+  testWidgets('outgoing append follows the live edge while reading history', (
+    tester,
+  ) async {
+    final controller = UiMessageScrollerController();
+    final key = GlobalKey<_ScrollerHarnessState>();
+    await tester.pumpWidget(
+      _host(_ScrollerHarness(key: key, controller: controller)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, 260));
+    await tester.pumpAndSettle();
+    expect(controller.isAtLiveEdge, isFalse);
+
+    key.currentState!.append(outgoing: true);
+    await tester.pumpAndSettle();
+
+    expect(controller.isAtLiveEdge, isTrue);
+    expect(controller.unseenCount, 0);
+  });
+
+  testWidgets('scroll controls expand reply action beside latest', (
+    tester,
+  ) async {
+    var replyPressed = false;
+    var latestPressed = false;
+    await tester.pumpWidget(
+      _host(
+        UiMessageScrollControls(
+          show: true,
+          queuedMessageCount: 4,
+          replyReturnCount: 2,
+          onScrollToBottom: () => latestPressed = true,
+          onReplyReturn: () => replyPressed = true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(UiMessageQueueBadge), findsOneWidget);
+    expect(find.byType(UiMessageReplyReturnButton), findsOneWidget);
+    expect(find.byType(UiMessageScrollToBottomButton), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+    final replyRect = tester.getRect(
+      find.byType(UiMessageReplyReturnButton),
+    );
+    final latestRect = tester.getRect(
+      find.byType(UiMessageScrollToBottomButton),
+    );
+    expect(replyRect.height, closeTo(latestRect.height, .01));
+    expect(replyRect.width, greaterThan(latestRect.width));
+    expect(replyRect.center.dy, latestRect.center.dy);
+    expect(replyRect.right, lessThanOrEqualTo(latestRect.left));
+    await tester.tap(find.byType(UiMessageReplyReturnButton));
+    await tester.tap(find.byType(UiMessageScrollToBottomButton));
+    expect(replyPressed, isTrue);
+    expect(latestPressed, isTrue);
+  });
+
+  testWidgets('reply action springs in when controls mount with a stack', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        UiMessageScrollControls(
+          show: true,
+          queuedMessageCount: 0,
+          replyReturnCount: 1,
+          onScrollToBottom: () {},
+          onReplyReturn: () {},
+        ),
+      ),
+    );
+
+    final controls = find.byKey(const ValueKey('message-scroll-controls'));
+    final initialWidth = tester.getSize(controls).width;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    final animatedWidth = tester.getSize(controls).width;
+    await tester.pumpAndSettle();
+    final settledWidth = tester.getSize(controls).width;
+
+    expect(animatedWidth, greaterThan(initialWidth));
+    expect(settledWidth, greaterThan(initialWidth));
+
+    await tester.pumpWidget(
+      _host(
+        UiMessageScrollControls(
+          show: true,
+          queuedMessageCount: 0,
+          onScrollToBottom: () {},
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 75));
+    final exitingWidth = tester.getSize(controls).width;
+    await tester.pumpAndSettle();
+    final exitedWidth = tester.getSize(controls).width;
+
+    expect(exitingWidth, lessThan(settledWidth));
+    expect(exitingWidth, greaterThan(exitedWidth));
+  });
 }
 
 Widget _host(Widget child) {
@@ -202,9 +366,14 @@ Widget _host(Widget child) {
 }
 
 class _ScrollerHarness extends StatefulWidget {
-  const _ScrollerHarness({super.key, required this.controller});
+  const _ScrollerHarness({
+    super.key,
+    required this.controller,
+    this.initialUnreadMessageId,
+  });
 
   final UiMessageScrollerController controller;
+  final String? initialUnreadMessageId;
 
   @override
   State<_ScrollerHarness> createState() => _ScrollerHarnessState();
@@ -212,18 +381,24 @@ class _ScrollerHarness extends StatefulWidget {
 
 class _ScrollerHarnessState extends State<_ScrollerHarness> {
   var count = 30;
+  final Set<int> outgoing = {};
 
-  void append() => setState(() => count++);
+  void append({bool outgoing = false}) => setState(() {
+        if (outgoing) this.outgoing.add(count);
+        count++;
+      });
 
   @override
   Widget build(BuildContext context) {
     return UiMessageScroller(
       controller: widget.controller,
+      initialUnreadMessageId: widget.initialUnreadMessageId,
       padding: const EdgeInsets.all(16),
       items: [
         for (var index = 0; index < count; index++)
           UiMessageScrollerItem(
             id: '$index',
+            isOutgoing: outgoing.contains(index),
             child: SizedBox(height: 56, child: Text('Message $index')),
           ),
       ],

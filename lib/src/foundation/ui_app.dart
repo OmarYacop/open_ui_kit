@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'motion/ui_motion_spec.dart';
 import 'reactive/ui_clock.dart';
+import 'scrolling/ui_scroll_configuration.dart';
 import 'theme/ui_theme_extensions.dart';
 import '../patterns/navigation/ui_navigation_transition.dart';
 
@@ -135,7 +136,9 @@ class _UiAppState extends State<UiApp> {
             title: widget.title,
             child: UiTheme(
               tokens: tokens,
-              child: child ?? const SizedBox.shrink(),
+              child: UiScrollConfiguration(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         );

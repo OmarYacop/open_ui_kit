@@ -175,19 +175,13 @@ class _InlineUiLocalizationsDelegate
 }
 
 Widget hostWithStrings(Widget child, UiLocalizations strings) {
-  return MaterialApp(
-    theme: UiThemeData.light(),
-    home: Builder(
-      builder: (ctx) => Localizations.override(
-        context: ctx,
-        delegates: [
-          _InlineUiLocalizationsDelegate(strings),
-          DefaultMaterialLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-        ],
-        child: child,
-      ),
-    ),
+  return UiApp(
+    lightTokens: UiThemeData.light(),
+    localizationsDelegates: [
+      _InlineUiLocalizationsDelegate(strings),
+      GlobalWidgetsLocalizations.delegate,
+    ],
+    home: child,
   );
 }
 ```

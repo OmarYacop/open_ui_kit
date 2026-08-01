@@ -10,6 +10,7 @@ import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiButtonMetrics, UiSize;
 
@@ -209,7 +210,9 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
     _resolveOverlayPlacement(overlay);
-    _entry = OverlayEntry(builder: (_) => _buildOverlay());
+    _entry = OverlayEntry(
+      builder: (_) => UiScrollConfiguration(child: _buildOverlay()),
+    );
     overlay.insert(_entry!);
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {

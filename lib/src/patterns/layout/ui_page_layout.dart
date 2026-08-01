@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
+import '../../components/feedback/refresher.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -37,6 +38,9 @@ class UiPageLayout extends StatelessWidget {
     this.breakpoints = UiBreakpoints.standard,
     this.filtersPaneWidth = 280,
     this.secondaryPaneWidth = 360,
+    this.onRefresh,
+    this.refreshController,
+    this.refreshIndicatorBuilder,
   });
 
   /// Main page content. This is always the primary flexible region.
@@ -84,6 +88,11 @@ class UiPageLayout extends StatelessWidget {
   final double filtersPaneWidth;
   final double secondaryPaneWidth;
 
+  /// Page-owned pull-to-refresh. See [UiPageScaffold.onRefresh].
+  final Future<void> Function()? onRefresh;
+  final UiRefresherController? refreshController;
+  final UiRefreshIndicatorBuilder? refreshIndicatorBuilder;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -100,6 +109,9 @@ class UiPageLayout extends StatelessWidget {
           rightSafeInset: rightSafeInset,
           showTopDivider: showTopDivider,
           showBottomDivider: showBottomDivider,
+          onRefresh: onRefresh,
+          refreshController: refreshController,
+          refreshIndicatorBuilder: refreshIndicatorBuilder,
           body: _buildBody(formFactor),
         );
       },
@@ -116,7 +128,7 @@ class UiPageLayout extends StatelessWidget {
     }
 
     final tokens = UiThemeTokens.of(context);
-    final brightness = Theme.of(context).brightness;
+    final brightness = tokens.brightness;
     final logo = brand?.resolveLogo(brightness);
 
     return UiBox(

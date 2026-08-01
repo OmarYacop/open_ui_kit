@@ -35,12 +35,14 @@ void main() {
     UiThemeTokens? tokens;
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.fromBrand(acme),
-        home: Builder(
-          builder: (ctx) {
-            tokens = UiThemeTokens.of(ctx);
-            return const SizedBox.shrink();
-          },
+        home: UiTheme(
+          tokens: UiThemeData.fromBrand(acme),
+          child: Builder(
+            builder: (ctx) {
+              tokens = UiThemeTokens.of(ctx);
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );

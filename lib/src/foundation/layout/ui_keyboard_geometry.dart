@@ -419,16 +419,23 @@ class UiKeyboardDock extends StatelessWidget {
     super.key,
     required this.child,
     this.enabled = true,
+    this.replacement,
+    this.replacementVisible = false,
+    this.replacementExtent = 0,
   });
 
   final Widget child;
   final bool enabled;
+  final Widget? replacement;
+  final bool replacementVisible;
+  final double replacementExtent;
 
   @override
   Widget build(BuildContext context) {
-    final followerTranslation =
-        enabled ? UiKeyboardGeometry.followerTranslationOf(context) : 0.0;
-    final reservedInset =
+    final followerTranslation = enabled && !replacementVisible
+        ? UiKeyboardGeometry.followerTranslationOf(context)
+        : 0.0;
+    final keyboardReservedInset =
         enabled ? UiKeyboardGeometry.reservedInsetOf(context) : 0.0;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -437,7 +444,45 @@ class UiKeyboardDock extends StatelessWidget {
           offset: Offset(0, followerTranslation),
           child: child,
         ),
-        SizedBox(height: reservedInset),
+        TweenAnimationBuilder<double>(
+          tween: Tween(
+            end: replacementVisible ? replacementExtent : 0,
+          ),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          builder: (context, animatedReplacementInset, child) {
+            final reservedInset = math.max(
+              keyboardReservedInset,
+              animatedReplacementInset,
+            );
+            return SizedBox(
+              height: reservedInset,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.topCenter,
+                  minHeight: 0,
+                  maxHeight: replacementExtent,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: replacementExtent,
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
+          child: replacement == null
+              ? null
+              : IgnorePointer(
+                  ignoring: !replacementVisible,
+                  child: AnimatedOpacity(
+                    opacity: replacementVisible ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOutCubic,
+                    child: replacement,
+                  ),
+                ),
+        ),
       ],
     );
   }

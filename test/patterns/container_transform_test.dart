@@ -98,7 +98,6 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Scaffold(
           body: Center(
             child: SizedBox(
@@ -159,7 +158,6 @@ void main() {
   testWidgets('container transform honors reduced motion', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: MediaQuery(
           data: const MediaQueryData(disableAnimations: true),
           child: UiOpenContainer(

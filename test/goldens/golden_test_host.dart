@@ -7,7 +7,6 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 const Size kGoldenSurfaceSize = Size(360, 360);
 const double kGoldenDevicePixelRatio = 1.0;
 const Locale kGoldenLocale = Locale('en', 'US');
-const TargetPlatform kGoldenTargetPlatform = TargetPlatform.macOS;
 
 bool get isSupportedGoldenHost => Platform.isMacOS;
 
@@ -25,33 +24,56 @@ Future<void> pumpGoldenFrame(
     )
     ..devicePixelRatio = kGoldenDevicePixelRatio;
   addTearDown(view.reset);
-  final theme =
-      (brightness == Brightness.dark ? UiThemeData.dark() : UiThemeData.light())
-          .copyWith(platform: kGoldenTargetPlatform);
+  final tokens =
+      brightness == Brightness.dark ? UiThemeData.dark() : UiThemeData.light();
 
   await tester.pumpWidget(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       locale: kGoldenLocale,
       supportedLocales: const [kGoldenLocale],
-      theme: theme,
-      home: MediaQuery(
-        data: MediaQueryData(
-          size: size,
-          devicePixelRatio: kGoldenDevicePixelRatio,
-          textScaler: TextScaler.noScaling,
-          platformBrightness: brightness,
-        ),
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: Center(
-            child: SizedBox.fromSize(
-              size: size,
-              child: Scaffold(body: child),
+      theme: _materialThemeFor(tokens),
+      home: UiTheme(
+        tokens: tokens,
+        child: MediaQuery(
+          data: MediaQueryData(
+            size: size,
+            devicePixelRatio: kGoldenDevicePixelRatio,
+            textScaler: TextScaler.noScaling,
+            platformBrightness: brightness,
+          ),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Center(
+              child: SizedBox.fromSize(
+                size: size,
+                child: Scaffold(body: child),
+              ),
             ),
           ),
         ),
       ),
+    ),
+  );
+}
+
+ThemeData _materialThemeFor(UiThemeTokens tokens) {
+  final colors = tokens.colors;
+  return ThemeData(
+    useMaterial3: true,
+    brightness: tokens.brightness,
+    scaffoldBackgroundColor: colors.background,
+    canvasColor: colors.background,
+    colorScheme: ColorScheme(
+      brightness: tokens.brightness,
+      primary: colors.primary,
+      onPrimary: colors.onPrimary,
+      secondary: colors.secondary,
+      onSecondary: colors.onSecondary,
+      error: colors.danger,
+      onError: colors.onDanger,
+      surface: colors.surface,
+      onSurface: colors.textPrimary,
     ),
   );
 }

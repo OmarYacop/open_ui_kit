@@ -10,6 +10,7 @@ import '../../foundation/overlay/overlay.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiButtonMetrics, UiSize;
 import 'input.dart';
@@ -181,11 +182,13 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     if (overlay == null) return;
     _resolveOverlayPlacement(overlay);
     _entry = OverlayEntry(
-      builder: (_) => StatefulBuilder(
-        builder: (context, setOverlayState) {
-          _overlaySetState = setOverlayState;
-          return _buildOverlay();
-        },
+      builder: (_) => UiScrollConfiguration(
+        child: StatefulBuilder(
+          builder: (context, setOverlayState) {
+            _overlaySetState = setOverlayState;
+            return _buildOverlay();
+          },
+        ),
       ),
     );
     overlay.insert(_entry!);

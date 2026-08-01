@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';

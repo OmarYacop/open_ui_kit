@@ -11,9 +11,9 @@ import 'package:flutter/widgets.dart';
 /// ### Integration — recommended
 ///
 /// ```dart
-/// MaterialApp(
+/// UiApp(
 ///   localizationsDelegates: const [
-///     ...GlobalMaterialLocalizations.delegates, // if you use material
+///     GlobalWidgetsLocalizations.delegate,
 ///     UiLocalizations.delegate,                 // <-- add this
 ///   ],
 ///   supportedLocales: const [Locale('en'), Locale('ar'), Locale('fr')],
@@ -39,7 +39,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// Text direction is NOT owned by this class. Flutter resolves it
 /// from the ambient `Locale`, `Directionality` ancestor, or
-/// `MaterialApp.localizationsDelegates`. Components should use
+/// `UiApp.localizationsDelegates`. Components should use
 /// `EdgeInsetsDirectional`, `AlignmentDirectional`, and
 /// `Directionality.of(context)` rather than branching on a locale
 /// tag to get RTL right.
@@ -149,7 +149,7 @@ abstract class UiLocalizations {
     return fromWidget ?? const UiLocalizationsEn();
   }
 
-  /// The delegate to register in `MaterialApp.localizationsDelegates`.
+  /// The delegate to register in `UiApp.localizationsDelegates`.
   static const LocalizationsDelegate<UiLocalizations> delegate =
       _UiLocalizationsDelegate();
 }

@@ -81,6 +81,83 @@ void main() {
     expect(tester.getSize(find.byKey(const Key('composer'))).height, 56);
   });
 
+  testWidgets('keyboard replacement holds composer while the IME retreats',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: UiKeyboardGeometryOverride(
+          geometry: const UiKeyboardGeometry(
+            currentInset: 120,
+            sourceInset: 300,
+            targetInset: 0,
+            isAnimating: true,
+            isVisible: true,
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: UiKeyboardDock(
+              replacementVisible: true,
+              replacementExtent: 300,
+              replacement: const SizedBox(key: Key('replacement')),
+              child: const SizedBox(
+                key: Key('replacement-composer'),
+                width: 390,
+                height: 56,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getBottomLeft(find.byKey(const Key('replacement-composer'))).dy,
+      400,
+    );
+    expect(tester.getSize(find.byKey(const Key('replacement'))).height, 300);
+  });
+
+  testWidgets('keyboard replacement is clipped during its height transition',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    Widget dock(bool visible) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: UiKeyboardDock(
+              replacementVisible: visible,
+              replacementExtent: 300,
+              replacement: const SizedBox(
+                key: Key('transitioning-replacement'),
+                height: 300,
+              ),
+              child: const SizedBox(width: 390, height: 56),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(dock(false));
+    await tester.pumpWidget(dock(true));
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byKey(const Key('transitioning-replacement'))).height,
+      300,
+    );
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('keyboard geometry accessors rebuild only for their aspect',
       (tester) async {
     final geometry = ValueNotifier<UiKeyboardGeometry>(

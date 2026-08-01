@@ -3,7 +3,8 @@ import 'package:flutter/widgets.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
-import '../forms/button.dart' show UiIntent, UiIntentPalette, UiSize;
+import '../../foundation/theme/ui_intent.dart';
+import '../forms/button.dart' show UiSize;
 
 /// Compact label surface for statuses and counts.
 ///

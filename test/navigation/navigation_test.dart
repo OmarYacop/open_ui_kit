@@ -45,7 +45,6 @@ void main() {
 
   Widget host(UiNavigationController controller) {
     return MaterialApp(
-      theme: UiThemeData.light(),
       home: Scaffold(body: UiNavigationHost(controller: controller)),
     );
   }
@@ -85,7 +84,6 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Scaffold(
           body: UiNavigationHost(
             controller: controller,

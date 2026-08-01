@@ -31,7 +31,6 @@ class _PageScaffold extends StatelessWidget {
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light().copyWith(platform: TargetPlatform.iOS),
     home: Scaffold(body: child),
   );
 }
@@ -68,6 +67,7 @@ void main() {
         await tester.pumpWidget(
           _host(
             UiNavigationHost(
+              enableEdgeSwipePop: true,
               controller: controller,
               edgeSwipeProgress: progress,
             ),
@@ -114,6 +114,7 @@ void main() {
         await tester.pumpWidget(
           _host(
             UiNavigationHost(
+              enableEdgeSwipePop: true,
               controller: controller,
               edgeSwipeProgress: progress,
             ),
@@ -158,6 +159,7 @@ void main() {
         await tester.pumpWidget(
           _host(
             UiNavigationHost(
+              enableEdgeSwipePop: true,
               controller: controller,
               edgeSwipeProgress: progress,
             ),
@@ -197,7 +199,10 @@ void main() {
         addTearDown(controller.dispose);
 
         await tester.pumpWidget(
-          _host(UiNavigationHost(controller: controller)),
+          _host(UiNavigationHost(
+            controller: controller,
+            enableEdgeSwipePop: true,
+          )),
         );
         await tester.pumpAndSettle();
 
@@ -229,6 +234,7 @@ void main() {
         await tester.pumpWidget(
           _host(
             UiNavigationHost(
+              enableEdgeSwipePop: true,
               controller: controller,
               edgeSwipeProgress: progress,
             ),

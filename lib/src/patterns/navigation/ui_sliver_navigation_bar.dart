@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
@@ -364,9 +363,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   UiNavigationSurface _resolveSurface(BuildContext context) {
     if (spec.surface != UiNavigationSurface.adaptive) return spec.surface;
-    return defaultTargetPlatform == TargetPlatform.iOS
-        ? UiNavigationSurface.edgeFade
-        : UiNavigationSurface.solid;
+    return UiNavigationSurface.solid;
   }
 
   double _dividerOpacity(double t) {
@@ -402,7 +399,7 @@ class _CompactRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
-    final brightness = Theme.of(context).brightness;
+    final brightness = tokens.brightness;
     final resolvedLogo = spec.brand?.resolveLogo(brightness);
     final showMiddle = showTitle || resolvedLogo != null;
     final runtime = UiNavigationControllerScope.maybeOf(context);

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
@@ -15,8 +14,7 @@ import 'ui_route_entry.dart';
 /// ### Edge-swipe pop (PR-E / PR-4 / PR-7)
 ///
 /// iOS/macOS users expect an edge-drag from the left to pop the top
-/// page — this is how `CupertinoPageRoute` behaves when a screen sits
-/// on Flutter's Navigator. `UiNavigationStack` intentionally does NOT
+/// page. `UiNavigationStack` intentionally does not
 /// participate in the `Navigator`/`Route` system (see its own
 /// docstring), so nothing in the default pipeline provides that
 /// gesture. [UiNavigationHost] adds an edge-swipe region that
@@ -26,8 +24,7 @@ import 'ui_route_entry.dart';
 ///
 /// The gesture is:
 ///
-/// - **platform-gated** via [enableEdgeSwipePop]. By default it is on
-///   for iOS and macOS, off elsewhere.
+/// - **explicitly enabled** via [enableEdgeSwipePop]. It is off by default.
 /// - **stack-aware**: only active when [UiNavigationController.canPop]
 ///   is true. At the stack root the edge strip is absent so root-page
 ///   scroll / hero gestures keep the full width.
@@ -37,26 +34,25 @@ import 'ui_route_entry.dart';
 ///   finger while dragging. A release that doesn't meet threshold
 ///   animates the page back; a release that meets it animates the
 ///   page off-screen and then pops the stack.
-/// - **Cupertino parallax** (PR-7): on iOS/macOS (or when forced via
-///   [backSwipeTransition]) both the outgoing and incoming routes
+/// - **layered parallax**: when selected through [backSwipeTransition], both
+///   the outgoing and incoming routes
 ///   are rendered during the drag. The incoming route starts offset
 ///   by `-0.30 * width` (LTR reading-start) and settles at 0 as the
 ///   gesture completes; the outgoing route carries a leading-edge
-///   shadow for the elevation cue. Non-Cupertino platforms fall back
-///   to the slide-only treatment.
+///   shadow for the elevation cue.
 class UiNavigationHost extends StatelessWidget {
   const UiNavigationHost({
     super.key,
     required this.controller,
     this.builder,
     this.transitionStyle = UiNavigationTransitionStyle.softShift,
-    this.enableEdgeSwipePop,
+    this.enableEdgeSwipePop = false,
     this.edgeSwipeWidth = 22,
     this.edgeSwipeMinDistance = 64,
     this.edgeSwipeMinVelocity = 400,
     this.edgeSwipeProgress,
     this.edgeSwipeSettleDuration = UiMotionDuration.slow,
-    this.backSwipeTransition = UiBackSwipeTransition.auto,
+    this.backSwipeTransition = UiBackSwipeTransition.slide,
   });
 
   final UiNavigationController controller;
@@ -67,12 +63,11 @@ class UiNavigationHost extends StatelessWidget {
 
   final UiNavigationTransitionStyle transitionStyle;
 
-  /// Force edge-swipe-to-pop on/off. When null (default) the behaviour
-  /// follows the ambient platform — on for iOS/macOS, off otherwise.
-  final bool? enableEdgeSwipePop;
+  /// Whether edge-swipe-to-pop is enabled.
+  final bool enableEdgeSwipePop;
 
   /// Width in logical pixels of the leading-edge strip that starts the
-  /// pop gesture. Matches CupertinoPageRoute's default.
+  /// Width of the leading-edge gesture region.
   final double edgeSwipeWidth;
 
   /// Horizontal distance the finger must travel from the edge before
@@ -94,29 +89,11 @@ class UiNavigationHost extends StatelessWidget {
 
   /// Back-swipe visual treatment. See [UiBackSwipeTransition].
   ///
-  /// The [UiBackSwipeTransition.auto] default picks Cupertino parallax
-  /// on iOS/macOS and the simple slide elsewhere; pass
-  /// [UiBackSwipeTransition.cupertino] or [UiBackSwipeTransition.slide] to
-  /// force a specific treatment regardless of platform.
+  /// The Open UI-owned visual treatment for an enabled back swipe.
   final UiBackSwipeTransition backSwipeTransition;
 
-  bool _shouldEnableSwipe(BuildContext context, int stackLength) {
-    if (stackLength < 2) return false;
-    final forced = enableEdgeSwipePop;
-    if (forced != null) return forced;
-    final platform = defaultTargetPlatform;
-    return platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
-  }
-
-  UiBackSwipeTransition _resolveBackSwipeStyle() {
-    if (backSwipeTransition != UiBackSwipeTransition.auto) {
-      return backSwipeTransition;
-    }
-    final platform = defaultTargetPlatform;
-    return (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS)
-        ? UiBackSwipeTransition.cupertino
-        : UiBackSwipeTransition.slide;
-  }
+  bool _shouldEnableSwipe(BuildContext context, int stackLength) =>
+      stackLength >= 2 && enableEdgeSwipePop;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +109,7 @@ class UiNavigationHost extends StatelessWidget {
           ],
         );
         if (!_shouldEnableSwipe(context, stack.length)) return host;
-        final style = _resolveBackSwipeStyle();
+        final style = backSwipeTransition;
         final parallaxCurrent =
             stack.isNotEmpty ? _build(context, stack[stack.length - 1]) : null;
         final parallaxPrevious =
@@ -181,7 +158,7 @@ class UiNavigationHost extends StatelessWidget {
 ///
 /// - [UiBackSwipeTransition.slide] — translate [child] (the full
 ///   `UiNavigationStack`) by `progress * width`.
-/// - [UiBackSwipeTransition.cupertino] — when `progress > 0`, paint a
+/// - [UiBackSwipeTransition.layered] — when `progress > 0`, paint a
 ///   parallax stack with [parallaxPrevious] at the bottom and
 ///   [parallaxCurrent] on top; at `progress = 0` fall through to
 ///   [child] so the normal `UiNavigationStack`'s forward transitions
@@ -345,7 +322,7 @@ class _EdgeSwipePopRegionState extends State<_EdgeSwipePopRegion>
   }
 
   bool get _shouldPaintParallax {
-    if (widget.style != UiBackSwipeTransition.cupertino) return false;
+    if (widget.style != UiBackSwipeTransition.layered) return false;
     if (!_dragActive && _drive.value == 0) return false;
     return _parallaxFromSnapshot != null && _parallaxToSnapshot != null;
   }
@@ -378,7 +355,7 @@ class _EdgeSwipePopRegionState extends State<_EdgeSwipePopRegion>
             final dir = isRtl ? -1.0 : 1.0;
             final Widget body;
             if (_shouldPaintParallax) {
-              body = _CupertinoBackSwipeStack(
+              body = _LayeredBackSwipeStack(
                 progress: progress,
                 direction: dir,
                 viewportWidth: _viewportWidth,
@@ -409,9 +386,9 @@ class _EdgeSwipePopRegionState extends State<_EdgeSwipePopRegion>
 }
 
 /// Two-page parallax stack used by the interactive back-swipe in
-/// [UiBackSwipeTransition.cupertino] mode.
-class _CupertinoBackSwipeStack extends StatelessWidget {
-  const _CupertinoBackSwipeStack({
+/// [UiBackSwipeTransition.layered] mode.
+class _LayeredBackSwipeStack extends StatelessWidget {
+  const _LayeredBackSwipeStack({
     required this.progress,
     required this.direction,
     required this.viewportWidth,
@@ -433,7 +410,7 @@ class _CupertinoBackSwipeStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final incomingStart =
-        -UiBackSwipeParallaxMetrics.incomingStartRatio * viewportWidth;
+        -UiBackSwipeLayeredMetrics.incomingStartRatio * viewportWidth;
     // Incoming page: moves from `incomingStart` at progress=0 to `0`
     // at progress=1.
     final incomingDx = (incomingStart + incomingStart.abs() * progress)
@@ -443,9 +420,9 @@ class _CupertinoBackSwipeStack extends StatelessWidget {
     // Scrim intensifies as the incoming page is further offset (i.e.
     // at the start of the gesture), fades out at commit.
     final scrimAlpha =
-        UiBackSwipeParallaxMetrics.incomingScrimOpacity * (1.0 - progress);
-    // Shadow peaks at mid-gesture for a Cupertino-like elevation cue.
-    final shadowAlpha = UiBackSwipeParallaxMetrics.outgoingShadowOpacity *
+        UiBackSwipeLayeredMetrics.incomingScrimOpacity * (1.0 - progress);
+    // Shadow peaks at mid-gesture for a clear elevation cue.
+    final shadowAlpha = UiBackSwipeLayeredMetrics.outgoingShadowOpacity *
         (1.0 - (progress - 0.5).abs() * 2);
 
     // Page-background fallback. Pages that don't install their own
@@ -498,9 +475,9 @@ class _CupertinoBackSwipeStack extends StatelessWidget {
                         BoxShadow(
                           color: Color.fromRGBO(0, 0, 0, shadowAlpha),
                           blurRadius:
-                              UiBackSwipeParallaxMetrics.outgoingShadowBlur,
+                              UiBackSwipeLayeredMetrics.outgoingShadowBlur,
                           offset: Offset(
-                            UiBackSwipeParallaxMetrics.outgoingShadowOffsetX *
+                            UiBackSwipeLayeredMetrics.outgoingShadowOffsetX *
                                 direction,
                             0,
                           ),

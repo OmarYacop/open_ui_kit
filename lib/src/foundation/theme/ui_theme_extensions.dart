@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform;
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../effects/ui_effects_tokens.dart';
 import '../motion/ui_motion_tokens.dart';
@@ -21,12 +20,9 @@ enum UiThemeAspect {
   brightness,
 }
 
-/// Aggregate ThemeExtension that exposes all Open UI Kit tokens.
-///
-/// Attach via `ThemeData.extensions` so any widget downstream can resolve
-/// tokens with [UiThemeTokens.of].
+/// Aggregate, framework-neutral Open UI Kit tokens.
 @immutable
-class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
+class UiThemeTokens {
   const UiThemeTokens({
     required this.colors,
     required this.spacing,
@@ -72,16 +68,13 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
   /// Resolve the Open UI Kit tokens attached to the ambient theme.
   /// Falls back to [light] if not present.
   static UiThemeTokens of(BuildContext context) {
-    final tokens = UiTheme.maybeOf(context) ??
-        Theme.of(context).extension<UiThemeTokens>() ??
-        light;
+    final tokens = UiTheme.maybeOf(context) ?? light;
     return _respectMotionPreferences(context, tokens);
   }
 
   /// Non-throwing lookup.
   static UiThemeTokens? maybeOf(BuildContext context) {
-    final tokens = UiTheme.maybeOf(context) ??
-        Theme.of(context).extension<UiThemeTokens>();
+    final tokens = UiTheme.maybeOf(context);
     if (tokens == null) return null;
     return _respectMotionPreferences(context, tokens);
   }
@@ -118,7 +111,6 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
   static UiEffectsTokens effectsOf(BuildContext context) {
     final effects = _ofAspect(context, UiThemeAspect.effects).effects;
     return effects.resolve(
-      platform: defaultTargetPlatform,
       disableAnimations: MediaQuery.maybeDisableAnimationsOf(context) ?? false,
       accessibleNavigation:
           MediaQuery.maybeAccessibleNavigationOf(context) ?? false,
@@ -133,9 +125,7 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
     BuildContext context,
     UiThemeAspect aspect,
   ) {
-    return UiTheme.maybeOf(context, aspect: aspect) ??
-        Theme.of(context).extension<UiThemeTokens>() ??
-        light;
+    return UiTheme.maybeOf(context, aspect: aspect) ?? light;
   }
 
   static UiThemeTokens _respectMotionPreferences(
@@ -149,14 +139,12 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
     return tokens.copyWith(
       motion: disableAnimations ? tokens.motion.reduce() : tokens.motion,
       effects: tokens.effects.resolve(
-        platform: defaultTargetPlatform,
         disableAnimations: disableAnimations,
         accessibleNavigation: accessibleNavigation,
       ),
     );
   }
 
-  @override
   UiThemeTokens copyWith({
     UiColorTokens? colors,
     UiSpacingTokens? spacing,
@@ -179,9 +167,7 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
     );
   }
 
-  @override
-  UiThemeTokens lerp(ThemeExtension<UiThemeTokens>? other, double t) {
-    if (other is! UiThemeTokens) return this;
+  UiThemeTokens lerp(UiThemeTokens other, double t) {
     return UiThemeTokens(
       colors: UiColorTokens.lerp(colors, other.colors, t),
       spacing: UiSpacingTokens.lerp(spacing, other.spacing, t),
@@ -193,14 +179,34 @@ class UiThemeTokens extends ThemeExtension<UiThemeTokens> {
       brightness: t < 0.5 ? brightness : other.brightness,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UiThemeTokens &&
+          colors == other.colors &&
+          spacing == other.spacing &&
+          radius == other.radius &&
+          shadows == other.shadows &&
+          typography == other.typography &&
+          motion == other.motion &&
+          effects == other.effects &&
+          brightness == other.brightness;
+
+  @override
+  int get hashCode => Object.hash(
+        colors,
+        spacing,
+        radius,
+        shadows,
+        typography,
+        motion,
+        effects,
+        brightness,
+      );
 }
 
-/// Material-free [InheritedWidget] host for [UiThemeTokens].
-///
-/// Provided by [UiApp] so any widget can resolve design tokens without a
-/// Material `Theme` ancestor. [UiThemeTokens.of] checks this first, then falls
-/// back to a Material `Theme` extension for interop with `MaterialApp`-hosted
-/// screens (e.g. widget tests).
+/// [InheritedWidget] host for [UiThemeTokens].
 class UiTheme extends InheritedModel<UiThemeAspect> {
   const UiTheme({super.key, required this.tokens, required super.child});
 

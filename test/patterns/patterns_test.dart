@@ -6,8 +6,10 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(effects: UiEffectsTokens.full),
-    home: Scaffold(body: Center(child: child)),
+    home: UiTheme(
+      tokens: UiThemeData.light(effects: UiEffectsTokens.full),
+      child: Scaffold(body: Center(child: child)),
+    ),
   );
 }
 
@@ -230,7 +232,6 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: const Scaffold(
             body: UiAppBar(
               title: 'Courses',
@@ -244,13 +245,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          themeMode: ThemeMode.dark,
-          theme: UiThemeData.dark(),
-          darkTheme: UiThemeData.dark(),
-          home: const Scaffold(
-            body: UiAppBar(
-              title: 'Courses',
-              brand: brand,
+          home: UiTheme(
+            tokens: UiThemeData.dark(),
+            child: const Scaffold(
+              body: UiAppBar(
+                title: 'Courses',
+                brand: brand,
+              ),
             ),
           ),
         ),
@@ -305,7 +306,6 @@ void main() {
       const topInset = 59.0;
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: MediaQuery(
             data: const MediaQueryData(
               padding: EdgeInsets.only(top: topInset),
@@ -658,14 +658,14 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          themeMode: ThemeMode.dark,
-          theme: UiThemeData.light(),
-          darkTheme: UiThemeData.dark(),
-          home: const Scaffold(
-            body: UiEmptyState(
-              mode: UiAsyncStateMode.section,
-              icon: Icon(Icons.calendar_today, key: Key('section-icon')),
-              title: 'No sessions',
+          home: UiTheme(
+            tokens: UiThemeData.dark(),
+            child: const Scaffold(
+              body: UiEmptyState(
+                mode: UiAsyncStateMode.section,
+                icon: Icon(Icons.calendar_today, key: Key('section-icon')),
+                title: 'No sessions',
+              ),
             ),
           ),
         ),
@@ -1127,7 +1127,6 @@ void main() {
 
       Widget host(double keyboard) {
         return MaterialApp(
-          theme: UiThemeData.light(),
           home: MediaQuery(
             data: MediaQueryData(
               viewInsets: EdgeInsets.only(bottom: keyboard),
@@ -1178,15 +1177,17 @@ void main() {
       SystemUiOverlayStyle? observed;
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.dark(),
-          home: UiSystemBars(
-            child: Builder(
-              builder: (ctx) {
-                observed = (ctx.findAncestorWidgetOfExactType<
-                        AnnotatedRegion<SystemUiOverlayStyle>>())
-                    ?.value;
-                return const SizedBox.shrink();
-              },
+          home: UiTheme(
+            tokens: UiThemeData.dark(),
+            child: UiSystemBars(
+              child: Builder(
+                builder: (ctx) {
+                  observed = (ctx.findAncestorWidgetOfExactType<
+                          AnnotatedRegion<SystemUiOverlayStyle>>())
+                      ?.value;
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -1302,7 +1303,7 @@ void main() {
       expect(stillPinned, pinned);
     });
 
-    testWidgets('UiSliverNavigationBar defaults to an edge fade on iOS',
+    testWidgets('UiSliverNavigationBar adaptive default is platform-neutral',
         (tester) async {
       const nav = CustomScrollView(
         slivers: [
@@ -1317,19 +1318,7 @@ void main() {
         await tester.pumpWidget(
           _host(nav),
         );
-        expect(
-          find.byType(UiScrollEdgeFade),
-          findsWidgets,
-          reason: 'iOS default should resolve adaptive surface to edgeFade.',
-        );
-        final edgeFade = tester.widget<UiScrollEdgeFade>(
-          find.byType(UiScrollEdgeFade).first,
-        );
-        final context = tester.element(find.byType(UiSliverNavigationBar));
-        expect(
-          edgeFade.backgroundColor,
-          UiThemeTokens.of(context).colors.background,
-        );
+        expect(find.byType(UiScrollEdgeFade), findsNothing);
         expect(find.byType(BackdropFilter), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = previous;
@@ -1706,15 +1695,15 @@ void main() {
         'picks icon brightness from the surface', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          themeMode: ThemeMode.dark,
-          theme: UiThemeData.dark(),
-          darkTheme: UiThemeData.dark(),
-          home: const Scaffold(
-            body: CustomScrollView(
-              slivers: [
-                UiSliverNavigationBar(spec: spec),
-                SliverToBoxAdapter(child: SizedBox(height: 400)),
-              ],
+          home: UiTheme(
+            tokens: UiThemeData.dark(),
+            child: const Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  UiSliverNavigationBar(spec: spec),
+                  SliverToBoxAdapter(child: SizedBox(height: 400)),
+                ],
+              ),
             ),
           ),
         ),
@@ -1929,13 +1918,15 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.dark(),
-          home: const Scaffold(
-            body: CustomScrollView(
-              slivers: [
-                UiSliverNavigationBar(spec: darkSpec),
-                SliverToBoxAdapter(child: SizedBox(height: 500)),
-              ],
+          home: UiTheme(
+            tokens: UiThemeData.dark(),
+            child: const Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  UiSliverNavigationBar(spec: darkSpec),
+                  SliverToBoxAdapter(child: SizedBox(height: 500)),
+                ],
+              ),
             ),
           ),
         ),

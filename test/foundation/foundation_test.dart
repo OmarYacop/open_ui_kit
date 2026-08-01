@@ -58,12 +58,10 @@ void main() {
       expect(resolved.brightness, Brightness.light);
     });
 
-    testWidgets('UiThemeData.light attaches UiThemeTokens extension',
-        (tester) async {
+    testWidgets('UiThemeData.light creates light tokens', (tester) async {
       late UiThemeTokens resolved;
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: Builder(
             builder: (ctx) {
               resolved = UiThemeTokens.of(ctx);
@@ -79,12 +77,14 @@ void main() {
       late UiThemeTokens resolved;
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.dark(),
-          home: Builder(
-            builder: (ctx) {
-              resolved = UiThemeTokens.of(ctx);
-              return const SizedBox.shrink();
-            },
+          home: UiTheme(
+            tokens: UiThemeData.dark(),
+            child: Builder(
+              builder: (ctx) {
+                resolved = UiThemeTokens.of(ctx);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -97,7 +97,6 @@ void main() {
       late UiThemeTokens resolved;
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: MediaQuery(
             data: const MediaQueryData(disableAnimations: true),
             child: Builder(
@@ -138,7 +137,6 @@ void main() {
     testWidgets('UiBox renders a DecoratedBox when styled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: const UiBox(
             background: Color(0xFFAABBCC),
             padding: EdgeInsets.all(8),
@@ -177,7 +175,6 @@ void main() {
     testWidgets('UiText applies heading font size', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: const UiText('hi', variant: UiTextVariant.heading),
         ),
       );

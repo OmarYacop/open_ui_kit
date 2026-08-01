@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -57,7 +57,7 @@ class UiAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final brightness = Theme.of(context).brightness;
+    final brightness = tokens.brightness;
     final logo = brand?.resolveLogo(brightness);
     return UiBox(
       background: tokens.colors.surface,

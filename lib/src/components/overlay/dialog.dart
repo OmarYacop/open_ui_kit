@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../forms/button.dart';
 
@@ -96,12 +97,14 @@ class UiDialogScope {
         barrierColor: const Color(0x00000000),
         transitionDuration: tokens.motion.standard,
         reverseTransitionDuration: tokens.motion.standard,
-        pageBuilder: (ctx, animation, __) => _DialogHost(
-          animation: animation,
-          barrierColor: _dialogBarrierColor(tokens),
-          child: InheritedTheme.captureAll(
-            context,
-            Builder(builder: builder),
+        pageBuilder: (ctx, animation, __) => UiScrollConfiguration(
+          child: _DialogHost(
+            animation: animation,
+            barrierColor: _dialogBarrierColor(tokens),
+            child: InheritedTheme.captureAll(
+              context,
+              Builder(builder: builder),
+            ),
           ),
         ),
         transitionsBuilder: (_, __, ___, child) => child,

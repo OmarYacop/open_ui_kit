@@ -10,6 +10,7 @@ import '../../foundation/motion/ui_stacked_motion.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Edge a drawer attaches to.
@@ -721,20 +722,22 @@ class UiDrawerScope {
         reverseTransitionDuration: drawerTransitionDuration,
         pageBuilder: (ctx, animation, __) {
           return capturedThemes.wrap(
-            _DrawerRouteHost(
-              animation: animation,
-              side: side,
-              variant: variant,
-              direction: direction,
-              builder: builder,
-              controlledBuilder: _eraseControlledBuilder(controlledBuilder),
-              blurBackdrop: effectiveBlurBackdrop,
-              barrierColor: barrierColor ?? tokens.colors.overlay,
-              barrierDismissible: barrierDismissible,
-              transitionDuration: drawerTransitionDuration,
-              onDismissRoute: ([result]) {
-                Navigator.of(ctx).maybePop(result);
-              },
+            UiScrollConfiguration(
+              child: _DrawerRouteHost(
+                animation: animation,
+                side: side,
+                variant: variant,
+                direction: direction,
+                builder: builder,
+                controlledBuilder: _eraseControlledBuilder(controlledBuilder),
+                blurBackdrop: effectiveBlurBackdrop,
+                barrierColor: barrierColor ?? tokens.colors.overlay,
+                barrierDismissible: barrierDismissible,
+                transitionDuration: drawerTransitionDuration,
+                onDismissRoute: ([result]) {
+                  Navigator.of(ctx).maybePop(result);
+                },
+              ),
             ),
           );
         },

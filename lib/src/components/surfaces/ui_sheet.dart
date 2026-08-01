@@ -7,6 +7,7 @@ import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// How a sheet sizes itself along the vertical axis.
@@ -280,12 +281,14 @@ class UiSheetScope {
             Navigator.of(ctx).maybePop(r);
           });
           return capturedThemes.wrap(
-            _SheetHost<T>(
-              snap: snap,
-              isDismissible: isDismissible,
-              controller: controller,
-              builder: builder,
-              maxWidth: maxWidth,
+            UiScrollConfiguration(
+              child: _SheetHost<T>(
+                snap: snap,
+                isDismissible: isDismissible,
+                controller: controller,
+                builder: builder,
+                maxWidth: maxWidth,
+              ),
             ),
           );
         },

@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart'
-    show CupertinoSliverRefreshControl, RefreshIndicatorMode;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -178,7 +177,7 @@ class UiRefresher extends StatefulWidget {
   final UiMotionDuration dismissDuration;
 
   double _effectiveEdgeOffset(BuildContext context) {
-    return MediaQuery.paddingOf(context).top + edgeOffset;
+    return MediaQuery.viewPaddingOf(context).top + edgeOffset;
   }
 
   /// Physics suitable for [UiSliverRefresher] on every platform.
@@ -193,6 +192,8 @@ class UiRefresher extends StatefulWidget {
 class _UiRefresherState extends State<UiRefresher>
     with SingleTickerProviderStateMixin {
   late final AnimationController _motionController;
+  Timer? _feedbackTimer;
+  Completer<void>? _feedbackDelay;
 
   Animation<double>? _extentAnimation;
   UiRefreshStatus _status = UiRefreshStatus.idle;
@@ -228,6 +229,8 @@ class _UiRefresherState extends State<UiRefresher>
 
   @override
   void dispose() {
+    _feedbackTimer?.cancel();
+    _feedbackDelay?.complete();
     widget.controller?._detach(this);
     _motionController.dispose();
     super.dispose();
@@ -397,12 +400,24 @@ class _UiRefresherState extends State<UiRefresher>
       final feedback =
           widget.feedbackDuration ?? UiThemeTokens.motionOf(context).slow;
       if (!_animationsDisabled && feedback > Duration.zero) {
-        await Future<void>.delayed(feedback);
+        await _waitForFeedback(feedback);
       }
       await _dismissToIdle();
     }
 
     _refreshFuture = null;
+  }
+
+  Future<void> _waitForFeedback(Duration duration) {
+    _feedbackTimer?.cancel();
+    final completer = Completer<void>();
+    _feedbackDelay = completer;
+    _feedbackTimer = Timer(duration, () {
+      if (!completer.isCompleted) completer.complete();
+      if (identical(_feedbackDelay, completer)) _feedbackDelay = null;
+      _feedbackTimer = null;
+    });
+    return completer.future;
   }
 
   Future<void> _dismissToIdle() async {
@@ -549,13 +564,13 @@ class _UiSliverRefresherState extends State<UiSliverRefresher> {
     }
   }
 
-  UiRefreshStatus _statusFor(RefreshIndicatorMode mode) {
+  UiRefreshStatus _statusFor(_UiRefreshIndicatorMode mode) {
     return switch (mode) {
-      RefreshIndicatorMode.inactive => UiRefreshStatus.idle,
-      RefreshIndicatorMode.drag => UiRefreshStatus.dragging,
-      RefreshIndicatorMode.armed => UiRefreshStatus.armed,
-      RefreshIndicatorMode.refresh => UiRefreshStatus.refreshing,
-      RefreshIndicatorMode.done => _terminalStatus,
+      _UiRefreshIndicatorMode.inactive => UiRefreshStatus.idle,
+      _UiRefreshIndicatorMode.drag => UiRefreshStatus.dragging,
+      _UiRefreshIndicatorMode.armed => UiRefreshStatus.armed,
+      _UiRefreshIndicatorMode.refresh => UiRefreshStatus.refreshing,
+      _UiRefreshIndicatorMode.done => _terminalStatus,
     };
   }
 
@@ -569,9 +584,10 @@ class _UiSliverRefresherState extends State<UiSliverRefresher> {
 
   @override
   Widget build(BuildContext context) {
-    final edgeOffset = MediaQuery.paddingOf(context).top + widget.edgeOffset;
+    final edgeOffset =
+        MediaQuery.viewPaddingOf(context).top + widget.edgeOffset;
 
-    return CupertinoSliverRefreshControl(
+    return _UiSliverRefreshControl(
       refreshTriggerPullDistance: widget.triggerDistance,
       refreshIndicatorExtent: widget.indicatorExtent,
       onRefresh: _refresh,
@@ -1064,4 +1080,219 @@ class _RefreshGlyphPainter extends CustomPainter {
         completion != oldDelegate.completion ||
         color != oldDelegate.color;
   }
+}
+
+enum _UiRefreshIndicatorMode { inactive, drag, armed, refresh, done }
+
+typedef _UiSliverIndicatorBuilder = Widget Function(
+  BuildContext context,
+  _UiRefreshIndicatorMode mode,
+  double pulledExtent,
+  double triggerDistance,
+  double indicatorExtent,
+);
+
+/// Widgets-layer sliver refresh mechanism used by [UiSliverRefresher].
+class _UiSliverRefreshControl extends StatefulWidget {
+  const _UiSliverRefreshControl({
+    required this.refreshTriggerPullDistance,
+    required this.refreshIndicatorExtent,
+    required this.onRefresh,
+    required this.builder,
+  });
+
+  final double refreshTriggerPullDistance;
+  final double refreshIndicatorExtent;
+  final Future<void> Function() onRefresh;
+  final _UiSliverIndicatorBuilder builder;
+
+  @override
+  State<_UiSliverRefreshControl> createState() =>
+      _UiSliverRefreshControlState();
+}
+
+class _UiSliverRefreshControlState extends State<_UiSliverRefreshControl> {
+  static const _inactiveResetFraction = 0.1;
+
+  _UiRefreshIndicatorMode _mode = _UiRefreshIndicatorMode.inactive;
+  Future<void>? _refreshTask;
+  double _extent = 0;
+  bool _holdsLayoutExtent = false;
+
+  _UiRefreshIndicatorMode _transition() {
+    void releaseExtent() {
+      void update() {
+        if (mounted) setState(() => _holdsLayoutExtent = false);
+      }
+
+      if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+        update();
+      } else {
+        SchedulerBinding.instance.addPostFrameCallback((_) => update());
+      }
+    }
+
+    switch (_mode) {
+      case _UiRefreshIndicatorMode.inactive:
+        if (_extent <= 0) return _UiRefreshIndicatorMode.inactive;
+        _mode = _UiRefreshIndicatorMode.drag;
+        return _transition();
+      case _UiRefreshIndicatorMode.drag:
+        if (_extent <= 0) return _UiRefreshIndicatorMode.inactive;
+        if (_extent < widget.refreshTriggerPullDistance) {
+          return _UiRefreshIndicatorMode.drag;
+        }
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _refreshTask != null) return;
+          setState(() => _holdsLayoutExtent = true);
+          _refreshTask = widget.onRefresh();
+          _refreshTask!.whenComplete(() {
+            if (!mounted) return;
+            setState(() {
+              _refreshTask = null;
+              _mode = _transition();
+            });
+          });
+        });
+        return _UiRefreshIndicatorMode.armed;
+      case _UiRefreshIndicatorMode.armed:
+        if (_refreshTask == null) {
+          releaseExtent();
+          _mode = _UiRefreshIndicatorMode.done;
+          return _transition();
+        }
+        return _extent > widget.refreshIndicatorExtent
+            ? _UiRefreshIndicatorMode.armed
+            : _UiRefreshIndicatorMode.refresh;
+      case _UiRefreshIndicatorMode.refresh:
+        if (_refreshTask != null) return _UiRefreshIndicatorMode.refresh;
+        releaseExtent();
+        _mode = _UiRefreshIndicatorMode.done;
+        return _transition();
+      case _UiRefreshIndicatorMode.done:
+        return _extent >
+                widget.refreshTriggerPullDistance * _inactiveResetFraction
+            ? _UiRefreshIndicatorMode.done
+            : _UiRefreshIndicatorMode.inactive;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _UiRefreshSliver(
+      refreshIndicatorLayoutExtent: widget.refreshIndicatorExtent,
+      hasLayoutExtent: _holdsLayoutExtent,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          _extent = constraints.maxHeight;
+          _mode = _transition();
+          if (_extent <= 0) return const SizedBox.shrink();
+          return widget.builder(
+            context,
+            _mode,
+            _extent,
+            widget.refreshTriggerPullDistance,
+            widget.refreshIndicatorExtent,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _UiRefreshSliver extends SingleChildRenderObjectWidget {
+  const _UiRefreshSliver({
+    required this.refreshIndicatorLayoutExtent,
+    required this.hasLayoutExtent,
+    required super.child,
+  });
+
+  final double refreshIndicatorLayoutExtent;
+  final bool hasLayoutExtent;
+
+  @override
+  _RenderUiRefreshSliver createRenderObject(BuildContext context) =>
+      _RenderUiRefreshSliver(
+        refreshIndicatorExtent: refreshIndicatorLayoutExtent,
+        hasLayoutExtent: hasLayoutExtent,
+      );
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderUiRefreshSliver renderObject,
+  ) {
+    renderObject
+      ..refreshIndicatorLayoutExtent = refreshIndicatorLayoutExtent
+      ..hasLayoutExtent = hasLayoutExtent;
+  }
+}
+
+class _RenderUiRefreshSliver extends RenderSliver
+    with RenderObjectWithChildMixin<RenderBox> {
+  _RenderUiRefreshSliver({
+    required double refreshIndicatorExtent,
+    required bool hasLayoutExtent,
+  })  : _refreshIndicatorExtent = refreshIndicatorExtent,
+        _hasLayoutExtent = hasLayoutExtent;
+
+  double _refreshIndicatorExtent;
+  double get refreshIndicatorLayoutExtent => _refreshIndicatorExtent;
+  set refreshIndicatorLayoutExtent(double value) {
+    if (value == _refreshIndicatorExtent) return;
+    _refreshIndicatorExtent = value;
+    markNeedsLayout();
+  }
+
+  bool _hasLayoutExtent;
+  bool get hasLayoutExtent => _hasLayoutExtent;
+  set hasLayoutExtent(bool value) {
+    if (value == _hasLayoutExtent) return;
+    _hasLayoutExtent = value;
+    markNeedsLayout();
+  }
+
+  double _layoutExtentCompensation = 0;
+
+  @override
+  void performLayout() {
+    final layoutExtent = _hasLayoutExtent ? _refreshIndicatorExtent : 0.0;
+    if (layoutExtent != _layoutExtentCompensation) {
+      geometry = SliverGeometry(
+        scrollOffsetCorrection: layoutExtent - _layoutExtentCompensation,
+      );
+      _layoutExtentCompensation = layoutExtent;
+      return;
+    }
+
+    final overscroll = constraints.overlap < 0 ? -constraints.overlap : 0.0;
+    final active = overscroll > 0 || layoutExtent > 0;
+    child!.layout(
+      constraints.asBoxConstraints(maxExtent: layoutExtent + overscroll),
+      parentUsesSize: true,
+    );
+    if (!active) {
+      geometry = SliverGeometry.zero;
+      return;
+    }
+    final extent = math.max(child!.size.height, layoutExtent);
+    geometry = SliverGeometry(
+      scrollExtent: layoutExtent,
+      paintOrigin: -overscroll - constraints.scrollOffset,
+      paintExtent: math.max(extent - constraints.scrollOffset, 0),
+      maxPaintExtent: math.max(extent - constraints.scrollOffset, 0),
+      layoutExtent: math.max(layoutExtent - constraints.scrollOffset, 0),
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (constraints.overlap < 0 ||
+        constraints.scrollOffset + child!.size.height > 0) {
+      context.paintChild(child!, offset);
+    }
+  }
+
+  @override
+  void applyPaintTransform(RenderObject child, Matrix4 transform) {}
 }

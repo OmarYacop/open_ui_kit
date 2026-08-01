@@ -94,3 +94,24 @@ class UiMarker extends StatelessWidget {
 
   Widget _line(Color color) => UiBox(height: 1, background: color);
 }
+
+/// A quiet, semantic boundary between previously seen and unread messages.
+class UiUnreadMessagesMarker extends StatelessWidget {
+  const UiUnreadMessagesMarker({
+    super.key,
+    this.label = 'Unread messages',
+    this.semanticLabel,
+  });
+
+  final String label;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return UiMarker(
+      label: label,
+      semanticLabel: semanticLabel ?? label,
+      variant: UiMarkerVariant.separator,
+    );
+  }
+}

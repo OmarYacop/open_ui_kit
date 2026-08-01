@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../components/feedback/refresher.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
@@ -56,7 +57,14 @@ class UiPageScaffold extends StatelessWidget {
     this.scrollFadeMaxOpacity = 0.74,
     this.scrollFadeUsesSafeArea = true,
     this.resizeBodyForKeyboard = false,
-  });
+    this.onRefresh,
+    this.refreshController,
+    this.refreshIndicatorBuilder,
+    this.onRefreshStatusChanged,
+    this.onRefreshError,
+    this.refreshEnabled = true,
+    this.refreshEdgeOffset = 0,
+  }) : assert(refreshEdgeOffset >= 0);
 
   final Widget body;
   final Widget? topBar;
@@ -156,6 +164,31 @@ class UiPageScaffold extends StatelessWidget {
   /// disabled for pages that already use [UiKeyboardDock] or otherwise own
   /// their keyboard geometry.
   final bool resizeBodyForKeyboard;
+
+  /// Enables page-owned pull-to-refresh for the vertical scrollable in [body].
+  ///
+  /// Prefer this over placing [UiRefresher] inside [body] when page content can
+  /// pull beneath navigation chrome. The scaffold keeps refresh feedback in
+  /// the system-feedback layer above compact and large navigation titles.
+  final Future<void> Function()? onRefresh;
+
+  /// Optional controller for the page-owned refresher.
+  final UiRefresherController? refreshController;
+
+  /// Optional replacement for the page-owned refresh indicator.
+  final UiRefreshIndicatorBuilder? refreshIndicatorBuilder;
+
+  /// Reports lifecycle changes from the page-owned refresher.
+  final ValueChanged<UiRefreshStatus>? onRefreshStatusChanged;
+
+  /// Receives errors thrown by [onRefresh].
+  final UiRefreshErrorCallback? onRefreshError;
+
+  /// Whether page-owned pull-to-refresh is interactive.
+  final bool refreshEnabled;
+
+  /// Additional spacing below the physical top safe inset.
+  final double refreshEdgeOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -267,11 +300,24 @@ class UiPageScaffold extends StatelessWidget {
       );
     }
 
+    final pageContent = onRefresh == null
+        ? content
+        : UiRefresher(
+            controller: refreshController,
+            onRefresh: onRefresh!,
+            indicatorBuilder: refreshIndicatorBuilder,
+            onStatusChanged: onRefreshStatusChanged,
+            onError: onRefreshError,
+            enabled: refreshEnabled,
+            edgeOffset: refreshEdgeOffset,
+            child: content,
+          );
+
     content = UiBox(
       background: bg,
       width: double.infinity,
       height: double.infinity,
-      child: UiLayeredOverlayHost(child: content),
+      child: UiLayeredOverlayHost(child: pageContent),
     );
 
     if (syncSystemBars) {

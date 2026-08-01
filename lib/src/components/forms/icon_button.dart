@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
-import '../forms/button.dart' show UiIntent, UiIntentPalette, UiSize;
+import '../../foundation/theme/ui_intent.dart';
+import '../forms/button.dart' show UiSize;
 
 /// Icon-only button primitive.
 ///

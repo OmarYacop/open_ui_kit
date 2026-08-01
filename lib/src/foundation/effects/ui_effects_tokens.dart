@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 
 /// The visual-effects budget used by Open UI Kit components.
 enum UiEffectsLevel {
-  /// Resolve to a platform-appropriate budget.
+  /// Use Open UI's balanced default budget.
   adaptive,
 
   /// Avoid continuous backdrop sampling and shorten effect animations.
@@ -74,7 +74,6 @@ class UiEffectsTokens {
   }
 
   UiEffectsTokens resolve({
-    required TargetPlatform platform,
     bool disableAnimations = false,
     bool accessibleNavigation = false,
   }) {
@@ -86,9 +85,7 @@ class UiEffectsTokens {
       _ => level,
     };
     final resolvedLevel = compileTimeLevel == UiEffectsLevel.adaptive
-        ? platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
-            ? UiEffectsLevel.full
-            : UiEffectsLevel.reduced
+        ? UiEffectsLevel.full
         : compileTimeLevel;
     final platformDefaults =
         resolvedLevel == UiEffectsLevel.full ? full : reduced;

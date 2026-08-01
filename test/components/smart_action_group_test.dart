@@ -4,7 +4,6 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child, {double width = 520}) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: Scaffold(
       body: Center(
         child: SizedBox(width: width, child: child),

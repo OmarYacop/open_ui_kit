@@ -13,6 +13,7 @@ import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Base type for anything that can appear in a [UiDropdownMenu].
@@ -160,8 +161,9 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
       to: overlay.context,
     );
     _entry = OverlayEntry(
-      builder: (overlayContext) =>
-          capturedThemes.wrap(_buildOverlay(overlayContext)),
+      builder: (overlayContext) => capturedThemes.wrap(
+        UiScrollConfiguration(child: _buildOverlay(overlayContext)),
+      ),
     );
     overlay.insert(_entry!);
     if (mounted) setState(() {});

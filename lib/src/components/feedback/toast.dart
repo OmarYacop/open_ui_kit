@@ -9,7 +9,7 @@ import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
-import '../forms/button.dart' show UiIntent;
+import '../../foundation/theme/ui_intent.dart';
 
 /// Stack position for toasts.
 ///

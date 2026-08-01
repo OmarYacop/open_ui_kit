@@ -13,6 +13,7 @@ class UiColorTokens {
     required this.surfaceMuted,
     required this.surfaceInverse,
     required this.border,
+    required this.input,
     required this.borderStrong,
     required this.textPrimary,
     required this.textMuted,
@@ -34,6 +35,7 @@ class UiColorTokens {
   final Color surfaceMuted;
   final Color surfaceInverse;
   final Color border;
+  final Color input;
   final Color borderStrong;
   final Color textPrimary;
   final Color textMuted;
@@ -60,7 +62,6 @@ class UiColorTokens {
   Color get mutedForeground => textMuted;
   Color get accent => surfaceMuted;
   Color get accentForeground => textPrimary;
-  Color get input => border;
   Color get ring => focusRing;
   Color get primaryForeground => onPrimary;
   Color get secondaryForeground => onSecondary;
@@ -73,6 +74,7 @@ class UiColorTokens {
     surfaceMuted: Color(0xFFF5F5F5),
     surfaceInverse: Color(0xFF0A0A0A),
     border: Color(0xFFE5E5E5),
+    input: Color(0xFFE5E5E5),
     borderStrong: Color(0xFFD4D4D4),
     textPrimary: Color(0xFF0A0A0A),
     textMuted: Color(0xFF737373),
@@ -85,7 +87,7 @@ class UiColorTokens {
     onDanger: Color(0xFFFFFFFF),
     success: Color(0xFF16A34A),
     warning: Color(0xFFD97706),
-    focusRing: Color(0xFF0A0A0A),
+    focusRing: Color(0xFFA1A1A1),
     overlay: Color(0x99000000),
   );
 
@@ -95,6 +97,7 @@ class UiColorTokens {
     surfaceMuted: Color(0xFF262626),
     surfaceInverse: Color(0xFFFAFAFA),
     border: Color(0xFF262626),
+    input: Color(0x26FFFFFF),
     borderStrong: Color(0xFF404040),
     textPrimary: Color(0xFFFAFAFA),
     textMuted: Color(0xFFA3A3A3),
@@ -107,7 +110,7 @@ class UiColorTokens {
     onDanger: Color(0xFFFAFAFA),
     success: Color(0xFF22C55E),
     warning: Color(0xFFF59E0B),
-    focusRing: Color(0xFFD4D4D4),
+    focusRing: Color(0xFF737373),
     overlay: Color(0xB3000000),
   );
 
@@ -117,6 +120,7 @@ class UiColorTokens {
     Color? surfaceMuted,
     Color? surfaceInverse,
     Color? border,
+    Color? input,
     Color? borderStrong,
     Color? textPrimary,
     Color? textMuted,
@@ -138,6 +142,7 @@ class UiColorTokens {
       surfaceMuted: surfaceMuted ?? this.surfaceMuted,
       surfaceInverse: surfaceInverse ?? this.surfaceInverse,
       border: border ?? this.border,
+      input: input ?? this.input,
       borderStrong: borderStrong ?? this.borderStrong,
       textPrimary: textPrimary ?? this.textPrimary,
       textMuted: textMuted ?? this.textMuted,
@@ -162,6 +167,7 @@ class UiColorTokens {
       surfaceMuted: Color.lerp(a.surfaceMuted, b.surfaceMuted, t)!,
       surfaceInverse: Color.lerp(a.surfaceInverse, b.surfaceInverse, t)!,
       border: Color.lerp(a.border, b.border, t)!,
+      input: Color.lerp(a.input, b.input, t)!,
       borderStrong: Color.lerp(a.borderStrong, b.borderStrong, t)!,
       textPrimary: Color.lerp(a.textPrimary, b.textPrimary, t)!,
       textMuted: Color.lerp(a.textMuted, b.textMuted, t)!,

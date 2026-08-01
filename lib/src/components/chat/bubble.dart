@@ -26,6 +26,10 @@ class UiBubble extends StatelessWidget {
     this.reactions,
     this.maxWidthFactor = .8,
     this.padding,
+    this.borderRadius,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.borderColor,
   }) : assert(maxWidthFactor > 0 && maxWidthFactor <= 1);
 
   final Widget child;
@@ -34,6 +38,10 @@ class UiBubble extends StatelessWidget {
   final Widget? reactions;
   final double maxWidthFactor;
   final EdgeInsetsGeometry? padding;
+  final BorderRadiusGeometry? borderRadius;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +83,12 @@ class UiBubble extends StatelessWidget {
           null,
         ),
     };
-    final ghost = variant == UiBubbleVariant.ghost;
+    final effectiveBackground = backgroundColor ?? palette.$1;
+    final effectiveForeground = foregroundColor ?? palette.$2;
+    final effectiveBorder = borderColor ?? palette.$3;
+    final ghost = variant == UiBubbleVariant.ghost &&
+        backgroundColor == null &&
+        borderColor == null;
     final radius = BorderRadiusDirectional.only(
       topStart: tokens.radius.lg,
       topEnd: tokens.radius.lg,
@@ -88,13 +101,15 @@ class UiBubble extends StatelessWidget {
     );
 
     final bubble = IconTheme.merge(
-      data: IconThemeData(color: palette.$2),
+      data: IconThemeData(color: effectiveForeground),
       child: DefaultTextStyle.merge(
-        style: tokens.typography.body.copyWith(color: palette.$2),
+        style: tokens.typography.body.copyWith(color: effectiveForeground),
         child: UiBox(
-          background: palette.$1,
-          border: palette.$3 == null ? null : Border.all(color: palette.$3!),
-          borderRadius: ghost ? null : radius,
+          background: effectiveBackground,
+          border: effectiveBorder == null
+              ? null
+              : Border.all(color: effectiveBorder),
+          borderRadius: ghost ? null : borderRadius ?? radius,
           padding: padding ??
               (ghost
                   ? EdgeInsets.zero

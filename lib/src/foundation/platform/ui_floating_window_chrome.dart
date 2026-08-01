@@ -1,47 +1,16 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../theme/ui_theme_extensions.dart';
 import 'ui_platform_capabilities.dart';
 
-/// Whether the current embedder can show native window chrome inside the app
-/// surface.
-///
-/// Browser windows provide their own chrome outside Flutter's surface, even
-/// when [defaultTargetPlatform] reflects iOS or macOS.
-bool supportsUiFloatingWindowChrome() {
-  if (kIsWeb) return false;
-  return defaultTargetPlatform == TargetPlatform.iOS ||
-      defaultTargetPlatform == TargetPlatform.macOS;
-}
-
 double resolveUiFloatingWindowChromeLeadingInset(
   BuildContext context,
   UiWindowMode? windowMode,
 ) {
-  if (!supportsUiFloatingWindowChrome()) return 0;
-
   if (windowMode == UiWindowMode.windowed) {
     return _chromeLeadingInset(context);
   }
-  if (windowMode == UiWindowMode.notApplicable) {
-    return 0;
-  }
-
-  final viewPadding = MediaQuery.viewPaddingOf(context);
-  final appHasTopSystemInset = viewPadding.top > 8;
-  if (windowMode == UiWindowMode.fullscreen) {
-    // On the first iOS frame the native window can briefly report fullscreen
-    // before its effective scene geometry settles. A real fullscreen iPhone or
-    // iPad supplies a top safe inset; zero inset is the windowed-chrome shape.
-    if (defaultTargetPlatform == TargetPlatform.iOS && !appHasTopSystemInset) {
-      return _chromeLeadingInset(context);
-    }
-    return 0;
-  }
-  if (appHasTopSystemInset) return 0;
-
-  return _chromeLeadingInset(context);
+  return 0;
 }
 
 double _chromeLeadingInset(BuildContext context) {

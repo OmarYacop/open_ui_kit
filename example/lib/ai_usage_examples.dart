@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 /// Canonical snippets for developers and AI coding agents.
@@ -15,9 +15,9 @@ class OpenUiKitAgentExamplesApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: UiThemeData.light(),
-      darkTheme: UiThemeData.dark(),
+    return UiApp(
+      lightTokens: UiThemeData.light(),
+      darkTokens: UiThemeData.dark(),
       home: const _ExamplesScreen(),
     );
   }
@@ -39,7 +39,7 @@ class _ExamplesScreenState extends State<_ExamplesScreen> {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
 
-    return Scaffold(
+    return UiPageScaffold(
       body: CustomScrollView(
         slivers: [
           UiSliverNavigationBar(

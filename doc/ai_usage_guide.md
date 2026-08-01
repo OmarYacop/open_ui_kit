@@ -6,8 +6,7 @@ consistently in Flutter apps.
 ## Mental Model
 
 Open UI Kit is a token-driven Flutter UI kit inspired by shadcn/ui. Components
-are plain Flutter widgets that avoid Material and Cupertino styling unless a
-host app deliberately provides those shells.
+use Flutter's widgets layer without relying on Material or Cupertino widgets.
 
 Start with these principles:
 
@@ -44,12 +43,16 @@ Do not import from `package:open_ui_kit/src/...` in application code.
 Install the theme at the app root:
 
 ```dart
-MaterialApp(
-  theme: UiThemeData.light(),
-  darkTheme: UiThemeData.dark(),
+UiApp(
+  lightTokens: UiThemeData.light(),
+  darkTokens: UiThemeData.dark(),
   home: const AppHome(),
 );
 ```
+
+`UiApp` installs the token host, neutral route motion, localization plumbing,
+and an overscroll-decoration-free scroll configuration. For another app root,
+wrap its content in `UiTheme` and `UiScrollConfiguration`.
 
 Resolve tokens inside widgets:
 
@@ -309,7 +312,10 @@ Use kit-provided states:
 - `UiCardSkeleton`, `UiSkeletonBar`, and `UiSkeletonText` for skeleton loading.
 - `UiAlert` for inline notices.
 - `UiToast` / `UiToaster` for transient feedback.
-- `UiRefresher` and `UiSliverRefresher` for pull-to-refresh.
+- `UiPageScaffold.onRefresh` for page-level pull-to-refresh whose feedback
+  must remain above navigation chrome.
+- `UiRefresher` and `UiSliverRefresher` for pull-to-refresh inside standalone
+  surfaces or sliver layouts not owned by `UiPageScaffold`.
 
 Prefer skeletons for content reloads when preserving layout matters. Use a
 refresh indicator only when the existing content remains visible and the action

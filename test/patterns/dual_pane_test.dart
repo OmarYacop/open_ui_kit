@@ -4,7 +4,6 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child, {Size size = const Size(390, 844)}) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: MediaQuery(
       data: MediaQueryData(size: size),
       child: Scaffold(
@@ -91,12 +90,17 @@ void main() {
           tabletMode: UiDualPaneTabletMode.overlayDetail,
           primaryBuilder: (context, selected, select) =>
               UiButton(label: 'Open detail', onPressed: () => select('a')),
-          detailBuilder: (context, selected, select) => Column(
-            children: [
-              Text('detail:$selected'),
-              UiButton(label: 'Close detail', onPressed: () => select(null)),
-            ],
-          ),
+          detailBuilder: (context, selected, select) {
+            if (selected == null) {
+              return const Text('Select an item');
+            }
+            return Column(
+              children: [
+                Text('detail:$selected'),
+                UiButton(label: 'Close detail', onPressed: () => select(null)),
+              ],
+            );
+          },
         ),
         size: const Size(700, 1000),
       ),
@@ -114,6 +118,11 @@ void main() {
       find.text('detail:a'),
       findsOneWidget,
       reason: 'Overlay detail should remain mounted during reverse motion.',
+    );
+    expect(
+      find.text('Select an item'),
+      findsNothing,
+      reason: 'The outgoing detail must not flash its empty state.',
     );
     await tester.pumpAndSettle();
     expect(find.text('detail:a'), findsNothing);

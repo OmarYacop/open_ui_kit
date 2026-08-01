@@ -4,21 +4,8 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 void main() {
   group('UiEffectsTokens', () {
-    test('adaptive defaults to reduced effects on Android', () {
-      final effects = UiEffectsTokens.adaptive.resolve(
-        platform: TargetPlatform.android,
-      );
-
-      expect(effects.level, UiEffectsLevel.reduced);
-      expect(effects.allowsBackdropBlur, isFalse);
-      expect(effects.scaleBlur(16), 0);
-      expect(effects.animateBlur, isFalse);
-    });
-
-    test('adaptive defaults to full effects on iOS', () {
-      final effects = UiEffectsTokens.adaptive.resolve(
-        platform: TargetPlatform.iOS,
-      );
+    test('adaptive uses the Open UI effects budget on every platform', () {
+      final effects = UiEffectsTokens.adaptive.resolve();
       final expectedLevel = switch (UiEffectsBuildConfig.effectsLevel) {
         'reduced' => UiEffectsLevel.reduced,
         _ => UiEffectsLevel.full,
@@ -37,10 +24,8 @@ void main() {
       expect(effects.animateBlur, expectedLevel == UiEffectsLevel.full);
     });
 
-    test('an explicit reduced budget wins on iOS', () {
-      final effects = UiEffectsTokens.reduced.resolve(
-        platform: TargetPlatform.iOS,
-      );
+    test('an explicit reduced budget wins', () {
+      final effects = UiEffectsTokens.reduced.resolve();
 
       expect(effects.level, UiEffectsLevel.reduced);
       expect(effects.allowsBackdropBlur, isFalse);
@@ -53,7 +38,7 @@ void main() {
         blurScale: 0.25,
         animateBlur: false,
       );
-      final effects = custom.resolve(platform: TargetPlatform.android);
+      final effects = custom.resolve();
       final expectsBlur = UiEffectsBuildConfig.enableBackdropFilters &&
           UiEffectsBuildConfig.effectsLevel != 'reduced';
 
@@ -74,17 +59,19 @@ void main() {
       late UiThemeTokens resolved;
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(effects: UiEffectsTokens.full),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              disableAnimations: true,
-              accessibleNavigation: true,
-            ),
-            child: Builder(
-              builder: (context) {
-                resolved = UiThemeTokens.of(context);
-                return const SizedBox.shrink();
-              },
+          home: UiTheme(
+            tokens: UiThemeData.light(effects: UiEffectsTokens.full),
+            child: MediaQuery(
+              data: const MediaQueryData(
+                disableAnimations: true,
+                accessibleNavigation: true,
+              ),
+              child: Builder(
+                builder: (context) {
+                  resolved = UiThemeTokens.of(context);
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -100,15 +87,17 @@ void main() {
     ) async {
       Widget host(UiEffectsTokens effects) {
         return MaterialApp(
-          theme: UiThemeData.light(effects: effects),
-          home: Scaffold(
-            body: UiBottomTabBar(
-              items: const [
-                UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
-                UiBottomTabItem(label: 'Search', icon: Icon(Icons.search)),
-              ],
-              currentIndex: 0,
-              onChanged: (_) {},
+          home: UiTheme(
+            tokens: UiThemeData.light(effects: effects),
+            child: Scaffold(
+              body: UiBottomTabBar(
+                items: const [
+                  UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
+                  UiBottomTabItem(label: 'Search', icon: Icon(Icons.search)),
+                ],
+                currentIndex: 0,
+                onChanged: (_) {},
+              ),
             ),
           ),
         );

@@ -366,6 +366,7 @@ void main() {
               collapsed: false,
               onToggleCollapsed: () {},
               platformCapabilities: platformCapabilities,
+              enableFloatingWindowChrome: true,
               destinations: [
                 UiNavigationRailDestination(
                   label: 'Home',
@@ -521,7 +522,7 @@ void main() {
     },
   );
 
-  testWidgets('UiNavigationRail guards provisional iOS window geometry', (
+  testWidgets('UiNavigationRail applies explicitly reported window chrome', (
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
@@ -536,6 +537,7 @@ void main() {
             collapsed: true,
             onToggleCollapsed: () {},
             platformCapabilities: platformCapabilities,
+            enableFloatingWindowChrome: true,
             destinations: [
               UiNavigationRailDestination(
                 label: 'Home',
@@ -552,7 +554,7 @@ void main() {
       expect(
         tester.getRect(find.byKey(const Key('ui_navigation_rail_header'))).top,
         closeTo(
-          UiNavigationRailGeometry.defaults.collapsedChromeTopPadding,
+          UiNavigationRailGeometry.defaults.collapsedHeaderTopPadding,
           0.1,
         ),
       );

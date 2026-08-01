@@ -29,6 +29,11 @@ class UiChatComposer extends StatefulWidget {
     this.textInputAction = TextInputAction.send,
     this.maxLines = 6,
     this.floating = false,
+    this.controlExtent = 48,
+    this.inputBorderRadius,
+    this.idleAction,
+    this.allowEmptySend = false,
+    this.textDirection,
   });
 
   final ValueChanged<String> onSend;
@@ -49,6 +54,15 @@ class UiChatComposer extends StatefulWidget {
   /// Removes the shared toolbar surface so the input and actions read as
   /// independent floating islands above a page edge fade.
   final bool floating;
+  final double controlExtent;
+  final BorderRadius? inputBorderRadius;
+
+  /// Replaces the disabled send action while there is no text.
+  final Widget? idleAction;
+
+  /// Allows callers with staged media to submit an empty caption.
+  final bool allowEmptySend;
+  final TextDirection? textDirection;
 
   @override
   State<UiChatComposer> createState() => _UiChatComposerState();
@@ -118,7 +132,7 @@ class _UiChatComposerState extends State<UiChatComposer> {
 
   void _submit() {
     final text = _ctrl.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && !widget.allowEmptySend) return;
     widget.onSend(text);
     _ctrl.clear();
   }
@@ -160,32 +174,76 @@ class _UiChatComposerState extends State<UiChatComposer> {
                         if (mounted) _update();
                       });
                     }
-                    return UiInput(
-                      controller: _ctrl,
-                      focusNode: widget.focusNode,
-                      hint: widget.hint,
-                      enabled: !widget.disabled,
-                      maxLines: widget.maxLines,
-                      minLines: _visualLines,
-                      onChanged: widget.onChanged,
-                      onSubmitted: widget.submitOnKeyboardAction
-                          ? (_) => _submit()
-                          : null,
-                      textInputAction: widget.textInputAction,
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: widget.controlExtent,
+                      ),
+                      child: UiInput(
+                        controller: _ctrl,
+                        focusNode: widget.focusNode,
+                        hint: widget.hint,
+                        enabled: !widget.disabled,
+                        maxLines: widget.maxLines,
+                        minLines: _visualLines,
+                        onChanged: widget.onChanged,
+                        onSubmitted: widget.submitOnKeyboardAction
+                            ? (_) => _submit()
+                            : null,
+                        textInputAction: widget.textInputAction,
+                        minHeight: widget.controlExtent,
+                        borderRadius:
+                            widget.inputBorderRadius ?? tokens.radius.lgAll,
+                        textDirection: widget.textDirection,
+                      ),
                     );
                   },
                 ),
               ),
               SizedBox(width: tokens.spacing.x2),
               if (widget.compactSendAction)
-                UiIconButton(
-                  icon: const Icon(LucideIcons.send),
-                  semanticsLabel: widget.sendLabel,
-                  intent: UiIntent.primary,
-                  borderRadius: tokens.radius.pillAll,
-                  onPressed: widget.disabled || widget.loading || !_canSend
-                      ? null
-                      : _submit,
+                SizedBox.square(
+                  dimension: widget.controlExtent,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    reverseDuration: const Duration(milliseconds: 150),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(
+                          begin: .78,
+                          end: 1,
+                        ).animate(animation),
+                        child: RotationTransition(
+                          turns: Tween<double>(
+                            begin: -.035,
+                            end: 0,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                    ),
+                    child: !_canSend &&
+                            !widget.allowEmptySend &&
+                            widget.idleAction != null
+                        ? KeyedSubtree(
+                            key: const ValueKey('chat-idle-action'),
+                            child: widget.idleAction!,
+                          )
+                        : UiIconButton(
+                            key: const ValueKey('chat-send-action'),
+                            icon: const Icon(LucideIcons.send),
+                            semanticsLabel: widget.sendLabel,
+                            intent: UiIntent.primary,
+                            borderRadius: tokens.radius.pillAll,
+                            onPressed: widget.disabled ||
+                                    widget.loading ||
+                                    (!_canSend && !widget.allowEmptySend)
+                                ? null
+                                : _submit,
+                          ),
+                  ),
                 )
               else
                 UiButton(
@@ -216,7 +274,7 @@ class _UiChatComposerState extends State<UiChatComposer> {
         text: text,
         style: tokens.typography.body,
       ),
-      textDirection: Directionality.of(context),
+      textDirection: widget.textDirection ?? Directionality.of(context),
       maxLines: widget.maxLines,
     )..layout(maxWidth: _inputWidth);
 

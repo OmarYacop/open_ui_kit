@@ -11,7 +11,6 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Builder(
           builder: (context) {
             standard = UiMotionSpec.resolve(context);
@@ -50,7 +49,6 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Builder(
           builder: (context) {
             tokenDuration = UiMotionDuration.slow.resolve(context);

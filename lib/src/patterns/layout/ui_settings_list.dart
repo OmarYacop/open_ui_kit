@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../components/data_display/card.dart';
 import '../../foundation/icons/ui_directional_icons.dart';

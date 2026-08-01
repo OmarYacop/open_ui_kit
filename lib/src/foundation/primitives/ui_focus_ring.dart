@@ -2,10 +2,11 @@ import 'package:flutter/widgets.dart';
 
 import '../theme/ui_theme_extensions.dart';
 
-/// A crisp focus ring drawn around a child when [visible] is true.
+/// A crisp, animated focus ring drawn around a child when [visible] is true.
 ///
 /// Uses a stroked outline so it matches shadcn's ring treatment without
-/// shifting layout or adding a glow.
+/// shifting layout or adding a glow. Set [animate] to keep the outline mounted
+/// while hidden so focus loss animates out instead of disappearing for a frame.
 class UiFocusRing extends StatelessWidget {
   const UiFocusRing({
     super.key,
@@ -15,6 +16,9 @@ class UiFocusRing extends StatelessWidget {
     this.color,
     this.width = 2,
     this.offset = 2,
+    this.animate = false,
+    this.duration,
+    this.curve,
   });
 
   final bool visible;
@@ -24,13 +28,25 @@ class UiFocusRing extends StatelessWidget {
   final double width;
   final double offset;
 
+  /// Animates visibility in both directions while preserving the legacy
+  /// unmounted hidden state by default.
+  final bool animate;
+  final Duration? duration;
+  final Curve? curve;
+
   @override
   Widget build(BuildContext context) {
-    if (!visible) return child;
+    if (!animate && !visible) return child;
 
     final tokens = UiThemeTokens.of(context);
     final ringColor = color ?? tokens.colors.ring;
     final radius = borderRadius ?? tokens.radius.mdAll;
+    final outline = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: _inflateRadius(radius, offset),
+        border: Border.all(color: ringColor, width: width),
+      ),
+    );
 
     return Stack(
       clipBehavior: Clip.none,
@@ -42,12 +58,15 @@ class UiFocusRing extends StatelessWidget {
           right: -offset,
           bottom: -offset,
           child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: _inflateRadius(radius, offset),
-                border: Border.all(color: ringColor, width: width),
-              ),
-            ),
+            child: animate
+                ? AnimatedOpacity(
+                    key: const ValueKey('ui-focus-ring-outline'),
+                    opacity: visible ? 1 : 0,
+                    duration: duration ?? tokens.motion.fast,
+                    curve: curve ?? tokens.motion.standardCurve,
+                    child: outline,
+                  )
+                : outline,
           ),
         ),
       ],

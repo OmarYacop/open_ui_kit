@@ -38,11 +38,21 @@ class _UiLayeredOverlayHostState extends State<UiLayeredOverlayHost> {
   final _keys = <UiOverlayLayer, GlobalKey<OverlayState>>{
     for (final layer in UiOverlayLayer.values) layer: GlobalKey<OverlayState>(),
   };
+  bool _layersReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _layersReady = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return _UiLayeredOverlayScope(
       keys: _keys,
+      layersReady: _layersReady,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -64,14 +74,16 @@ class _UiLayeredOverlayHostState extends State<UiLayeredOverlayHost> {
 class _UiLayeredOverlayScope extends InheritedWidget {
   const _UiLayeredOverlayScope({
     required this.keys,
+    required this.layersReady,
     required super.child,
   });
 
   final Map<UiOverlayLayer, GlobalKey<OverlayState>> keys;
+  final bool layersReady;
 
   @override
   bool updateShouldNotify(_UiLayeredOverlayScope oldWidget) =>
-      oldWidget.keys != keys;
+      oldWidget.keys != keys || oldWidget.layersReady != layersReady;
 }
 
 /// Access to the nearest page-level semantic overlay layers.

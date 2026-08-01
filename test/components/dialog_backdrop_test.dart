@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) => MaterialApp(
-      theme: UiThemeData.light(effects: UiEffectsTokens.full),
-      home: Scaffold(body: child),
+      home: UiTheme(
+        tokens: UiThemeData.light(effects: UiEffectsTokens.full),
+        child: Scaffold(body: child),
+      ),
     );
 
 void main() {

@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.5.0 - 2026-08-01
+
+### Breaking
+
+- Removed Open UI Kit's production dependency on Flutter Material and
+  Cupertino libraries. `UiThemeTokens` is now a plain immutable token object,
+  and `UiThemeData.light()`, `.dark()`, and `.fromBrand()` return token objects
+  for `UiApp`/`UiTheme` rather than Material `ThemeData`.
+- Back-swipe gestures are disabled unless explicitly enabled, and their visual
+  style is selected explicitly with `UiBackSwipeTransition.slide` or
+  `.layered`; platform-derived `auto` and `cupertino` styles were removed.
+- Adaptive effects now resolve to an Open UI-owned budget independent of the
+  host operating system. Native floating-window chrome is opt-in through
+  `UiNavigationRail.enableFloatingWindowChrome`.
+
+### Added
+
+- Promoted `UiIntent` and `UiIntentPalette` to the public foundation API. New
+  code should import `package:open_ui_kit/foundation.dart` or the main
+  `package:open_ui_kit/open_ui_kit.dart` barrel.
+- Added a documented deprecation lifecycle with explicit removal versions.
+
+### Deprecated
+
+- Importing `UiIntent` or `UiIntentPalette` through
+  `package:open_ui_kit/components/forms.dart` or the internal `button.dart`
+  library is deprecated. This compatibility export remains available through
+  all `0.x` releases and will be removed in `1.0.0`. Dart cannot annotate an
+  export directive as deprecated without incorrectly deprecating the canonical
+  declaration, so this migration is enforced through documentation and API
+  compatibility tests.
+
 ## 0.4.0 - 2026-07-29
 
 - Added adaptive visual-effects budgets with reduced Android defaults, full

@@ -5,14 +5,12 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: Scaffold(body: Center(child: child)),
   );
 }
 
 Widget _reducedMotionHost(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     builder: (context, appChild) => MediaQuery(
       data: MediaQuery.of(context).copyWith(disableAnimations: true),
       child: appChild ?? const SizedBox.shrink(),
@@ -23,14 +21,18 @@ Widget _reducedMotionHost(Widget child) {
 
 Widget _brightnessHost(Widget child, Brightness brightness) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     builder: (context, appChild) => MediaQuery(
       data: MediaQuery.of(
         context,
       ).copyWith(platformBrightness: brightness),
       child: appChild ?? const SizedBox.shrink(),
     ),
-    home: Scaffold(body: Center(child: child)),
+    home: UiTheme(
+      tokens: brightness == Brightness.dark
+          ? UiThemeData.dark()
+          : UiThemeData.light(),
+      child: Scaffold(body: Center(child: child)),
+    ),
   );
 }
 
@@ -735,6 +737,28 @@ void main() {
   });
 
   group('UiInput', () {
+    testWidgets('defaults multiline inputs to the multiline keyboard', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _host(
+          UiInput(
+            controller: controller,
+            minLines: 1,
+            maxLines: 4,
+            textInputAction: TextInputAction.newline,
+          ),
+        ),
+      );
+
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.keyboardType, TextInputType.multiline);
+      await tester.enterText(find.byType(EditableText), 'First\nSecond');
+      expect(controller.text, 'First\nSecond');
+    });
+
     testWidgets('shows error text from prop', (tester) async {
       await tester.pumpWidget(
         _host(
@@ -1533,7 +1557,6 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: Scaffold(
             body: Align(
               alignment: Alignment.bottomRight,
@@ -1576,7 +1599,6 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: Scaffold(
             body: SizedBox(
               height: 320,
@@ -1617,7 +1639,6 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: UiThemeData.light(),
           home: Scaffold(
             body: Center(
               child: UiSelect<int>(
@@ -1656,7 +1677,6 @@ void main() {
     testWidgets('disposing while open does not throw', (tester) async {
       Widget host({required bool shown}) {
         return MaterialApp(
-          theme: UiThemeData.light(),
           home: Scaffold(
             body: Column(
               children: [
@@ -2330,6 +2350,71 @@ void main() {
   });
 
   group('UiInput focus ring', () {
+    test('neutral input tokens match current shadcn values', () {
+      expect(UiColorTokens.light.input, const Color(0xFFE5E5E5));
+      expect(UiColorTokens.light.ring, const Color(0xFFA1A1A1));
+      expect(UiColorTokens.dark.input, const Color(0x26FFFFFF));
+      expect(UiColorTokens.dark.ring, const Color(0xFF737373));
+    });
+
+    testWidgets(
+        'focus uses a solid inner border and animated translucent outer ring',
+        (tester) async {
+      final node = FocusNode();
+      addTearDown(node.dispose);
+      await tester.pumpWidget(_host(UiInput(focusNode: node)));
+
+      node.requestFocus();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final inputContainer = tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .firstWhere(
+            (container) =>
+                (container.decoration as BoxDecoration?)?.border != null,
+          );
+      final inputBorder =
+          (inputContainer.decoration! as BoxDecoration).border! as Border;
+      expect(inputBorder.top.color, UiColorTokens.light.focusRing);
+      expect(inputBorder.top.width, 1);
+
+      final outlineFinder = find.byKey(
+        const ValueKey('ui-focus-ring-outline'),
+      );
+      final outline = tester.widget<AnimatedOpacity>(outlineFinder);
+      expect(outline.opacity, 1);
+      expect(outline.duration, const Duration(milliseconds: 150));
+
+      final outlineDecoration = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: outlineFinder,
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .single;
+      final outerBorder = outlineDecoration.border! as Border;
+      expect(outerBorder.top.width, 3);
+      expect(outerBorder.top.color.a, closeTo(.5, .01));
+
+      node.unfocus();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      final exitingOutline = tester.widget<AnimatedOpacity>(outlineFinder);
+      expect(node.hasFocus, isFalse);
+      expect(exitingOutline.opacity, 0);
+      expect(
+        outlineFinder,
+        findsOneWidget,
+        reason: 'The outer ring stays mounted for its blur animation.',
+      );
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('disabled input never shows the focus ring', (tester) async {
       final node = FocusNode();
       addTearDown(node.dispose);
@@ -2348,7 +2433,7 @@ void main() {
       }
     });
 
-    testWidgets('readOnly input keeps the ring suppressed when focused',
+    testWidgets('readOnly input retains shadcn focus treatment',
         (tester) async {
       final node = FocusNode();
       addTearDown(node.dispose);
@@ -2359,8 +2444,72 @@ void main() {
       await tester.pump();
       for (final w
           in tester.widgetList<UiFocusRing>(find.byType(UiFocusRing))) {
-        expect(w.visible, isFalse);
+        expect(w.visible, isTrue);
       }
+    });
+
+    testWidgets('invalid focus uses destructive border and light-mode ring',
+        (tester) async {
+      final node = FocusNode();
+      addTearDown(node.dispose);
+      await tester.pumpWidget(
+        _host(UiInput(errorText: 'Invalid', focusNode: node)),
+      );
+      node.requestFocus();
+      await tester.pumpAndSettle();
+
+      final inputContainer = tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .firstWhere(
+            (container) =>
+                (container.decoration as BoxDecoration?)?.border != null,
+          );
+      final inputBorder =
+          (inputContainer.decoration! as BoxDecoration).border! as Border;
+      expect(inputBorder.top.color, UiColorTokens.light.destructive);
+      expect(inputBorder.top.width, 1);
+
+      final outlineDecoration = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byKey(const ValueKey('ui-focus-ring-outline')),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .single;
+      final outerBorder = outlineDecoration.border! as Border;
+      expect(outerBorder.top.width, 3);
+      expect(outerBorder.top.color,
+          UiColorTokens.light.destructive.withValues(alpha: .2));
+    });
+
+    testWidgets('invalid focus uses the stronger dark-mode ring alpha',
+        (tester) async {
+      final node = FocusNode();
+      addTearDown(node.dispose);
+      await tester.pumpWidget(
+        _brightnessHost(
+          UiInput(errorText: 'Invalid', focusNode: node),
+          Brightness.dark,
+        ),
+      );
+      node.requestFocus();
+      await tester.pumpAndSettle();
+
+      final outlineDecoration = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byKey(const ValueKey('ui-focus-ring-outline')),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .single;
+      final outerBorder = outlineDecoration.border! as Border;
+      expect(outerBorder.top.color.a, closeTo(.4, .01));
     });
   });
 }

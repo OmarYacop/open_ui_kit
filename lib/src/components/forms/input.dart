@@ -1,13 +1,11 @@
-import 'package:flutter/cupertino.dart' show cupertinoTextSelectionControls;
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
-import 'package:flutter/material.dart'
-    show AdaptiveTextSelectionToolbar, materialTextSelectionControls;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
+import '../../foundation/primitives/ui_box.dart';
+import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiSize, UiButtonMetrics;
 
@@ -52,6 +50,9 @@ class UiInput extends StatefulWidget {
     this.leading,
     this.trailing,
     this.variant = UiInputVariant.standard,
+    this.borderRadius,
+    this.minHeight,
+    this.textDirection,
   }) : assert(
           controller == null || initialValue == null,
           'Provide controller OR initialValue, not both.',
@@ -81,6 +82,9 @@ class UiInput extends StatefulWidget {
   final Widget? leading;
   final Widget? trailing;
   final UiInputVariant variant;
+  final BorderRadius? borderRadius;
+  final double? minHeight;
+  final TextDirection? textDirection;
 
   @override
   State<UiInput> createState() => UiInputState();
@@ -107,9 +111,7 @@ class UiInputState extends State<UiInput>
   GlobalKey<EditableTextState> get editableTextKey => _editableTextKey;
 
   @override
-  bool get forcePressEnabled =>
-      defaultTargetPlatform == TargetPlatform.iOS ||
-      defaultTargetPlatform == TargetPlatform.macOS;
+  bool get forcePressEnabled => false;
 
   @override
   bool get selectionEnabled => widget.enabled;
@@ -218,15 +220,30 @@ class UiInputState extends State<UiInput>
     final disabled = !widget.enabled;
     final padding = _paddingFor(widget.size, tokens, widget.maxLines);
 
-    // Focus ring is suppressed when the field cannot accept input, so
-    // disabled/read-only rows stay visually quiet.
-    final canFocus = !disabled && !widget.readOnly;
+    // Match shadcn/native behavior: read-only inputs can still receive focus
+    // for selection and copying. Only disabled inputs suppress focus chrome.
+    final canFocus = !disabled;
     final ringActive = _focused && canFocus;
     final embedded = widget.variant == UiInputVariant.embedded;
-    // Keep the resting border stable and add a low-opacity one-pixel focus
-    // ring. This preserves shadcn-style focus visibility without producing a
-    // high-contrast double outline in light or dark mode.
-    final borderColor = hasError ? c.destructive : c.input;
+    // The original one-pixel border carries the solid focus color. A separate
+    // wider, translucent ring sits outside it, producing the layered shadcn
+    // treatment without changing layout.
+    final borderColor = hasError
+        ? c.destructive
+        : ringActive
+            ? c.ring
+            : c.input;
+    final borderRadius = widget.borderRadius ?? tokens.radius.mdAll;
+    final focusTransition = UiMotionSpec.resolveCustom(
+      context,
+      duration: const Duration(milliseconds: 150),
+      curve: const Cubic(0.4, 0, 0.2, 1),
+    );
+    final ringColor = hasError
+        ? c.destructive.withValues(
+            alpha: tokens.brightness == Brightness.dark ? .4 : .2,
+          )
+        : c.ring.withValues(alpha: .5);
 
     final bg = disabled ? c.muted : c.surface;
     final textColor = disabled ? c.mutedForeground : c.foreground;
@@ -245,7 +262,8 @@ class UiInputState extends State<UiInput>
       cursorColor: c.primary,
       backgroundCursorColor: c.input,
       selectionColor: c.primary.withValues(alpha: 0.18),
-      keyboardType: widget.keyboardType ?? TextInputType.text,
+      keyboardType: widget.keyboardType ??
+          (widget.maxLines == 1 ? TextInputType.text : TextInputType.multiline),
       textInputAction: widget.textInputAction,
       obscureText: widget.obscureText,
       readOnly: effectiveReadOnly,
@@ -259,15 +277,17 @@ class UiInputState extends State<UiInput>
       inputFormatters: inputFormatters,
       onChanged: _onChanged,
       onSubmitted: widget.onSubmitted,
+      textDirection: widget.textDirection,
       // Selection stays available for read-only rows so users can copy
       // displayed text. Disabled rows lock interaction entirely.
       enableInteractiveSelection: !disabled,
       contextMenuBuilder: (context, editableTextState) {
-        return AdaptiveTextSelectionToolbar.editableText(
-          editableTextState: editableTextState,
+        return _UiTextContextMenu(
+          anchors: editableTextState.contextMenuAnchors,
+          items: editableTextState.contextMenuButtonItems,
         );
       },
-      selectionControls: _selectionControlsForPlatform(defaultTargetPlatform),
+      selectionControls: emptyTextSelectionControls,
     );
 
     return Column(
@@ -287,16 +307,20 @@ class UiInputState extends State<UiInput>
         _buildTappable(
           disabled: disabled,
           child: UiFocusRing(
-            visible: !embedded && ringActive && !hasError,
-            borderRadius: tokens.radius.mdAll,
-            color: c.ring.withValues(alpha: 0.32),
-            width: 1,
-            offset: 1,
+            visible: !embedded && ringActive,
+            borderRadius: borderRadius,
+            color: ringColor,
+            width: 3,
+            offset: 3,
+            animate: true,
+            duration: focusTransition.duration,
+            curve: focusTransition.curve,
             child: AnimatedContainer(
-              duration: tokens.motion.fast,
-              curve: tokens.motion.standardCurve,
+              duration: focusTransition.duration,
+              curve: focusTransition.curve,
               constraints: BoxConstraints(
-                minHeight: UiButtonMetrics.minHeight(widget.size),
+                minHeight:
+                    widget.minHeight ?? UiButtonMetrics.minHeight(widget.size),
               ),
               decoration: BoxDecoration(
                 color: embedded ? const Color(0x00000000) : bg,
@@ -304,9 +328,9 @@ class UiInputState extends State<UiInput>
                     ? null
                     : Border.all(
                         color: borderColor,
-                        width: hasError ? 1.5 : 1,
+                        width: 1,
                       ),
-                borderRadius: tokens.radius.mdAll,
+                borderRadius: borderRadius,
               ),
               padding: padding,
               child: Row(
@@ -324,15 +348,19 @@ class UiInputState extends State<UiInput>
                       children: [
                         if (_controller.text.isEmpty && widget.hint != null)
                           Positioned.fill(
-                            child: IgnorePointer(
-                              child: Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: UiText(
-                                  widget.hint!,
-                                  variant: UiTextVariant.body,
-                                  tone: UiTextTone.muted,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            child: Directionality(
+                              textDirection: widget.textDirection ??
+                                  Directionality.of(context),
+                              child: IgnorePointer(
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: UiText(
+                                    widget.hint!,
+                                    variant: UiTextVariant.body,
+                                    tone: UiTextTone.muted,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ),
@@ -386,19 +414,65 @@ class UiInputState extends State<UiInput>
     final vertical = (maxLines == 1) ? 0.0 : t.spacing.x2;
     return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
   }
+}
 
-  static TextSelectionControls _selectionControlsForPlatform(
-    TargetPlatform platform,
-  ) {
-    switch (platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-        return cupertinoTextSelectionControls;
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
-        return materialTextSelectionControls;
-    }
+class _UiTextContextMenu extends StatelessWidget {
+  const _UiTextContextMenu({required this.anchors, required this.items});
+
+  final TextSelectionToolbarAnchors anchors;
+  final List<ContextMenuButtonItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    return CustomSingleChildLayout(
+      delegate: TextSelectionToolbarLayoutDelegate(
+        anchorAbove: anchors.primaryAnchor,
+        anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
+      ),
+      child: UiBox(
+        background: tokens.colors.surface,
+        border: Border.all(color: tokens.colors.border),
+        borderRadius: tokens.radius.mdAll,
+        boxShadow: tokens.shadows.md,
+        padding: EdgeInsets.all(tokens.spacing.x1),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final item in items)
+              UiPressable(
+                onPressed: item.onPressed,
+                builder: (context, state, _) => UiBox(
+                  background: state.hovered || state.pressed
+                      ? tokens.colors.accent
+                      : const Color(0x00000000),
+                  borderRadius: tokens.radius.smAll,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.x2,
+                    vertical: tokens.spacing.x1,
+                  ),
+                  child: UiText(
+                    item.label ?? _labelFor(item.type),
+                    variant: UiTextVariant.caption,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
+
+  static String _labelFor(ContextMenuButtonType type) => switch (type) {
+        ContextMenuButtonType.cut => 'Cut',
+        ContextMenuButtonType.copy => 'Copy',
+        ContextMenuButtonType.paste => 'Paste',
+        ContextMenuButtonType.selectAll => 'Select all',
+        ContextMenuButtonType.delete => 'Delete',
+        ContextMenuButtonType.lookUp => 'Look up',
+        ContextMenuButtonType.searchWeb => 'Search web',
+        ContextMenuButtonType.share => 'Share',
+        ContextMenuButtonType.liveTextInput => 'Insert text',
+        ContextMenuButtonType.custom => 'Action',
+      };
 }

@@ -27,7 +27,7 @@ Widget _host(
       },
     ),
   );
-  return MaterialApp(theme: UiThemeData.light(), home: Scaffold(body: tree));
+  return MaterialApp(home: Scaffold(body: tree));
 }
 
 class _InlineUiLocalizationsDelegate

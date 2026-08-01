@@ -5,14 +5,12 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: Scaffold(body: Center(child: child)),
   );
 }
 
 Widget _reducedMotionHost(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     builder: (context, appChild) => MediaQuery(
       data: MediaQuery.of(context).copyWith(disableAnimations: true),
       child: appChild ?? const SizedBox.shrink(),

@@ -62,6 +62,85 @@ void main() {
     await tester.tap(find.byKey(const Key('lifted-child')));
     expect(taps, 1);
   });
+
+  testWidgets('an eager feedback portal lifts before late navigation chrome', (
+    tester,
+  ) async {
+    var chromeTaps = 0;
+    var feedbackTaps = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UiLayeredOverlayHost(
+          child: _StaggeredPortals(
+            onChromeTap: () => chromeTaps++,
+            onFeedbackTap: () => feedbackTaps++,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tapAt(const Offset(400, 300));
+
+    expect(chromeTaps, 0);
+    expect(feedbackTaps, 1);
+  });
+}
+
+class _StaggeredPortals extends StatefulWidget {
+  const _StaggeredPortals({
+    required this.onChromeTap,
+    required this.onFeedbackTap,
+  });
+
+  final VoidCallback onChromeTap;
+  final VoidCallback onFeedbackTap;
+
+  @override
+  State<_StaggeredPortals> createState() => _StaggeredPortalsState();
+}
+
+class _StaggeredPortalsState extends State<_StaggeredPortals> {
+  bool _showChrome = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _showChrome = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Center(
+          child: UiLayeredOverlayPortal(
+            layer: UiOverlayLayer.systemFeedback,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onFeedbackTap,
+              child: const SizedBox(width: 200, height: 200),
+            ),
+          ),
+        ),
+        if (_showChrome)
+          Center(
+            child: UiLayeredOverlayPortal(
+              layer: UiOverlayLayer.navigationChrome,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onChromeTap,
+                child: const SizedBox(width: 200, height: 200),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _LayerEntries extends StatefulWidget {

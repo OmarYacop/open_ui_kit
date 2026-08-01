@@ -5,39 +5,17 @@ import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import '../../foundation/theme/ui_intent.dart';
 import '../../foundation/tokens/ui_color_tokens.dart';
 import '../../foundation/tokens/ui_spacing_tokens.dart';
 
-/// Visual intent for interactive components.
-///
-/// Neutral surfaces stay calm; brand colors surface on [UiIntent.primary]
-/// / [UiIntent.secondary] / [UiIntent.destructive].
-///
-/// ### Button-specific semantics
-///
-/// For [UiButton], [UiIntent.defaultIntent] is treated as an alias of
-/// [UiIntent.primary] — i.e. an unspecified button intent renders as
-/// the primary call-to-action. To opt into the previous neutral /
-/// outlined button look, use the explicit [UiIntent.neutral] variant.
-///
-/// This alias is button-local. [UiBadge] and [UiToast] still resolve
-/// [UiIntent.defaultIntent] to a neutral surface — their "default" is
-/// calm on purpose.
-enum UiIntent {
-  defaultIntent,
-
-  /// Explicit neutral/outlined variant. Mirrors the button's pre-PR-A
-  /// default look (surface fill + border, muted foreground). Use this
-  /// when you want a low-emphasis button that visually recedes next to
-  /// a primary action, or as the "Cancel" partner to a primary confirm.
-  neutral,
-  primary,
-  secondary,
-  destructive,
-  danger,
-  ghost,
-  link,
-}
+// Deprecated import path retained for source compatibility through 0.x.
+//
+// Dart does not support deprecating an export directive without also marking
+// the declaration deprecated at its canonical location. Keep this re-export
+// until 1.0.0, then remove it as documented in CHANGELOG.md and
+// doc/deprecation_policy.md. New code should import foundation.dart.
+export '../../foundation/theme/ui_intent.dart';
 
 /// Component sizing scale.
 enum UiSize { sm, md, lg }
@@ -488,82 +466,6 @@ class UiButtonMetrics {
         return t.typography.label;
       case UiSize.lg:
         return t.typography.label.copyWith(fontWeight: FontWeight.w600);
-    }
-  }
-}
-
-/// Rest-state colour trio shared between [UiButton] and other
-/// intent-driven surfaces (notably [UiBadge]). Hover/press/disabled
-/// ramps stay component-specific — they are behavioural, not purely
-/// visual.
-@immutable
-class UiIntentPalette {
-  const UiIntentPalette({
-    required this.background,
-    required this.foreground,
-    this.border,
-  });
-
-  final Color background;
-  final Color foreground;
-  final Color? border;
-
-  /// Rest-state colours for [intent] against [c].
-  ///
-  /// Both [UiButton] and [UiBadge] read from this so adding a new
-  /// intent — or tuning an existing one (e.g. the destructive tint
-  /// alpha) — only happens in one place.
-  static UiIntentPalette rest(UiIntent intent, UiColorTokens c) {
-    final isDarkTheme = c.background.computeLuminance() < 0.2;
-    switch (intent) {
-      case UiIntent.primary:
-        return UiIntentPalette(
-          background: c.primary,
-          foreground: c.onPrimary,
-        );
-      case UiIntent.secondary:
-        return UiIntentPalette(
-          background: c.secondary,
-          foreground: c.onSecondary,
-          border: c.border,
-        );
-      case UiIntent.destructive:
-      case UiIntent.danger:
-        return UiIntentPalette(
-          background: c.danger.withValues(alpha: isDarkTheme ? 0.18 : 0.10),
-          foreground: c.danger,
-        );
-      case UiIntent.ghost:
-        return UiIntentPalette(
-          background: const Color(0x00000000),
-          foreground: c.accentForeground,
-        );
-      case UiIntent.link:
-        return UiIntentPalette(
-          background: const Color(0x00000000),
-          foreground: c.primary,
-        );
-      case UiIntent.neutral:
-      case UiIntent.defaultIntent:
-        // Shared neutral/outlined palette.
-        //
-        // - For UiButton, `defaultIntent` is aliased to primary before
-        //   this resolver runs, so this branch is reached only via
-        //   `UiIntent.neutral` (explicit opt-in to the outlined look).
-        // - For UiBadge / UiToast, `defaultIntent` still lands here so
-        //   their calm neutral default is preserved.
-        if (isDarkTheme) {
-          return UiIntentPalette(
-            background: c.surface.withValues(alpha: 0.62),
-            foreground: Color.lerp(c.mutedForeground, c.foreground, 0.55)!,
-            border: c.borderStrong.withValues(alpha: 0.9),
-          );
-        }
-        return UiIntentPalette(
-          background: c.surface,
-          foreground: c.foreground,
-          border: c.border,
-        );
     }
   }
 }

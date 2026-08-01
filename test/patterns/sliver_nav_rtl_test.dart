@@ -4,7 +4,6 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child, {TextDirection dir = TextDirection.ltr}) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: Directionality(
       textDirection: dir,
       child: Scaffold(body: child),

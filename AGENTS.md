@@ -7,13 +7,13 @@ Follow it before introducing custom Flutter UI.
 
 - Import the kit through `package:open_ui_kit/open_ui_kit.dart` unless the app
   already uses focused barrels such as `components/forms.dart`.
-- Use `UiThemeData.light()` / `UiThemeData.dark()` at the app root.
+- Use `UiApp` at the app root and pass `UiThemeData.light()` /
+  `UiThemeData.dark()` as its token sets when customization is needed.
 - Read tokens with `UiThemeTokens.of(context)`. Prefer token colors, spacing,
   radii, shadows, motion, and typography over hard-coded design values.
 - Prefer existing kit components before writing app-specific widgets.
-- Keep Material/Cupertino widgets at the app shell or platform-integration
-  boundary. Do not mix Material controls into kit surfaces when a `Ui*`
-  component exists.
+- Keep Material/Cupertino dependencies outside the kit. Use widgets-layer
+  Flutter APIs at platform-integration boundaries.
 
 ## Component Selection
 
@@ -91,5 +91,14 @@ Follow it before introducing custom Flutter UI.
   states when changing public components.
 - Do not update golden files unless the visual change is intentional and the
   user asked for it.
+
+## API deprecations
+
+- Follow `doc/deprecation_policy.md` for public API migrations.
+- Every deprecation must name its replacement and scheduled removal version in
+  `CHANGELOG.md`.
+- Do not remove a compatibility API before its announced breaking release.
+- Keep compatibility coverage for deprecated export paths that Dart cannot
+  annotate with `@Deprecated`.
 
 For more detail, read `doc/ai_usage_guide.md`.

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -217,12 +216,6 @@ class UiBottomTabScaffold extends StatelessWidget {
   }
 
   bool _isCompactMobileDevice(BuildContext context, double breakpoint) {
-    if (kIsWeb ||
-        (defaultTargetPlatform != TargetPlatform.android &&
-            defaultTargetPlatform != TargetPlatform.iOS)) {
-      return false;
-    }
-
     return MediaQuery.sizeOf(context).shortestSide < breakpoint;
   }
 }

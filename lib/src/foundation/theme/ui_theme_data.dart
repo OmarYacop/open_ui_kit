@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../motion/ui_motion_tokens.dart';
 import '../effects/ui_effects_tokens.dart';
@@ -10,15 +10,12 @@ import '../tokens/ui_typography_tokens.dart';
 import 'ui_brand.dart';
 import 'ui_theme_extensions.dart';
 
-/// Helpers for building a [ThemeData] preloaded with [UiThemeTokens].
-///
-/// Consumers typically wire this into `MaterialApp.theme` / `darkTheme` so
-/// the Open UI Kit widgets can read tokens via `UiThemeTokens.of(context)`.
+/// Helpers for building framework-neutral [UiThemeTokens].
 class UiThemeData {
   UiThemeData._();
 
   /// Light theme with neutral Open UI Kit tokens.
-  static ThemeData light({
+  static UiThemeTokens light({
     UiColorTokens? colors,
     UiSpacingTokens? spacing,
     UiRadiusTokens? radius,
@@ -27,7 +24,7 @@ class UiThemeData {
     UiMotionTokens? motion,
     UiEffectsTokens? effects,
   }) {
-    final tokens = UiThemeTokens(
+    return UiThemeTokens(
       colors: colors ?? UiColorTokens.light,
       spacing: spacing ?? UiSpacingTokens.standard,
       radius: radius ?? UiRadiusTokens.standard,
@@ -37,11 +34,10 @@ class UiThemeData {
       effects: effects ?? UiEffectsTokens.adaptive,
       brightness: Brightness.light,
     );
-    return _build(tokens);
   }
 
   /// Dark theme with neutral Open UI Kit tokens.
-  static ThemeData dark({
+  static UiThemeTokens dark({
     UiColorTokens? colors,
     UiSpacingTokens? spacing,
     UiRadiusTokens? radius,
@@ -50,7 +46,7 @@ class UiThemeData {
     UiMotionTokens? motion,
     UiEffectsTokens? effects,
   }) {
-    final tokens = UiThemeTokens(
+    return UiThemeTokens(
       colors: colors ?? UiColorTokens.dark,
       spacing: spacing ?? UiSpacingTokens.standard,
       radius: radius ?? UiRadiusTokens.standard,
@@ -60,16 +56,15 @@ class UiThemeData {
       effects: effects ?? UiEffectsTokens.adaptive,
       brightness: Brightness.dark,
     );
-    return _build(tokens);
   }
 
-  /// Build a [ThemeData] from a [UiBrand] runtime config.
+  /// Build [UiThemeTokens] from a [UiBrand] runtime config.
   ///
   /// Single bootstrap seam for branded apps — pass the brand in, get a
   /// themed app out. Callers should *not* branch on brand id anywhere
   /// below this call; plumb everything through [UiBrand] instead so
   /// leaf widgets stay brand-agnostic.
-  static ThemeData fromBrand(
+  static UiThemeTokens fromBrand(
     UiBrand brand, {
     Brightness brightness = Brightness.light,
     UiSpacingTokens? spacing,
@@ -101,28 +96,6 @@ class UiThemeData {
           );
   }
 
-  /// Shorthand for resolving tokens from the nearest [Theme].
+  /// Shorthand for resolving tokens from the nearest [UiTheme].
   static UiThemeTokens of(BuildContext context) => UiThemeTokens.of(context);
-
-  static ThemeData _build(UiThemeTokens tokens) {
-    final c = tokens.colors;
-    return ThemeData(
-      useMaterial3: true,
-      brightness: tokens.brightness,
-      scaffoldBackgroundColor: c.background,
-      canvasColor: c.background,
-      colorScheme: ColorScheme(
-        brightness: tokens.brightness,
-        primary: c.primary,
-        onPrimary: c.onPrimary,
-        secondary: c.secondary,
-        onSecondary: c.onSecondary,
-        error: c.danger,
-        onError: c.onDanger,
-        surface: c.surface,
-        onSurface: c.textPrimary,
-      ),
-      extensions: <ThemeExtension<dynamic>>[tokens],
-    );
-  }
 }

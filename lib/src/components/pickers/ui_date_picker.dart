@@ -6,7 +6,8 @@ import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../forms/icon_button.dart';
-import '../forms/button.dart' show UiIntent, UiSize;
+import '../../foundation/theme/ui_intent.dart';
+import '../forms/button.dart' show UiSize;
 
 /// Predicate the picker consults before accepting a date — return
 /// `true` for dates that should be non-selectable (e.g. weekends).

@@ -5,19 +5,23 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(effects: UiEffectsTokens.full),
-    home: Scaffold(body: child),
+    home: UiTheme(
+      tokens: UiThemeData.light(effects: UiEffectsTokens.full),
+      child: Scaffold(body: child),
+    ),
   );
 }
 
 Widget _reducedMotionHost(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(effects: UiEffectsTokens.full),
     builder: (context, appChild) => MediaQuery(
       data: MediaQuery.of(context).copyWith(disableAnimations: true),
       child: appChild ?? const SizedBox.shrink(),
     ),
-    home: Scaffold(body: child),
+    home: UiTheme(
+      tokens: UiThemeData.light(effects: UiEffectsTokens.full),
+      child: Scaffold(body: child),
+    ),
   );
 }
 
@@ -1014,7 +1018,6 @@ void main() {
   testWidgets('drawer safe area wraps the outer surface', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: MediaQuery(
           data: const MediaQueryData(
             size: Size(390, 844),
@@ -1040,7 +1043,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Directionality(
           textDirection: TextDirection.ltr,
           child: SizedBox(
@@ -1084,7 +1086,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: const Directionality(
           textDirection: TextDirection.ltr,
           child: Align(
@@ -1152,7 +1153,6 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: MediaQuery(
           data: const MediaQueryData(
             size: Size(390, 844),
@@ -1192,7 +1192,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: const Directionality(
           textDirection: TextDirection.ltr,
           child: SizedBox(
@@ -1227,7 +1226,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: const Directionality(
           textDirection: TextDirection.ltr,
           child: UiNavigationDrawer(
@@ -1253,7 +1251,6 @@ void main() {
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: const Directionality(
           textDirection: TextDirection.ltr,
           child: UiNavigationDrawer(
@@ -1289,7 +1286,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: const Directionality(
           textDirection: TextDirection.ltr,
           child: UiNavigationDrawer(
@@ -1333,7 +1329,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: MediaQuery(
           data: const MediaQueryData(
             size: Size(390, 844),

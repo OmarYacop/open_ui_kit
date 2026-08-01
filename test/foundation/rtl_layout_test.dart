@@ -10,7 +10,6 @@ Widget _host(Widget child, {TextDirection dir = TextDirection.ltr}) {
   // what every kit component actually reads, so this exercises the
   // same code path.
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: Directionality(
       textDirection: dir,
       child: Scaffold(body: child),

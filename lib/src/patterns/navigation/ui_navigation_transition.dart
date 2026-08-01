@@ -106,24 +106,16 @@ class UiNavigationTransition extends StatelessWidget {
 /// Interactive back-swipe transition style.
 ///
 /// Controls what the user sees while dragging the leading edge to pop
-/// the current page. Introduced in PR-7 for Cupertino parallax
-/// fidelity; [auto] matches platform conventions so existing call
-/// sites continue to render the right thing.
+/// the current page. Both treatments are Open UI-owned and selected explicitly.
 enum UiBackSwipeTransition {
-  /// Resolves to [cupertino] on iOS/macOS and [slide] on every other
-  /// platform — matching platform conventions.
-  auto,
-
-  /// Full Cupertino parallax: the outgoing page translates with the
+  /// Layered parallax: the outgoing page translates with the
   /// finger while the incoming (previous) page is revealed underneath,
   /// starting offset by ~30 % of the viewport width and settling at
   /// zero. A leading-edge shadow accentuates the elevation.
-  cupertino,
+  layered,
 
   /// Simple slide: the outgoing page translates with the finger and
-  /// nothing is rendered underneath. Matches the PR-4 behaviour and
-  /// is the right default for non-Cupertino platforms where a
-  /// parallax reveal would read as Apple-specific.
+  /// nothing is rendered underneath.
   slide,
 }
 
@@ -131,12 +123,8 @@ enum UiBackSwipeTransition {
 /// region in [UiNavigationHost]. Declared at the library level so
 /// tests can exercise the same numbers the implementation renders.
 ///
-/// The ratio matches Apple's documented
-/// `CupertinoPageTransition.primaryRouteAnimation` where the
-/// incoming (previous) page starts at `-0.30 * width` and settles at
-/// zero as `progress` interpolates from 0 to 1.
-class UiBackSwipeParallaxMetrics {
-  UiBackSwipeParallaxMetrics._();
+class UiBackSwipeLayeredMetrics {
+  UiBackSwipeLayeredMetrics._();
 
   /// Fraction of the viewport width by which the incoming (previous)
   /// page starts offset from zero when the gesture begins.
@@ -148,7 +136,7 @@ class UiBackSwipeParallaxMetrics {
 
   /// Peak opacity of the leading-edge shadow cast by the outgoing
   /// page at `progress = 0.5`. Fades to zero at both endpoints so the
-  /// elevation cue only appears mid-gesture, matching Cupertino.
+  /// elevation cue only appears mid-gesture.
   static const double outgoingShadowOpacity = 0.22;
 
   /// Blur radius of the outgoing page's leading shadow.

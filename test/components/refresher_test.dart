@@ -15,7 +15,7 @@ Widget _host(
     localizationsDelegates: const [UiLocalizations.delegate],
     supportedLocales: const [Locale('en'), Locale('ar')],
     home: MediaQuery(
-      data: MediaQueryData(padding: padding),
+      data: MediaQueryData(padding: padding, viewPadding: padding),
       child: UiPageScaffold(scrollFade: false, body: child),
     ),
   );
@@ -43,7 +43,7 @@ Future<void> _pull(
 }
 
 void main() {
-  testWidgets('default refresh indicator has a blending clearance shadow', (
+  testWidgets('default refresh indicator uses a transparent clearance shadow', (
     tester,
   ) async {
     const details = UiRefreshIndicatorDetails(
@@ -70,7 +70,79 @@ void main() {
     expect(decoration.color, isNull);
     expect(decoration.border, isNull);
     expect(decoration.shape, BoxShape.circle);
-    expect(decoration.boxShadow, isNotEmpty);
+    expect(decoration.boxShadow, hasLength(1));
+    expect(
+      decoration.boxShadow!.single,
+      BoxShadow(
+        color: UiThemeTokens.light.colors.background.withValues(alpha: 0.96),
+        blurRadius: UiThemeTokens.light.spacing.x3,
+        spreadRadius: UiThemeTokens.light.spacing.x1,
+      ),
+    );
+  });
+
+  testWidgets('UiPageScaffold owns refresh feedback above compact navigation', (
+    tester,
+  ) async {
+    final statuses = <UiRefreshStatus>[];
+
+    await tester.pumpWidget(
+      UiApp(
+        mode: UiThemeMode.light,
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(390, 844),
+            padding: EdgeInsets.only(top: 47),
+            viewPadding: EdgeInsets.only(top: 47),
+          ),
+          child: UiPageScaffold(
+            scrollFade: false,
+            onRefresh: () async {},
+            onRefreshStatusChanged: statuses.add,
+            body: CustomScrollView(
+              physics: UiRefresher.sliverPhysics,
+              slivers: [
+                UiSliverNavigationBar(
+                  spec: UiNavigationSpec(
+                    title: 'My devices',
+                    surface: UiNavigationSurface.edgeFade,
+                    back: UiNavigationBackConfig(
+                      label: 'Account',
+                      onPressed: () {},
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 1200)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final layers = tester
+        .widgetList<UiLayeredOverlayPortal>(
+          find.byType(UiLayeredOverlayPortal),
+        )
+        .map((portal) => portal.layer);
+    expect(layers, contains(UiOverlayLayer.navigationChrome));
+
+    await _pull(tester, scrollable: find.byType(CustomScrollView));
+
+    expect(statuses, contains(UiRefreshStatus.refreshing));
+    final feedbackPortal = tester
+        .widgetList<UiLayeredOverlayPortal>(
+          find.byType(UiLayeredOverlayPortal),
+        )
+        .singleWhere((portal) => portal.layer == UiOverlayLayer.systemFeedback);
+    expect(feedbackPortal.layer.index,
+        greaterThan(UiOverlayLayer.navigationChrome.index));
+    expect(
+      tester.getTopLeft(find.byKey(const Key('refresh_indicator_surface'))).dy,
+      greaterThanOrEqualTo(47),
+    );
+    await tester.pumpAndSettle();
   });
 
   group('UiRefresher', () {
@@ -285,6 +357,7 @@ void main() {
         _host(
           UiRefresher(
             controller: controller,
+            edgeOffset: 40,
             onRefresh: () => completer.future,
             indicatorBuilder: (_, details) {
               triggerDistances.add(details.triggerDistance);
@@ -296,7 +369,6 @@ void main() {
             },
             child: _list(),
           ),
-          padding: const EdgeInsets.only(top: 40),
         ),
       );
       await tester.pumpAndSettle();
@@ -304,7 +376,7 @@ void main() {
       final refresh = controller.refresh();
       await tester.pump();
 
-      expect(tester.getTopLeft(find.byKey(indicatorKey)).dy, greaterThan(40));
+      expect(find.byKey(indicatorKey), findsOneWidget);
       expect(triggerDistances, everyElement(72));
       completer.complete();
       await refresh;

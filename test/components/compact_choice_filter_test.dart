@@ -4,7 +4,6 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    theme: UiThemeData.light(),
     home: Scaffold(
       body: Center(child: child),
     ),
@@ -104,7 +103,6 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Builder(
           builder: (context) => MediaQuery(
             data: MediaQuery.of(context).copyWith(disableAnimations: true),
@@ -144,7 +142,6 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: UiThemeData.light(),
         home: Scaffold(
           body: UiLayeredOverlayHost(
             child: ListView(

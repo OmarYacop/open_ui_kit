@@ -7,7 +7,8 @@ import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
-import '../forms/button.dart' show UiButton, UiIntent, UiSize;
+import '../../foundation/theme/ui_intent.dart';
+import '../forms/button.dart' show UiButton, UiSize;
 import 'ui_picker_models.dart';
 
 /// Time format used by [UiTimeGridPicker] and [UiTimePickerField].

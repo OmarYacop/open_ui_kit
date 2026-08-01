@@ -165,6 +165,7 @@ class UiNavigationRail extends StatefulWidget {
     this.footerActions = const <UiNavigationRailAction>[],
     this.footerDestinations = const <UiNavigationRailDestination>[],
     this.platformCapabilities,
+    this.enableFloatingWindowChrome = false,
     this.geometry = UiNavigationRailGeometry.defaults,
   });
 
@@ -176,6 +177,9 @@ class UiNavigationRail extends StatefulWidget {
   final bool collapsed;
   final VoidCallback onToggleCollapsed;
   final UiPlatformCapabilities? platformCapabilities;
+
+  /// Enables native floating-window inset tracking for hosts that provide it.
+  final bool enableFloatingWindowChrome;
   final UiNavigationRailGeometry geometry;
 
   static const expandedOuterWidth = 260.0;
@@ -204,7 +208,7 @@ class _UiNavigationRailState extends State<UiNavigationRail>
   @override
   void initState() {
     super.initState();
-    _tracksWindowMode = supportsUiFloatingWindowChrome();
+    _tracksWindowMode = widget.enableFloatingWindowChrome;
     if (_tracksWindowMode) {
       WidgetsBinding.instance.addObserver(this);
       _windowModeSubscription = _platformCapabilities.windowModeChanges

@@ -95,8 +95,9 @@ class UiCollectionPage<T> extends StatelessWidget {
 
   /// Optional pull-to-refresh callback for the loaded collection.
   ///
-  /// When supplied, the generated list/grid is wrapped in [UiRefresher] and
-  /// remains refreshable even when its content is shorter than the viewport.
+  /// When supplied, [UiPageLayout] delegates refresh ownership to its
+  /// [UiPageScaffold], keeping feedback above page chrome and allowing refresh
+  /// even when content is shorter than the viewport.
   final Future<void> Function()? onRefresh;
   final UiRefresherController? refreshController;
   final UiRefreshIndicatorBuilder? refreshIndicatorBuilder;
@@ -119,6 +120,9 @@ class UiCollectionPage<T> extends StatelessWidget {
       bottomBar: bottomBar,
       safeViewportMode: safeViewportMode,
       breakpoints: breakpoints,
+      onRefresh: onRefresh,
+      refreshController: refreshController,
+      refreshIndicatorBuilder: refreshIndicatorBuilder,
       body: _buildBody(context),
     );
   }
@@ -178,14 +182,7 @@ class UiCollectionPage<T> extends StatelessWidget {
       },
     );
 
-    final refresh = onRefresh;
-    if (refresh == null) return collection;
-    return UiRefresher(
-      onRefresh: refresh,
-      controller: refreshController,
-      indicatorBuilder: refreshIndicatorBuilder,
-      child: collection,
-    );
+    return collection;
   }
 
   UiCollectionLayout _resolveLayout(double width) {

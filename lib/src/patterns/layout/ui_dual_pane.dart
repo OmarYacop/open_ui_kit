@@ -241,8 +241,9 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
                                   decoration: BoxDecoration(
                                     color: tokens.colors.background,
                                   ),
-                                  child: _Pane<T>(
+                                  child: _SelectedPane<T>(
                                     controller: widget.controller,
+                                    selected: selected,
                                     builder: widget.detailBuilder,
                                   ),
                                 ),
@@ -298,8 +299,9 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
                     color: tokens.colors.background,
                     boxShadow: tokens.shadows.lg,
                   ),
-                  child: _Pane<T>(
+                  child: _SelectedPane<T>(
                     controller: widget.controller,
+                    selected: selected,
                     builder: widget.detailBuilder,
                   ),
                 ),
@@ -388,5 +390,25 @@ class _Pane<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return builder(context, controller.selected, controller.select);
+  }
+}
+
+/// Keeps an outgoing detail bound to the value it was built for while its
+/// transition finishes. Without this snapshot, clearing the shared controller
+/// can rebuild the fading pane with the empty-detail UI for a frame.
+class _SelectedPane<T> extends StatelessWidget {
+  const _SelectedPane({
+    required this.controller,
+    required this.selected,
+    required this.builder,
+  });
+
+  final UiDualPaneController<T> controller;
+  final T selected;
+  final UiDualPaneBuilder<T> builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return builder(context, selected, controller.select);
   }
 }

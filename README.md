@@ -34,19 +34,21 @@ Tokens live in `lib/src/foundation/tokens` and are aggregated into the
 
 Motion timing, easing, and reduced-motion behavior are documented in
 [`doc/motion.md`](https://github.com/OmarYacop/open_ui_kit/blob/main/doc/motion.md).
+Public API migrations and scheduled removals follow the
+[`deprecation policy`](https://github.com/OmarYacop/open_ui_kit/blob/main/doc/deprecation_policy.md).
 
-### Platform visual-effects budgets
+### Visual-effects budgets
 
-Open UI Kit defaults to reduced-cost effects on Android and full glass effects
-on iOS and macOS. The adaptive policy also removes backdrop filters when the
-user requests reduced motion or accessible navigation.
+Open UI Kit uses the same effects budget on every operating system. The
+adaptive policy removes backdrop filters when the user requests reduced motion
+or accessible navigation.
 
 Override the app-wide policy through the theme:
 
 ```dart
-MaterialApp(
-  theme: UiThemeData.light(effects: UiEffectsTokens.reduced),
-  darkTheme: UiThemeData.dark(effects: UiEffectsTokens.reduced),
+UiApp(
+  lightTokens: UiThemeData.light(effects: UiEffectsTokens.reduced),
+  darkTokens: UiThemeData.dark(effects: UiEffectsTokens.reduced),
 );
 ```
 
@@ -83,7 +85,7 @@ before generating UI with this package.
 When generating app code with Open UI Kit, prefer this order:
 
 1. Import `package:open_ui_kit/open_ui_kit.dart`.
-2. Put `UiThemeData.light()` / `UiThemeData.dark()` on `MaterialApp`.
+2. Use `UiApp` with `UiThemeData.light()` / `UiThemeData.dark()` token sets.
 3. Use existing `Ui*` widgets before writing custom Material controls.
 4. Resolve visual values through `UiThemeTokens.of(context)`.
 5. Keep app-specific widgets thin: compose kit components, pass callbacks,
@@ -227,17 +229,17 @@ calm on purpose.
 
 ## Usage
 
-### 1. Apply the theme extension
+### 1. Install the Open UI app and tokens
 
 ```dart
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 void main() {
   runApp(
-    MaterialApp(
-      theme: UiThemeData.light(),
-      darkTheme: UiThemeData.dark(),
+    UiApp(
+      lightTokens: UiThemeData.light(),
+      darkTokens: UiThemeData.dark(),
       home: const MyHome(),
     ),
   );
@@ -517,6 +519,24 @@ UiCollectionPage<SessionCard>(
 
 ### 7e. Pull to refresh
 
+For page scrollables, let `UiPageScaffold` own refresh feedback so it remains
+above navigation chrome:
+
+```dart
+UiPageScaffold(
+  onRefresh: repository.reload,
+  body: CustomScrollView(
+    physics: UiRefresher.sliverPhysics,
+    slivers: const [
+      UiSliverNavigationBar(
+        spec: UiNavigationSpec(title: 'Devices'),
+      ),
+      // Page content...
+    ],
+  ),
+)
+```
+
 `UiRefresher` wraps any vertical scrollable, works with short content, and
 uses the kit's color, radius, shadow, typography, and motion tokens. The
 default indicator exposes pull, armed, refreshing, success, and failure
@@ -540,8 +560,8 @@ UiRefresher(
 await refreshController.refresh();
 ```
 
-For sliver layouts, put `UiSliverRefresher` first and opt into the portable
-refresh physics:
+For a sliver layout that is not hosted by `UiPageScaffold`, put
+`UiSliverRefresher` first and opt into the portable refresh physics:
 
 ```dart
 CustomScrollView(
@@ -831,20 +851,17 @@ controller.go(home);
 
 #### Edge-swipe-to-pop
 
-`UiNavigationStack` is an `AnimatedSwitcher` — it intentionally does
-**not** sit on Flutter's `Navigator`/`Route` system, so the iOS
-edge-drag back gesture that ships with `CupertinoPageRoute` is NOT
-available out of the box.
+`UiNavigationStack` intentionally does not sit on Flutter's
+`Navigator`/`Route` system. Edge-swipe-to-pop is therefore an explicit Open UI
+behavior rather than an operating-system-derived default.
 
-`UiNavigationHost` fills this gap. When the ambient platform is
-**iOS or macOS** (default), a narrow leading-edge strip listens for
-a horizontal drag and calls `controller.pop()` once the release
-passes either a 64pt distance or a 400 pts/sec velocity threshold.
-On other platforms the gesture is off by default (matching native
-conventions — Android uses the back button/system back gesture).
+When enabled, a narrow leading-edge strip listens for a horizontal drag and
+calls `controller.pop()` once the release passes either a 64 logical-pixel
+distance or a 400 pixels/sec velocity threshold. It is disabled by default on
+every platform.
 
 ```dart
-// Force on/off regardless of platform:
+// Enable explicitly:
 UiNavigationHost(
   controller: controller,
   enableEdgeSwipePop: true,     // or false
@@ -853,7 +870,7 @@ UiNavigationHost(
 // Tune the detection window:
 UiNavigationHost(
   controller: controller,
-  edgeSwipeWidth: 22,           // matches Cupertino default
+  edgeSwipeWidth: 22,
   edgeSwipeMinDistance: 64,
   edgeSwipeMinVelocity: 400,
 );
@@ -871,7 +888,7 @@ the start edge" gesture without a separate code path.
 The back-swipe gesture has two visual treatments, selected by
 `backSwipeTransition` on `UiNavigationHost`:
 
-- `UiBackSwipeTransition.cupertino` — full parallax: the outgoing
+- `UiBackSwipeTransition.layered` — layered parallax: the outgoing
   page translates under the finger while the **previous route** is
   revealed underneath, starting offset by `-0.30 × viewportWidth`
   (reading-start edge) and settling at zero as the gesture
@@ -879,28 +896,21 @@ The back-swipe gesture has two visual treatments, selected by
   elevation; a subtle scrim fades on the incoming page. Both routes
   are painted on an opaque backdrop (theme's page-background token)
   so pages that don't install their own `Scaffold`/`UiPageScaffold`
-  still read as a slide rather than a cross-fade. Matches
-  `CupertinoPageTransition` from Flutter's Cupertino library.
-- `UiBackSwipeTransition.slide` — the outgoing page translates with
-  the finger; the previous page is **not** rendered. Matches the
-  native expectation on Android, where a Cupertino-style reveal
-  would read as Apple-specific.
-- `UiBackSwipeTransition.auto` (default) — resolves to `cupertino`
-  on iOS/macOS and `slide` everywhere else.
+  still read as a slide rather than a cross-fade.
+- `UiBackSwipeTransition.slide` (default) — the outgoing page translates with
+  the finger; the previous page is **not** rendered.
 
 ```dart
-// Platform-correct defaults — Cupertino on iOS/macOS, slide on
-// Android/web/desktop:
+// Open UI default:
 UiNavigationHost(
   controller: controller,
-  // backSwipeTransition: UiBackSwipeTransition.auto, // default
+  // backSwipeTransition: UiBackSwipeTransition.slide, // default
 );
 
-// Force Cupertino parallax regardless of platform (useful for
-// demos or iPadOS-leaning apps on Android):
+// Select layered parallax explicitly:
 UiNavigationHost(
   controller: controller,
-  backSwipeTransition: UiBackSwipeTransition.cupertino,
+  backSwipeTransition: UiBackSwipeTransition.layered,
 );
 
 // Force slide-only (no parallax reveal):
@@ -1245,9 +1255,9 @@ All user-facing strings inside the kit flow through `UiLocalizations`.
 To localize, register the delegate:
 
 ```dart
-MaterialApp(
+UiApp(
   localizationsDelegates: const [
-    ...GlobalMaterialLocalizations.delegates,
+    GlobalWidgetsLocalizations.delegate,
     UiLocalizations.delegate,          // ← kit strings
   ],
   supportedLocales: const [
