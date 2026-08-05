@@ -140,6 +140,18 @@ abstract class UiLocalizations {
   /// Default label for an overflow navigation item.
   String get more;
 
+  /// Formats the presence message for participants composing a chat message.
+  ///
+  /// The default shows at most two names and summarizes additional people.
+  String typingLabel(List<String> names) {
+    if (names.isEmpty) return '';
+    if (names.length == 1) return '${names.first} is typing';
+    if (names.length == 2) return '${names.first} and ${names.last} are typing';
+    final remaining = names.length - 2;
+    final noun = remaining == 1 ? 'other' : 'others';
+    return '${names[0]}, ${names[1]} and $remaining $noun are typing';
+  }
+
   /// Resolve the active localization for [context]. When no delegate
   /// is installed, [UiLocalizationsEn] is returned so components keep
   /// working during test and bring-up.
@@ -336,6 +348,14 @@ class UiLocalizationsAr extends UiLocalizations {
 
   @override
   String get more => 'المزيد';
+
+  @override
+  String typingLabel(List<String> names) {
+    if (names.isEmpty) return '';
+    if (names.length == 1) return '${names.first} يكتب الآن';
+    if (names.length == 2) return '${names.first} و${names.last} يكتبان الآن';
+    return '${names[0]} و${names[1]} و${names.length - 2} آخرون يكتبون الآن';
+  }
 }
 
 class _UiLocalizationsDelegate extends LocalizationsDelegate<UiLocalizations> {

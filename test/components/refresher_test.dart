@@ -63,8 +63,15 @@ void main() {
       ),
     );
 
-    final decorated = tester.widget<DecoratedBox>(
+    final effect = tester.widget<UiComponentShadow>(
       find.byKey(const Key('refresh_indicator_surface')),
+    );
+    expect(effect.shape, BoxShape.circle);
+    final decorated = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(const Key('refresh_indicator_surface')),
+        matching: find.byType(DecoratedBox),
+      ),
     );
     final decoration = decorated.decoration as BoxDecoration;
     expect(decoration.color, isNull);
@@ -79,6 +86,22 @@ void main() {
         spreadRadius: UiThemeTokens.light.spacing.x1,
       ),
     );
+  });
+
+  testWidgets('standalone refreshing indicator reuses the stock visual', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const UiApp(
+        home: Center(child: UiRefreshIndicator.refreshing()),
+      ),
+    );
+
+    final indicator = tester.widget<UiRefreshIndicator>(
+      find.byType(UiRefreshIndicator),
+    );
+    expect(indicator.details.status, UiRefreshStatus.refreshing);
+    expect(find.byType(UiComponentShadow), findsOneWidget);
   });
 
   testWidgets('UiPageScaffold owns refresh feedback above compact navigation', (

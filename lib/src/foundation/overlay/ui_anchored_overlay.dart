@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 import '../theme/ui_theme_extensions.dart';
@@ -38,12 +39,66 @@ class UiAnchoredOverlayGeometry {
   final double gap;
 }
 
+/// A non-blocking outside-tap region for anchored overlays.
+///
+/// Pointer sequences that move beyond Flutter's touch slop are treated as
+/// scroll/drag gestures and do not dismiss. A completed outside tap dismisses
+/// without consuming the event, so the underlying control still activates.
+class UiAnchoredOverlayTapRegion extends StatefulWidget {
+  const UiAnchoredOverlayTapRegion({
+    super.key,
+    required this.groupId,
+    required this.onDismiss,
+    required this.child,
+    this.enabled = true,
+  });
+
+  final Object groupId;
+  final VoidCallback onDismiss;
+  final Widget child;
+  final bool enabled;
+
+  @override
+  State<UiAnchoredOverlayTapRegion> createState() =>
+      _UiAnchoredOverlayTapRegionState();
+}
+
+class _UiAnchoredOverlayTapRegionState
+    extends State<UiAnchoredOverlayTapRegion> {
+  final Map<int, Offset> _outsideDownPositions = <int, Offset>{};
+
+  void _handleOutsideDown(PointerDownEvent event) {
+    _outsideDownPositions[event.pointer] = event.position;
+  }
+
+  void _handleOutsideUp(PointerUpEvent event) {
+    final start = _outsideDownPositions.remove(event.pointer);
+    if (start == null) return;
+    final delta = event.position - start;
+    if (delta.distanceSquared <= kTouchSlop * kTouchSlop) {
+      widget.onDismiss();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TapRegion(
+      groupId: widget.groupId,
+      onTapOutside: widget.enabled ? _handleOutsideDown : null,
+      onTapUpOutside: widget.enabled ? _handleOutsideUp : null,
+      consumeOutsideTaps: false,
+      child: widget.child,
+    );
+  }
+}
+
 UiAnchoredOverlayGeometry? resolveUiAnchoredOverlayGeometry({
   required BuildContext context,
   required GlobalKey targetKey,
   required OverlayState overlay,
   required double desiredHeight,
   required double maxHeight,
+  double? desiredWidth,
   double minWidth = 0,
   double crampedAvailableHeight = 0,
   bool allowOverflowWhenCramped = false,
@@ -85,7 +140,10 @@ UiAnchoredOverlayGeometry? resolveUiAnchoredOverlayGeometry({
           : math.max(0.0, math.min(maxHeight, available));
 
   final availableWidth = math.max(0.0, rightLimit - leftLimit);
-  final width = math.min(math.max(minWidth, targetRect.width), availableWidth);
+  final width = math.min(
+    math.max(minWidth, desiredWidth ?? targetRect.width),
+    availableWidth,
+  );
   var horizontalOffset = 0.0;
   final menuRight = targetRect.left + width;
   if (menuRight > rightLimit) {

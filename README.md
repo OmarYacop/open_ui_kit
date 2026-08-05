@@ -388,6 +388,17 @@ UiAppShell(
 );
 ```
 
+Show one or more people composing a message:
+
+```dart
+UiTypingIndicator(
+  users: const [
+    UiTypingUser(id: 'ada', name: 'Ada'),
+    UiTypingUser(id: 'grace', name: 'Grace'),
+  ],
+)
+```
+
 ### 5b. Top-nav logo integration
 
 ```dart

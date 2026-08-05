@@ -4,8 +4,6 @@ import 'package:flutter/widgets.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
-import '../../foundation/primitives/ui_box.dart';
-import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiSize, UiButtonMetrics;
 
@@ -281,13 +279,6 @@ class UiInputState extends State<UiInput>
       // Selection stays available for read-only rows so users can copy
       // displayed text. Disabled rows lock interaction entirely.
       enableInteractiveSelection: !disabled,
-      contextMenuBuilder: (context, editableTextState) {
-        return _UiTextContextMenu(
-          anchors: editableTextState.contextMenuAnchors,
-          items: editableTextState.contextMenuButtonItems,
-        );
-      },
-      selectionControls: emptyTextSelectionControls,
     );
 
     return Column(
@@ -414,65 +405,4 @@ class UiInputState extends State<UiInput>
     final vertical = (maxLines == 1) ? 0.0 : t.spacing.x2;
     return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
   }
-}
-
-class _UiTextContextMenu extends StatelessWidget {
-  const _UiTextContextMenu({required this.anchors, required this.items});
-
-  final TextSelectionToolbarAnchors anchors;
-  final List<ContextMenuButtonItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = UiThemeTokens.of(context);
-    return CustomSingleChildLayout(
-      delegate: TextSelectionToolbarLayoutDelegate(
-        anchorAbove: anchors.primaryAnchor,
-        anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
-      ),
-      child: UiBox(
-        background: tokens.colors.surface,
-        border: Border.all(color: tokens.colors.border),
-        borderRadius: tokens.radius.mdAll,
-        boxShadow: tokens.shadows.md,
-        padding: EdgeInsets.all(tokens.spacing.x1),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final item in items)
-              UiPressable(
-                onPressed: item.onPressed,
-                builder: (context, state, _) => UiBox(
-                  background: state.hovered || state.pressed
-                      ? tokens.colors.accent
-                      : const Color(0x00000000),
-                  borderRadius: tokens.radius.smAll,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.x2,
-                    vertical: tokens.spacing.x1,
-                  ),
-                  child: UiText(
-                    item.label ?? _labelFor(item.type),
-                    variant: UiTextVariant.caption,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _labelFor(ContextMenuButtonType type) => switch (type) {
-        ContextMenuButtonType.cut => 'Cut',
-        ContextMenuButtonType.copy => 'Copy',
-        ContextMenuButtonType.paste => 'Paste',
-        ContextMenuButtonType.selectAll => 'Select all',
-        ContextMenuButtonType.delete => 'Delete',
-        ContextMenuButtonType.lookUp => 'Look up',
-        ContextMenuButtonType.searchWeb => 'Search web',
-        ContextMenuButtonType.share => 'Share',
-        ContextMenuButtonType.liveTextInput => 'Insert text',
-        ContextMenuButtonType.custom => 'Action',
-      };
 }

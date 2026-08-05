@@ -431,7 +431,7 @@ void main() {
 
       final dockRect =
           tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
-      expect(dockRect.bottom, closeTo(828, 0.1));
+      expect(dockRect.bottom, closeTo(810, 0.1));
     });
 
     testWidgets('scaffold automatically overflows bottom tabs into More drawer',
@@ -868,6 +868,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
+      var underlyingTaps = 0;
       await tester.pumpWidget(
         _host(
           UiBottomTabScaffold(
@@ -877,7 +878,14 @@ void main() {
             ],
             currentIndex: 1,
             onChanged: (_) {},
-            pages: const [SizedBox(), SizedBox()],
+            pages: [
+              const SizedBox(),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => underlyingTaps++,
+                child: const SizedBox.expand(),
+              ),
+            ],
             bottomAccessory: const UiBottomTabAccessory(
               expanded: true,
               leadingItem: UiBottomTabItem(label: 'Chat'),
@@ -899,6 +907,11 @@ void main() {
       );
 
       expect(after.dy, closeTo(before.dy - 280, 0.1));
+      await tester.tapAt(tester.getCenter(
+        find.byKey(const Key('ui_bottom_tab_accessory')),
+      ));
+      await tester.pump();
+      expect(underlyingTaps, 0);
     });
 
     testWidgets('accessory can enter and leave expanded mode with semantics',

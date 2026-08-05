@@ -110,6 +110,11 @@ class _SettingsGroupView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
+    final formFactor = uiFormFactorOf(context);
+
+    bool visuallySelected(UiSettingsItem item) =>
+        _selected(item) &&
+        (item.showSelectedOnPhone || formFactor != UiFormFactor.phone);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,9 +142,17 @@ class _SettingsGroupView extends StatelessWidget {
               children: [
                 for (var i = 0; i < group.items.length; i += 1) ...[
                   if (i > 0)
-                    UiDivider(
-                      indent: tokens.spacing.x4 + 36 + tokens.spacing.x3,
-                    ),
+                    if (visuallySelected(group.items[i - 1]) ||
+                        visuallySelected(group.items[i]))
+                      ColoredBox(
+                        key: ValueKey('ui-settings-selected-separator-$i'),
+                        color: tokens.colors.surfaceMuted,
+                        child: const SizedBox(height: 1),
+                      )
+                    else
+                      UiDivider(
+                        indent: tokens.spacing.x4 + 36 + tokens.spacing.x3,
+                      ),
                   _SettingsItemRow(
                     key: group.items[i].key,
                     item: group.items[i],

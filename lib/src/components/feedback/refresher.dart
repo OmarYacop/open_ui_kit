@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
+import '../../foundation/effects/ui_component_shadow.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -752,6 +753,43 @@ class UiRefreshIndicator extends StatelessWidget {
     this.showLabel = false,
   });
 
+  /// A standalone instance of the stock refreshing visual.
+  ///
+  /// Use this when another flow is waiting on work but should share the
+  /// refresher's compact visual language, such as awaiting a permission.
+  const UiRefreshIndicator.refreshing({super.key})
+      : details = const UiRefreshIndicatorDetails(
+          status: UiRefreshStatus.refreshing,
+          progress: 1,
+          pulledExtent: 0,
+          triggerDistance: 1,
+        ),
+        showLabel = false;
+
+  /// A standalone instance of the stock completion visual.
+  const UiRefreshIndicator.completed({super.key})
+      : details = const UiRefreshIndicatorDetails(
+          status: UiRefreshStatus.completed,
+          progress: 1,
+          pulledExtent: 0,
+          triggerDistance: 1,
+        ),
+        showLabel = false;
+
+  /// A standalone instance of the stock failure visual.
+  factory UiRefreshIndicator.failed({Key? key, Object? error}) {
+    return UiRefreshIndicator(
+      key: key,
+      details: UiRefreshIndicatorDetails(
+        status: UiRefreshStatus.failed,
+        progress: 1,
+        pulledExtent: 0,
+        triggerDistance: 1,
+        error: error,
+      ),
+    );
+  }
+
   final UiRefreshIndicatorDetails details;
 
   @Deprecated(
@@ -769,18 +807,9 @@ class UiRefreshIndicator extends StatelessWidget {
       _ => tokens.colors.textPrimary,
     };
 
-    return DecoratedBox(
+    return UiComponentShadow(
       key: const Key('refresh_indicator_surface'),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: tokens.colors.background.withValues(alpha: 0.96),
-            blurRadius: tokens.spacing.x3,
-            spreadRadius: tokens.spacing.x1,
-          ),
-        ],
-      ),
+      shape: BoxShape.circle,
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.x1),
         child: _RefreshGlyph(

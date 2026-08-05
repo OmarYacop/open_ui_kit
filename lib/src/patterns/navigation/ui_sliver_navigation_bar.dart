@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
+import '../../foundation/effects/ui_component_shadow.dart';
+import '../../foundation/effects/ui_legibility_shadow.dart';
 import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/layout/ui_navigation_chrome_scope.dart';
@@ -62,6 +64,8 @@ class UiSliverNavigationBar extends StatelessWidget {
     this.floating = false,
     this.stretch = false,
     this.adaptToPersistentRail = true,
+    this.bottom,
+    this.bottomHeight = 0,
   });
 
   final UiNavigationSpec spec;
@@ -81,6 +85,11 @@ class UiSliverNavigationBar extends StatelessWidget {
   /// Replaces the mobile glass treatment with a non-pinned content header
   /// when the page is hosted next to a persistent navigation rail.
   final bool adaptToPersistentRail;
+
+  /// Optional control row attached to the navigation surface. Its height is
+  /// included in the sliver geometry so page content starts below it.
+  final Widget? bottom;
+  final double bottomHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -107,8 +116,11 @@ class UiSliverNavigationBar extends StatelessWidget {
     // collapsed height so back + title + actions sit together on a
     // single row, with no large-title reveal on overscroll.
     final useLarge = effectiveSpec.largeTitle && effectiveSpec.back == null;
-    final maxH = (useLarge ? expandedHeight : collapsedHeight) + topInset;
-    final minH = collapsedHeight + topInset;
+    final attachedBottomHeight = bottom == null ? 0.0 : bottomHeight;
+    final maxH = (useLarge ? expandedHeight : collapsedHeight) +
+        topInset +
+        attachedBottomHeight;
+    final minH = collapsedHeight + topInset + attachedBottomHeight;
 
     return SliverPersistentHeader(
       pinned: pinned,
@@ -118,6 +130,8 @@ class UiSliverNavigationBar extends StatelessWidget {
         topInset: topInset,
         expandedHeight: maxH,
         collapsedHeight: minH,
+        bottom: bottom,
+        bottomHeight: attachedBottomHeight,
       ),
     );
   }
@@ -215,12 +229,16 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.topInset,
     required this.expandedHeight,
     required this.collapsedHeight,
+    required this.bottom,
+    required this.bottomHeight,
   });
 
   final UiNavigationSpec spec;
   final double topInset;
   final double expandedHeight;
   final double collapsedHeight;
+  final Widget? bottom;
+  final double bottomHeight;
 
   @override
   double get minExtent => collapsedHeight;
@@ -243,6 +261,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     final surfaceColor = _surfaceColor(
       c.surface,
       t,
+      pageBackground: c.background,
       surface: resolvedSurface,
       overlapsContent: overlapsContent,
     );
@@ -259,7 +278,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
           top: topInset,
           left: 0,
           right: 0,
-          height: minExtent - topInset,
+          height: minExtent - topInset - bottomHeight,
           child: _CompactRow(
             spec: spec,
             collapseT: t,
@@ -267,6 +286,14 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
             titleOpacity: useHero ? ((t - 0.5) / 0.36).clamp(0.0, 1.0) : 1,
           ),
         ),
+        if (bottom != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: bottomHeight,
+            child: bottom!,
+          ),
         if (useHero)
           // _LargeTitle uses Positioned internally, which requires
           // a direct Stack parent — so the RepaintBoundary lives
@@ -274,7 +301,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
           _LargeTitle(
             spec: spec,
             collapseT: t,
-            expandedHeight: maxExtent,
+            expandedHeight: maxExtent - bottomHeight,
             scrollOffset: shrinkOffset,
           ),
         if (useHero &&
@@ -282,8 +309,8 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
             spec.actions.isNotEmpty)
           _TitleTrackingActions(
             spec: spec,
-            expandedHeight: maxExtent,
-            collapsedHeight: minExtent,
+            expandedHeight: maxExtent - bottomHeight,
+            collapsedHeight: minExtent - bottomHeight,
             topInset: topInset,
             scrollOffset: shrinkOffset,
           ),
@@ -294,19 +321,23 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     // which flips in a single frame the moment content scrolls under
     // the pinned bar. Tween the decoration so neither layer pops in —
     // the divider fade reads as a soft reveal instead of a hard edge.
-    content = AnimatedContainer(
-      duration: tokens.motion.standard,
-      curve: tokens.motion.standardCurve,
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        border: Border(
-          bottom: BorderSide(
-            color: c.border.withValues(alpha: dividerOpacity),
-            width: 1,
+    content = UiComponentShadow(
+      key: const Key('ui_sliver_navigation_bar_shadow'),
+      color: c.background.withValues(alpha: overlapsContent ? 0.96 : 0),
+      child: AnimatedContainer(
+        duration: tokens.motion.standard,
+        curve: tokens.motion.standardCurve,
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          border: Border(
+            bottom: BorderSide(
+              color: c.border.withValues(alpha: dividerOpacity),
+              width: 1,
+            ),
           ),
         ),
+        child: content,
       ),
-      child: content,
     );
 
     if (showEdgeFade) {
@@ -329,7 +360,8 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
       UiNavigationSurface.blurred =>
         c.background,
       UiNavigationSurface.adaptive ||
-      UiNavigationSurface.solid =>
+      UiNavigationSurface.solid ||
+      UiNavigationSurface.pageBackground =>
         surfaceColor.withValues(alpha: 1),
     };
     return UiLayeredOverlayPortal(
@@ -344,6 +376,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
   Color _surfaceColor(
     Color base,
     double t, {
+    required Color pageBackground,
     required UiNavigationSurface surface,
     required bool overlapsContent,
   }) {
@@ -353,6 +386,8 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
         return base;
       case UiNavigationSurface.solid:
         return base;
+      case UiNavigationSurface.pageBackground:
+        return pageBackground;
       case UiNavigationSurface.edgeFade:
       case UiNavigationSurface.blurred:
         return const Color(0x00000000);
@@ -377,7 +412,9 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     return old.spec != spec ||
         old.topInset != topInset ||
         old.expandedHeight != expandedHeight ||
-        old.collapsedHeight != collapsedHeight;
+        old.collapsedHeight != collapsedHeight ||
+        old.bottom != bottom ||
+        old.bottomHeight != bottomHeight;
   }
 }
 
@@ -488,15 +525,17 @@ class _CompactRow extends StatelessWidget {
                 switchInCurve: tokens.motion.standardCurve,
                 switchOutCurve: tokens.motion.standardCurve,
                 transitionBuilder: _chromeTransition,
-                child: Row(
+                child: UiLegibilityShadow(
                   key: ValueKey('actions:${Object.hashAll(spec.actions)}'),
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var i = 0; i < spec.actions.length; i++) ...[
-                      if (i > 0) SizedBox(width: tokens.spacing.x2),
-                      spec.actions[i],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < spec.actions.length; i++) ...[
+                        if (i > 0) SizedBox(width: tokens.spacing.x2),
+                        spec.actions[i],
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               );
         final middle = showMiddle
@@ -516,10 +555,12 @@ class _CompactRow extends StatelessWidget {
                   children: [
                     if (resolvedLogo != null) ...[
                       Flexible(
-                        child: Semantics(
-                          container: true,
-                          label: '${spec.brand!.displayName} logo',
-                          child: ExcludeSemantics(child: resolvedLogo),
+                        child: UiLegibilityShadow(
+                          child: Semantics(
+                            container: true,
+                            label: '${spec.brand!.displayName} logo',
+                            child: ExcludeSemantics(child: resolvedLogo),
+                          ),
                         ),
                       ),
                       if (showTitle) SizedBox(width: tokens.spacing.x2),
@@ -528,21 +569,28 @@ class _CompactRow extends StatelessWidget {
                       Flexible(
                         child: Opacity(
                           opacity: titleOpacity,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              UiText(
-                                spec.compactTitle ?? spec.title,
-                                key: const Key('ui_navigation_compact_title'),
-                                variant: UiTextVariant.heading,
-                                style: TextStyle(color: c.textPrimary),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                          child: UiLegibilityShadow(
+                            key: const Key(
+                              'ui_navigation_compact_title_shadow',
+                            ),
+                            blurSigma: 4,
+                            spreadRadius: 2.5,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                UiText(
+                                  spec.compactTitle ?? spec.title,
+                                  key: const Key('ui_navigation_compact_title'),
+                                  variant: UiTextVariant.heading,
+                                  style: TextStyle(color: c.textPrimary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -642,14 +690,17 @@ class _TitleTrackingActions extends StatelessWidget {
       end: tokens.spacing.x3,
       top: top,
       height: actionExtent,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < spec.actions.length; i++) ...[
-            if (i > 0) SizedBox(width: tokens.spacing.x2),
-            spec.actions[i],
+      child: UiLegibilityShadow(
+        key: const Key('ui_navigation_tracking_actions_shadow'),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < spec.actions.length; i++) ...[
+              if (i > 0) SizedBox(width: tokens.spacing.x2),
+              spec.actions[i],
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -709,31 +760,34 @@ class _LargeTitle extends StatelessWidget {
           ignoring: titleOpacity < 0.05,
           child: Opacity(
             opacity: titleOpacity,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  spec.title,
-                  key: const Key('ui_navigation_large_title'),
-                  style: titleStyle.copyWith(color: c.textPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (spec.subtitle != null && subtitleOpacity > 0.02) ...[
-                  SizedBox(height: tokens.spacing.x1),
-                  Opacity(
-                    opacity: subtitleOpacity,
-                    child: UiText(
-                      spec.subtitle!,
-                      variant: UiTextVariant.bodySm,
-                      tone: UiTextTone.muted,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+            child: UiLegibilityShadow(
+              key: const Key('ui_navigation_large_title_shadow'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    spec.title,
+                    key: const Key('ui_navigation_large_title'),
+                    style: titleStyle.copyWith(color: c.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  if (spec.subtitle != null && subtitleOpacity > 0.02) ...[
+                    SizedBox(height: tokens.spacing.x1),
+                    Opacity(
+                      opacity: subtitleOpacity,
+                      child: UiText(
+                        spec.subtitle!,
+                        variant: UiTextVariant.bodySm,
+                        tone: UiTextTone.muted,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/effects/ui_component_shadow.dart';
 import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/layout/layout.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
@@ -533,10 +534,16 @@ class _UiDrawerRegions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = UiThemeTokens.of(context).colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (header != null) header!,
+        if (header != null)
+          UiComponentShadow(
+            key: const Key('ui_drawer_header_shadow'),
+            color: colors.card.withValues(alpha: 0.96),
+            child: header!,
+          ),
         if (header != null && body != null) const UiDivider(),
         if (body != null)
           Expanded(child: SingleChildScrollView(primary: false, child: body))
@@ -544,7 +551,12 @@ class _UiDrawerRegions extends StatelessWidget {
           const Spacer(),
         if (footer != null && (header != null || body != null))
           const UiDivider(),
-        if (footer != null) footer!,
+        if (footer != null)
+          UiComponentShadow(
+            key: const Key('ui_drawer_footer_shadow'),
+            color: colors.card.withValues(alpha: 0.96),
+            child: footer!,
+          ),
       ],
     );
   }

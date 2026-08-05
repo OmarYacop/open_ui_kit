@@ -121,6 +121,7 @@ class UiSelect<T> extends StatefulWidget {
     this.optionBuilder,
     this.valueBuilder,
     this.shrinkWrap = false,
+    this.dismissOnTapOutside = true,
   });
 
   final List<UiSelectOption<T>> options;
@@ -148,6 +149,11 @@ class UiSelect<T> extends StatefulWidget {
   /// language switcher).
   final bool shrinkWrap;
 
+  /// Whether a pointer tap outside the trigger and menu dismisses it.
+  /// Scroll gestures keep the menu open and outside taps pass through to the
+  /// underlying control. Defaults to true.
+  final bool dismissOnTapOutside;
+
   @override
   State<UiSelect<T>> createState() => UiSelectState<T>();
 }
@@ -156,6 +162,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
   final GlobalKey _targetKey = GlobalKey();
   final LayerLink _link = LayerLink();
   final ScrollController _scrollController = ScrollController();
+  final Object _tapRegionGroup = Object();
   OverlayEntry? _entry;
   String? _internalError;
   bool _openAbove = false;
@@ -166,8 +173,6 @@ class UiSelectState<T> extends State<UiSelect<T>> {
   double _anchorOffset = 0;
   double? _triggerWidth;
   double? _triggerHeight;
-  Rect? _targetOverlayRect;
-  Rect? _targetGlobalRect;
 
   String? get errorText => widget.errorText ?? _internalError;
 
@@ -267,53 +272,45 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     final rowCacheExtent = _estimatedRowHeight() * 6;
     return Stack(
       children: [
-        Positioned.fill(
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: _handleOverlayPointerDown,
-          ),
-        ),
-        if (_targetOverlayRect != null)
-          Positioned.fromRect(
-            rect: _targetOverlayRect!,
-            child: Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (_) => _hide(),
-            ),
-          ),
         CompositedTransformFollower(
           link: _link,
+          showWhenUnlinked: false,
           targetAnchor: _openAbove ? Alignment.topLeft : Alignment.bottomLeft,
           followerAnchor: _openAbove ? Alignment.bottomLeft : Alignment.topLeft,
           offset: Offset(
             _horizontalOffset,
             (_openAbove ? -verticalOffset : verticalOffset) + _anchorOffset,
           ),
-          child: SizedBox(
-            width: _menuWidth,
-            child: _AnimatedMenuReveal(
-              openAbove: _openAbove,
-              duration: tokens.motion.standard,
-              curve: tokens.motion.standardCurve,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: _menuMaxHeight),
-                child: UiBox(
-                  key: const ValueKey<String>('ui-select-menu'),
-                  background: c.popover,
-                  border: Border.all(color: c.border),
-                  borderRadius: tokens.radius.mdAll,
-                  boxShadow: tokens.shadows.md,
-                  child: ListView.separated(
-                    controller: _scrollController,
-                    primary: false,
-                    padding: EdgeInsets.all(tokens.spacing.x1),
-                    scrollCacheExtent: ScrollCacheExtent.pixels(
-                      rowCacheExtent,
+          child: UiAnchoredOverlayTapRegion(
+            groupId: _tapRegionGroup,
+            enabled: widget.dismissOnTapOutside,
+            onDismiss: _hide,
+            child: SizedBox(
+              width: _menuWidth,
+              child: _AnimatedMenuReveal(
+                openAbove: _openAbove,
+                duration: tokens.motion.standard,
+                curve: tokens.motion.standardCurve,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: _menuMaxHeight),
+                  child: UiBox(
+                    key: const ValueKey<String>('ui-select-menu'),
+                    background: c.popover,
+                    border: Border.all(color: c.border),
+                    borderRadius: tokens.radius.mdAll,
+                    boxShadow: tokens.shadows.md,
+                    child: ListView.separated(
+                      controller: _scrollController,
+                      primary: false,
+                      padding: EdgeInsets.all(tokens.spacing.x1),
+                      scrollCacheExtent: ScrollCacheExtent.pixels(
+                        rowCacheExtent,
+                      ),
+                      itemCount: widget.options.length,
+                      separatorBuilder: (_, __) =>
+                          SizedBox(height: tokens.spacing.x1),
+                      itemBuilder: (context, i) => _buildRow(widget.options[i]),
                     ),
-                    itemCount: widget.options.length,
-                    separatorBuilder: (_, __) =>
-                        SizedBox(height: tokens.spacing.x1),
-                    itemBuilder: (context, i) => _buildRow(widget.options[i]),
                   ),
                 ),
               ),
@@ -322,15 +319,6 @@ class UiSelectState<T> extends State<UiSelect<T>> {
         ),
       ],
     );
-  }
-
-  void _handleOverlayPointerDown(PointerDownEvent event) {
-    final targetRect = _targetGlobalRect;
-    if (targetRect == null || targetRect.contains(event.position)) {
-      _hide();
-      return;
-    }
-    _hide();
   }
 
   Widget _buildRow(UiSelectOption<T> option) {
@@ -448,73 +436,78 @@ class UiSelectState<T> extends State<UiSelect<T>> {
           UiText(widget.label!, variant: UiTextVariant.label),
           SizedBox(height: tokens.spacing.x1),
         ],
-        CompositedTransformTarget(
-          key: _targetKey,
-          link: _link,
-          child: UiPressable(
-            enabled: !_disabled,
-            onPressed: _toggle,
-            semanticsLabel: widget.label ?? widget.hint,
-            builder: (context, state, _) {
-              final borderColor = hasError ? c.destructive : c.input;
-              final triggerRadius = tokens.radius.mdAll;
-              return UiFocusRing(
-                visible: (state.focused || open) && !hasError,
-                borderRadius: triggerRadius,
-                color: c.ring.withValues(alpha: 0.32),
-                width: 1,
-                offset: 1,
-                child: AnimatedContainer(
-                  key: const ValueKey<String>('ui-select-trigger'),
-                  duration: tokens.motion.fast,
-                  curve: tokens.motion.standardCurve,
-                  decoration: BoxDecoration(
-                    color: _disabled ? c.muted : c.surface,
-                    border: Border.all(color: borderColor),
-                    borderRadius: triggerRadius,
-                  ),
-                  constraints: BoxConstraints(
-                    minHeight: math.max(
-                      _minHeightFor(widget.size),
-                      open ? _triggerHeight ?? 0 : 0,
+        TapRegion(
+          groupId: _tapRegionGroup,
+          child: CompositedTransformTarget(
+            key: _targetKey,
+            link: _link,
+            child: UiPressable(
+              enabled: !_disabled,
+              onPressed: _toggle,
+              semanticsLabel: widget.label ?? widget.hint,
+              builder: (context, state, _) {
+                final borderColor = hasError ? c.destructive : c.input;
+                final triggerRadius = tokens.radius.mdAll;
+                return UiFocusRing(
+                  visible: (state.focused || open) && !hasError,
+                  borderRadius: triggerRadius,
+                  color: c.ring.withValues(alpha: 0.32),
+                  width: 1,
+                  offset: 1,
+                  child: AnimatedContainer(
+                    key: const ValueKey<String>('ui-select-trigger'),
+                    duration: tokens.motion.fast,
+                    curve: tokens.motion.standardCurve,
+                    decoration: BoxDecoration(
+                      color: _disabled ? c.muted : c.surface,
+                      border: Border.all(color: borderColor),
+                      borderRadius: triggerRadius,
                     ),
-                    minWidth:
-                        widget.shrinkWrap && open ? _triggerWidth ?? 0 : 0,
-                  ),
-                  padding: _paddingFor(widget.size, tokens),
-                  child: Row(
-                    mainAxisSize:
-                        widget.shrinkWrap ? MainAxisSize.min : MainAxisSize.max,
-                    children: [
-                      Flexible(
-                        fit: widget.shrinkWrap ? FlexFit.loose : FlexFit.tight,
-                        child: widget.valueBuilder != null
-                            ? widget.valueBuilder!(context, selected)
-                            : UiText(
-                                selected?.label ?? widget.hint ?? '',
-                                variant: UiTextVariant.body,
-                                tone: selected == null
-                                    ? UiTextTone.muted
-                                    : UiTextTone.primary,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                    constraints: BoxConstraints(
+                      minHeight: math.max(
+                        _minHeightFor(widget.size),
+                        open ? _triggerHeight ?? 0 : 0,
                       ),
-                      SizedBox(width: tokens.spacing.x2),
-                      AnimatedRotation(
-                        turns: open ? 0.5 : 0,
-                        duration: tokens.motion.fast,
-                        child: Icon(
-                          LucideIcons.chevronDown,
-                          size: 16,
-                          color: c.mutedForeground,
+                      minWidth:
+                          widget.shrinkWrap && open ? _triggerWidth ?? 0 : 0,
+                    ),
+                    padding: _paddingFor(widget.size, tokens),
+                    child: Row(
+                      mainAxisSize: widget.shrinkWrap
+                          ? MainAxisSize.min
+                          : MainAxisSize.max,
+                      children: [
+                        Flexible(
+                          fit:
+                              widget.shrinkWrap ? FlexFit.loose : FlexFit.tight,
+                          child: widget.valueBuilder != null
+                              ? widget.valueBuilder!(context, selected)
+                              : UiText(
+                                  selected?.label ?? widget.hint ?? '',
+                                  variant: UiTextVariant.body,
+                                  tone: selected == null
+                                      ? UiTextTone.muted
+                                      : UiTextTone.primary,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                         ),
-                      ),
-                    ],
+                        SizedBox(width: tokens.spacing.x2),
+                        AnimatedRotation(
+                          turns: open ? 0.5 : 0,
+                          duration: tokens.motion.fast,
+                          child: Icon(
+                            LucideIcons.chevronDown,
+                            size: 16,
+                            color: c.mutedForeground,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         if (hasError) ...[
@@ -576,8 +569,6 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     );
     if (geometry == null) return;
 
-    _targetOverlayRect = geometry.targetOverlayRect;
-    _targetGlobalRect = geometry.targetGlobalRect;
     _triggerWidth = geometry.triggerWidth;
     _triggerHeight = geometry.targetOverlayRect.height;
     _openAbove = geometry.openAbove;

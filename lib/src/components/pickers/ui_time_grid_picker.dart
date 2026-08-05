@@ -336,6 +336,7 @@ class UiTimePickerField extends StatefulWidget {
     this.enabled = true,
     this.doneLabel = 'Done',
     this.semanticsPrefix,
+    this.dismissOnTapOutside = true,
   }) : assert(
           minuteStep > 0 && 60 % minuteStep == 0,
           'minuteStep must divide 60',
@@ -354,6 +355,11 @@ class UiTimePickerField extends StatefulWidget {
   final String doneLabel;
   final String? semanticsPrefix;
 
+  /// Whether a pointer tap outside the field and picker dismisses it.
+  /// Scroll gestures keep the picker open and outside taps pass through to the
+  /// underlying control. Defaults to true.
+  final bool dismissOnTapOutside;
+
   @override
   State<UiTimePickerField> createState() => _UiTimePickerFieldState();
 }
@@ -362,13 +368,12 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
   final GlobalKey _targetKey = GlobalKey();
   final LayerLink _link = LayerLink();
   final FocusNode _focusNode = FocusNode();
+  final Object _tapRegionGroup = Object();
   OverlayEntry? _entry;
   UiTimeValue? _overlayValue;
   bool _openAbove = false;
   double _horizontalOffset = 0;
   double _menuWidth = 288;
-  Rect? _targetOverlayRect;
-  Rect? _targetGlobalRect;
 
   bool get _interactive => widget.enabled && widget.onChanged != null;
   bool get _hasError =>
@@ -416,8 +421,6 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
     _openAbove = geometry.openAbove;
     _horizontalOffset = geometry.horizontalOffset;
     _menuWidth = geometry.width;
-    _targetOverlayRect = geometry.targetOverlayRect;
-    _targetGlobalRect = geometry.targetGlobalRect;
     _entry = OverlayEntry(builder: (_) => _buildOverlay());
     overlay.insert(_entry!);
     _focusNode.requestFocus();
@@ -428,15 +431,6 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
     _entry?.remove();
     _entry = null;
     if (notify && mounted) setState(() {});
-  }
-
-  void _handleOverlayPointerDown(PointerDownEvent event) {
-    final targetRect = _targetGlobalRect;
-    if (targetRect == null || targetRect.contains(event.position)) {
-      _hide();
-      return;
-    }
-    _hide();
   }
 
   void _handleChanged(UiTimeValue value) {
@@ -462,40 +456,32 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
 
     return Stack(
       children: [
-        Positioned.fill(
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: _handleOverlayPointerDown,
-          ),
-        ),
-        if (_targetOverlayRect != null)
-          Positioned.fromRect(
-            rect: _targetOverlayRect!,
-            child: Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (_) => _hide(),
-            ),
-          ),
         CompositedTransformFollower(
           link: _link,
+          showWhenUnlinked: false,
           targetAnchor: _openAbove ? Alignment.topLeft : Alignment.bottomLeft,
           followerAnchor: _openAbove ? Alignment.bottomLeft : Alignment.topLeft,
           offset: Offset(
             _horizontalOffset,
             _openAbove ? -verticalOffset : verticalOffset,
           ),
-          child: SizedBox(
-            width: _menuWidth,
-            child: UiTimeGridPicker(
-              value: _overlayValue ?? widget.value,
-              onChanged: _handleChanged,
-              minuteStep: widget.minuteStep,
-              format: widget.format,
-              hourDisabled: widget.hourDisabled,
-              label: 'Time',
-              doneLabel: widget.doneLabel,
-              semanticsPrefix: widget.semanticsPrefix,
-              onDone: _hide,
+          child: UiAnchoredOverlayTapRegion(
+            groupId: _tapRegionGroup,
+            enabled: widget.dismissOnTapOutside,
+            onDismiss: _hide,
+            child: SizedBox(
+              width: _menuWidth,
+              child: UiTimeGridPicker(
+                value: _overlayValue ?? widget.value,
+                onChanged: _handleChanged,
+                minuteStep: widget.minuteStep,
+                format: widget.format,
+                hourDisabled: widget.hourDisabled,
+                label: 'Time',
+                doneLabel: widget.doneLabel,
+                semanticsPrefix: widget.semanticsPrefix,
+                onDone: _hide,
+              ),
             ),
           ),
         ),
@@ -535,45 +521,48 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
           ),
           SizedBox(height: tokens.spacing.x2),
         ],
-        CompositedTransformTarget(
-          link: _link,
-          child: UiPressable(
-            key: _targetKey,
-            enabled: _interactive,
-            onPressed: _toggle,
-            focusNode: _focusNode,
-            semanticsLabel: widget.label ?? widget.hint,
-            minTapSize: 44,
-            builder: (context, state, _) {
-              return UiFocusRing(
-                visible: state.focused && !_hasError,
-                borderRadius: tokens.radius.mdAll,
-                child: UiBox(
-                  background: bg,
-                  border: Border.all(color: borderColor),
+        TapRegion(
+          groupId: _tapRegionGroup,
+          child: CompositedTransformTarget(
+            link: _link,
+            child: UiPressable(
+              key: _targetKey,
+              enabled: _interactive,
+              onPressed: _toggle,
+              focusNode: _focusNode,
+              semanticsLabel: widget.label ?? widget.hint,
+              minTapSize: 44,
+              builder: (context, state, _) {
+                return UiFocusRing(
+                  visible: state.focused && !_hasError,
                   borderRadius: tokens.radius.mdAll,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.x3,
-                    vertical: tokens.spacing.x2,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.clock3, size: 18, color: fg),
-                      SizedBox(width: tokens.spacing.x2),
-                      Expanded(
-                        child: UiText(
-                          displayValue,
-                          variant: UiTextVariant.body,
-                          tone: valueTone,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  child: UiBox(
+                    background: bg,
+                    border: Border.all(color: borderColor),
+                    borderRadius: tokens.radius.mdAll,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.x3,
+                      vertical: tokens.spacing.x2,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.clock3, size: 18, color: fg),
+                        SizedBox(width: tokens.spacing.x2),
+                        Expanded(
+                          child: UiText(
+                            displayValue,
+                            variant: UiTextVariant.body,
+                            tone: valueTone,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         if (helperText != null && helperText.isNotEmpty) ...[

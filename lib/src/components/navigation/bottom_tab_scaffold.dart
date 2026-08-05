@@ -6,6 +6,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../foundation/intl/intl.dart';
 import '../../foundation/layout/layout.dart';
+import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../surfaces/ui_drawer.dart';
 import '../surfaces/ui_responsive_navigation_scaffold.dart';
@@ -406,7 +407,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
+    final content = LayoutBuilder(
       builder: (context, constraints) {
         final overflow = widget.automaticOverflow
             ? _resolveOverflowLayout(context, constraints)
@@ -439,23 +440,33 @@ class _BottomTabBodyState extends State<_BottomTabBody>
             Positioned(
               left: 0,
               right: 0,
-              bottom: 0,
-              child: Transform.translate(
-                offset: Offset(0, -keyboardInset),
-                child: RepaintBoundary(
-                  child: UiBottomTabBar(
-                    items: resolvedItems,
-                    currentIndex: resolvedCurrentIndex,
-                    onChanged: resolvedChanged,
-                    backgroundColor: widget.backgroundColor,
-                    layout: widget.layout,
-                    adaptiveBreakpoint: widget.adaptiveBreakpoint,
-                    floatingMaxWidth: widget.floatingMaxWidth,
-                    floatingHorizontalMargin: widget.floatingHorizontalMargin,
-                    floatingBottomMargin: widget.floatingBottomMargin,
-                    equalWidthsWhenLastSelected: overflow != null,
-                    accessory: _visibleAccessory,
-                    accessoryPresence: _accessoryPresence.value,
+              // Position the navigation chrome in its real hit-test location.
+              // Translating it visually above the keyboard leaves the parent
+              // hit region at the screen bottom on iOS, allowing taps through.
+              bottom: keyboardInset,
+              child: SizedBox(
+                height: bodyBottomInset,
+                child: UiLayeredOverlayPortal(
+                  layer: UiOverlayLayer.navigationChrome,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: RepaintBoundary(
+                      child: UiBottomTabBar(
+                        items: resolvedItems,
+                        currentIndex: resolvedCurrentIndex,
+                        onChanged: resolvedChanged,
+                        backgroundColor: widget.backgroundColor,
+                        layout: widget.layout,
+                        adaptiveBreakpoint: widget.adaptiveBreakpoint,
+                        floatingMaxWidth: widget.floatingMaxWidth,
+                        floatingHorizontalMargin:
+                            widget.floatingHorizontalMargin,
+                        floatingBottomMargin: widget.floatingBottomMargin,
+                        equalWidthsWhenLastSelected: overflow != null,
+                        accessory: _visibleAccessory,
+                        accessoryPresence: _accessoryPresence.value,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -464,6 +475,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
         );
       },
     );
+    return content;
   }
 
   _BottomOverflowLayout? _resolveOverflowLayout(
@@ -565,6 +577,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     final bottomOffset = resolveUiEdgeAwareBottomOffset(
       context,
       minimum: widget.floatingBottomMargin + tokens.spacing.x1,
+      reduceSafeArea: false,
     );
     return _kBottomTabScaffoldBarHeight +
         _kBottomTabScaffoldDockPadding * 2 +

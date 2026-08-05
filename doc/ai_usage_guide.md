@@ -258,6 +258,46 @@ Prefer:
 - `UiSwitch` for immediate on/off settings.
 - `UiFilterChip` for filter toggles.
 
+## Feedback Effects And Indicators
+
+Use `UiComponentShadow` when a compact control needs the same theme-aware
+clearance treatment as the stock refresh indicator. This is a separation
+effect, not elevation; use `tokens.shadows.*` when a surface should appear
+raised.
+
+```dart
+UiComponentShadow(
+  shape: BoxShape.circle,
+  child: permissionControl,
+);
+```
+
+Use `UiLegibilityShadow` for text, icons, or controls floating directly over
+scrolling content. Its alpha-following shadow stays compact by default; raise
+`spreadRadius` and `blurSigma` only for high-overlap chrome such as a title
+that collapses into the center of a navigation bar.
+
+```dart
+UiLegibilityShadow(
+  blurSigma: 4,
+  spreadRadius: 2.5,
+  child: title,
+);
+```
+
+The `UiRefreshIndicator` visual can also be reused independently of a
+pull-to-refresh host:
+
+```dart
+const UiRefreshIndicator.refreshing();
+const UiRefreshIndicator.completed();
+UiRefreshIndicator.failed(error: error);
+```
+
+This is useful for short waits that should share refresh feedback styling,
+such as waiting for record permission. Keep the surrounding status label or
+live-region semantics owned by the feature so it describes the actual task.
+
 Do not wrap enabled controls in `IgnorePointer` or `Opacity` to fake disabled
 state. Use the component's `enabled`, `loading`, and callback parameters.
 

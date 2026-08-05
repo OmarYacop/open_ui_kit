@@ -95,31 +95,39 @@ class UiMessageUtilityStrip extends StatelessWidget {
           UiBox(height: 1, background: tokens.colors.border),
           Padding(
             padding: EdgeInsets.all(tokens.spacing.x2),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var index = 0; index < actions.length; index++) ...[
-                  if (index > 0) SizedBox(width: tokens.spacing.x1),
-                  Expanded(
-                    child: TweenAnimationBuilder<double>(
-                      key: ValueKey(actions[index].id),
-                      tween: Tween(begin: reduceMotion ? 1 : .88, end: 1),
-                      duration: reduceMotion
-                          ? Duration.zero
-                          : Duration(milliseconds: 180 + (index * 28)),
-                      curve: Curves.easeOutQuart,
-                      builder: (context, progress, child) => Opacity(
-                        opacity: progress,
-                        child: Transform.translate(
-                          offset: Offset(0, (1 - progress) * 8),
-                          child: child,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = actions.length.clamp(1, 4);
+                final gap = tokens.spacing.x1;
+                final itemWidth =
+                    (constraints.maxWidth - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    for (var index = 0; index < actions.length; index++)
+                      SizedBox(
+                        width: itemWidth,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(actions[index].id),
+                          tween: Tween(begin: reduceMotion ? 1 : .88, end: 1),
+                          duration: reduceMotion
+                              ? Duration.zero
+                              : Duration(milliseconds: 180 + (index * 28)),
+                          curve: Curves.easeOutQuart,
+                          builder: (context, progress, child) => Opacity(
+                            opacity: progress,
+                            child: Transform.translate(
+                              offset: Offset(0, (1 - progress) * 8),
+                              child: child,
+                            ),
+                          ),
+                          child: _UtilityAction(action: actions[index]),
                         ),
                       ),
-                      child: _UtilityAction(action: actions[index]),
-                    ),
-                  ),
-                ],
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ],

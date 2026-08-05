@@ -359,5 +359,99 @@ void main() {
       expect(find.text('Learner 199'), findsNothing);
       expect(built.length, lessThan(200));
     });
+
+    testWidgets('non-scrollable data table delegates scrolling to its parent',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiDataTable.lazy(
+            columns: const [UiDataColumn(label: 'Learner')],
+            rowCount: 3,
+            scrollable: false,
+            rowBuilder: (context, index) => UiDataRow(
+              cells: [Text('Learner $index')],
+            ),
+          ),
+        ),
+      );
+
+      final rowsList = tester.widget<ListView>(
+        find.descendant(
+          of: find.byType(UiDataTable),
+          matching: find.byType(ListView),
+        ),
+      );
+      expect(rowsList.shrinkWrap, isTrue);
+      expect(rowsList.physics, isA<NeverScrollableScrollPhysics>());
+      expect(find.text('Learner 2'), findsOneWidget);
+    });
+
+    testWidgets('data table clips rows inside its rounded border',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const UiDataTable(
+            columns: [
+              UiDataColumn(label: 'Learner', alignment: Alignment.center),
+            ],
+            rows: [
+              UiDataRow(cells: [Text('Amina')]),
+              UiDataRow(cells: [Text('Yusuf')]),
+            ],
+          ),
+        ),
+      );
+
+      final roundedClip = tester.widget<ClipRRect>(
+        find.descendant(
+          of: find.byType(UiDataTable),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+      expect(roundedClip.clipBehavior, Clip.antiAlias);
+      expect(
+        find.ancestor(
+          of: find.text('Learner'),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Align && widget.alignment == Alignment.center,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Amina'),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Align && widget.alignment == Alignment.center,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(UiDataTable),
+          matching: find.byWidgetPredicate((widget) {
+            if (widget case UiBox(border: final Border border)) {
+              return border.top.style != BorderStyle.none &&
+                  border.left.style == BorderStyle.none &&
+                  border.right.style == BorderStyle.none &&
+                  border.bottom.style == BorderStyle.none;
+            }
+            return false;
+          }),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(UiDataTable),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Padding && widget.padding == const EdgeInsets.all(1),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

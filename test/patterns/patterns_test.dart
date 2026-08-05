@@ -217,6 +217,11 @@ void main() {
       expect(find.text('Title'), findsOneWidget);
       expect(find.text('body'), findsOneWidget);
       expect(find.text('bot'), findsOneWidget);
+      expect(find.byKey(const Key('ui_page_top_bar_shadow')), findsOneWidget);
+      expect(
+        find.byKey(const Key('ui_page_bottom_bar_shadow')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('UiAppBar resolves brand logo for light and dark themes',
@@ -574,6 +579,42 @@ void main() {
       expect(
         cards.map((card) => card.variant),
         contains(UiCardVariant.standard),
+      );
+    });
+
+    testWidgets('selected rows absorb adjacent separators', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const SizedBox(
+            width: 390,
+            height: 700,
+            child: UiSettingsList(
+              groups: [
+                UiSettingsGroup(
+                  items: [
+                    UiSettingsItem(label: 'English'),
+                    UiSettingsItem(
+                      label: 'Español',
+                      selected: true,
+                      showSelectedOnPhone: true,
+                    ),
+                    UiSettingsItem(label: 'Français'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(UiDivider), findsNothing);
+      expect(
+        find.byKey(const ValueKey('ui-settings-selected-separator-1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('ui-settings-selected-separator-2')),
+        findsOneWidget,
       );
     });
 
@@ -1279,6 +1320,15 @@ void main() {
         ),
       );
 
+      expect(
+        find.byKey(const Key('ui_navigation_large_title_shadow')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('ui_navigation_tracking_actions_shadow')),
+        findsOneWidget,
+      );
+
       final resting = tester.getTopRight(
         find.byKey(const Key('tracked-title-action')),
       );
@@ -1415,6 +1465,16 @@ void main() {
         titleOpacity(const Key('ui_navigation_compact_title')),
         greaterThan(0.9),
       );
+      final compactShadow = tester.widget<UiLegibilityShadow>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('ui_navigation_compact_title')),
+              matching: find.byType(UiLegibilityShadow),
+            )
+            .first,
+      );
+      expect(compactShadow.blurSigma, greaterThan(2));
+      expect(compactShadow.spreadRadius, greaterThan(0.5));
     });
 
     testWidgets('UiSliverNavigationBar stays pinned for the full scroll view',
@@ -1549,6 +1609,14 @@ void main() {
       );
       expect(stickyRect.top, closeTo(52, 0.1));
       expect(find.byType(BackdropFilter), findsOneWidget);
+      expect(
+        find.byKey(const Key('ui_sliver_navigation_bar_shadow')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('ui_sliver_sticky_region_shadow')),
+        findsOneWidget,
+      );
       final fade = tester.widget<AnimatedOpacity>(
         find.descendant(
           of: find.byKey(const Key('ui_sliver_sticky_region_fade')),

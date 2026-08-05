@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/effects/ui_component_shadow.dart';
 import '../../foundation/layout/ui_navigation_chrome_scope.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
@@ -194,6 +195,12 @@ class _UiStickyRegionDelegate extends SliverPersistentHeaderDelegate {
     if (useSafeArea) {
       control = SafeArea(top: false, bottom: false, child: control);
     }
+
+    control = UiComponentShadow(
+      key: const Key('ui_sliver_sticky_region_shadow'),
+      color: transitionColor.withValues(alpha: activated ? 0.96 : 0),
+      child: control,
+    );
 
     return Stack(
       fit: StackFit.expand,

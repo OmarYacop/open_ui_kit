@@ -312,6 +312,7 @@ class UiBottomTabBar extends StatelessWidget {
         final bottomOffset = resolveUiEdgeAwareBottomOffset(
           context,
           minimum: floatingBottomMargin + tokens.spacing.x1,
+          reduceSafeArea: false,
         );
 
         return Padding(
@@ -610,15 +611,18 @@ class _BlurredTabSurface extends StatelessWidget {
         child: surface,
       );
     }
-    return RepaintBoundary(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: borderRadius,
-          boxShadow: boxShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: borderRadius,
-          child: surface,
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      child: RepaintBoundary(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            boxShadow: boxShadow,
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: surface,
+          ),
         ),
       ),
     );

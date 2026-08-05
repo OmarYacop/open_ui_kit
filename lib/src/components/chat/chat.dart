@@ -5,3 +5,4 @@ export 'message.dart';
 export 'message_scroller.dart';
 export 'message_scroll_controls.dart';
 export 'message_utility_strip.dart';
+export 'typing_indicator.dart';

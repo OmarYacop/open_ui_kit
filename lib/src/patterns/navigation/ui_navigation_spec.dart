@@ -14,6 +14,12 @@ enum UiNavigationSurface {
   /// Opaque surface color — no blur, sharp edge.
   solid,
 
+  /// Opaque page background color.
+  ///
+  /// Use this when navigation chrome should read as a continuation of the
+  /// surrounding page rather than as an elevated surface.
+  pageBackground,
+
   /// Surface-color gradient that lets scrolling content recede below chrome
   /// without live backdrop sampling.
   edgeFade,

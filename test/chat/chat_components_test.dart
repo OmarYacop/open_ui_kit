@@ -1,10 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/components/chat.dart';
+import 'package:open_ui_kit/components/data_display.dart';
 import 'package:open_ui_kit/foundation.dart';
 import 'package:open_ui_kit/patterns/chat.dart';
 
 void main() {
+  testWidgets('typing indicator summarizes and announces multiple users', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _host(
+        const UiTypingIndicator(
+          users: [
+            UiTypingUser(id: 1, name: 'Ada'),
+            UiTypingUser(id: 2, name: 'Grace'),
+            UiTypingUser(id: 3, name: 'Linus'),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('Ada, Grace and 1 other are typing'), findsOneWidget);
+    expect(find.byType(UiAvatar), findsNWidgets(3));
+    final typingSemantics = find.bySemanticsLabel(
+      'Ada, Grace and 1 other are typing',
+    );
+    expect(
+      tester.getSemantics(typingSemantics),
+      matchesSemantics(
+        label: 'Ada, Grace and 1 other are typing',
+        isLiveRegion: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('typing indicator collapses when nobody is typing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(const UiTypingIndicator(users: [])),
+    );
+
+    expect(find.byType(UiAvatar), findsNothing);
+    expect(find.byType(UiText), findsNothing);
+  });
+
+  testWidgets('typing indicator honors custom copy and reduced motion', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: UiTypingIndicator(
+            users: const [UiTypingUser(id: 1, name: 'Ada')],
+            labelBuilder: (users) => '${users.first.name} is composing',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Ada is composing'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('bubble constrains width and aligns to the logical end', (
     tester,
   ) async {

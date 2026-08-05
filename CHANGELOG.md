@@ -17,6 +17,13 @@
 
 ### Added
 
+- Added `UiTypingIndicator` with animated multi-user presence, stacked avatars,
+  localized labels, live-region semantics, RTL support, and reduced motion.
+- Anchored dropdowns, selects, comboboxes, and time pickers are now non-modal:
+  parent scrolling keeps them open and attached to their trigger, while a
+  genuine outside tap dismisses without blocking the tapped control.
+- Dropdown menus now use the semantic floating overlay layer, below modal
+  surfaces and bottom navigation chrome.
 - Promoted `UiIntent` and `UiIntentPalette` to the public foundation API. New
   code should import `package:open_ui_kit/foundation.dart` or the main
   `package:open_ui_kit/open_ui_kit.dart` barrel.

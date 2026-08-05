@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/effects/ui_component_shadow.dart';
 import '../../foundation/intl/intl.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/layout/ui_keyboard_geometry.dart';
@@ -87,9 +88,19 @@ class UiSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (showHandle) const UiSheetHandle(),
-          if (header != null) header!,
+          if (header != null)
+            UiComponentShadow(
+              key: const Key('ui_sheet_header_shadow'),
+              color: c.card.withValues(alpha: 0.96),
+              child: header!,
+            ),
           Flexible(child: Padding(padding: bodyPadding, child: child)),
-          if (footer != null) footer!,
+          if (footer != null)
+            UiComponentShadow(
+              key: const Key('ui_sheet_footer_shadow'),
+              color: c.card.withValues(alpha: 0.96),
+              child: footer!,
+            ),
         ],
       ),
     );

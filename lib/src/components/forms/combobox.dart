@@ -48,6 +48,7 @@ class UiCombobox<T> extends StatefulWidget {
     this.valueBuilder,
     this.filter,
     this.shrinkWrap = false,
+    this.dismissOnTapOutside = true,
   });
 
   final List<UiSelectOption<T>> options;
@@ -65,6 +66,10 @@ class UiCombobox<T> extends StatefulWidget {
   final UiComboboxFilter<T>? filter;
   final bool shrinkWrap;
 
+  /// Whether losing focus or tapping outside dismisses the suggestion menu.
+  /// Scroll gestures keep the menu open. Defaults to true.
+  final bool dismissOnTapOutside;
+
   @override
   State<UiCombobox<T>> createState() => _UiComboboxState<T>();
 }
@@ -75,6 +80,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _queryController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final Object _tapRegionGroup = Object();
 
   OverlayEntry? _entry;
   StateSetter? _overlaySetState;
@@ -86,8 +92,6 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   double _horizontalOffset = 0;
   double _anchorOffset = 0;
   double? _triggerWidth;
-  Rect? _targetOverlayRect;
-  Rect? _targetGlobalRect;
 
   bool get _disabled => !widget.enabled || widget.onChanged == null;
 
@@ -171,7 +175,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
         extentOffset: _queryController.text.length,
       );
       _show();
-    } else if (_entry != null) {
+    } else if (_entry != null && widget.dismissOnTapOutside) {
       _hide(restoreSelection: !_committingSelection);
     }
   }
@@ -244,72 +248,67 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
 
     return Stack(
       children: [
-        Positioned.fill(
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: _handleOverlayPointerDown,
-          ),
-        ),
-        if (_targetOverlayRect != null)
-          Positioned.fromRect(
-            rect: _targetOverlayRect!,
-            child: Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (_) => _hide(),
-            ),
-          ),
         CompositedTransformFollower(
           link: _link,
+          showWhenUnlinked: false,
           targetAnchor: _openAbove ? Alignment.topLeft : Alignment.bottomLeft,
           followerAnchor: _openAbove ? Alignment.bottomLeft : Alignment.topLeft,
           offset: Offset(
             _horizontalOffset,
             (_openAbove ? -verticalOffset : verticalOffset) + _anchorOffset,
           ),
-          child: SizedBox(
-            width: _menuWidth,
-            child: _ComboboxMenuReveal(
-              openAbove: _openAbove,
-              duration: tokens.motion.standard,
-              curve: tokens.motion.standardCurve,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: _menuMaxHeight),
-                child: UiBox(
-                  key: const ValueKey<String>('ui-combobox-menu'),
-                  background: c.popover,
-                  border: Border.all(color: c.border),
-                  borderRadius: tokens.radius.mdAll,
-                  boxShadow: tokens.shadows.md,
-                  padding: EdgeInsets.all(tokens.spacing.x1),
-                  child: indexes.isEmpty
-                      ? Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.spacing.x3,
-                            vertical: tokens.spacing.x4,
+          child: UiAnchoredOverlayTapRegion(
+            groupId: _tapRegionGroup,
+            enabled: widget.dismissOnTapOutside,
+            onDismiss: () {
+              _searchFocusNode.unfocus();
+              _hide(restoreSelection: true);
+            },
+            child: SizedBox(
+              width: _menuWidth,
+              child: _ComboboxMenuReveal(
+                openAbove: _openAbove,
+                duration: tokens.motion.standard,
+                curve: tokens.motion.standardCurve,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: _menuMaxHeight),
+                  child: UiBox(
+                    key: const ValueKey<String>('ui-combobox-menu'),
+                    background: c.popover,
+                    border: Border.all(color: c.border),
+                    borderRadius: tokens.radius.mdAll,
+                    boxShadow: tokens.shadows.md,
+                    padding: EdgeInsets.all(tokens.spacing.x1),
+                    child: indexes.isEmpty
+                        ? Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: tokens.spacing.x3,
+                              vertical: tokens.spacing.x4,
+                            ),
+                            child: UiText(
+                              widget.emptyText,
+                              variant: UiTextVariant.body,
+                              tone: UiTextTone.muted,
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: _scrollController,
+                            primary: false,
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            scrollCacheExtent: ScrollCacheExtent.pixels(
+                              rowCacheExtent,
+                            ),
+                            itemCount: indexes.length,
+                            separatorBuilder: (_, __) =>
+                                SizedBox(height: tokens.spacing.x1),
+                            itemBuilder: (context, i) {
+                              final option = widget.options[indexes[i]];
+                              return _buildRow(option);
+                            },
                           ),
-                          child: UiText(
-                            widget.emptyText,
-                            variant: UiTextVariant.body,
-                            tone: UiTextTone.muted,
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : ListView.separated(
-                          controller: _scrollController,
-                          primary: false,
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          scrollCacheExtent: ScrollCacheExtent.pixels(
-                            rowCacheExtent,
-                          ),
-                          itemCount: indexes.length,
-                          separatorBuilder: (_, __) =>
-                              SizedBox(height: tokens.spacing.x1),
-                          itemBuilder: (context, i) {
-                            final option = widget.options[indexes[i]];
-                            return _buildRow(option);
-                          },
-                        ),
+                  ),
                 ),
               ),
             ),
@@ -317,13 +316,6 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
         ),
       ],
     );
-  }
-
-  void _handleOverlayPointerDown(PointerDownEvent event) {
-    final targetRect = _targetGlobalRect;
-    if (targetRect != null && targetRect.contains(event.position)) return;
-    _searchFocusNode.unfocus();
-    _hide(restoreSelection: true);
   }
 
   Widget _buildRow(UiSelectOption<T> option) {
@@ -434,34 +426,38 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
           UiText(widget.label!, variant: UiTextVariant.label),
           SizedBox(height: tokens.spacing.x1),
         ],
-        CompositedTransformTarget(
-          key: _targetKey,
-          link: _link,
-          child: SizedBox(
-            key: const ValueKey<String>('ui-combobox-trigger'),
-            width: widget.shrinkWrap ? _triggerWidth : null,
-            child: UiInput(
-              controller: _queryController,
-              focusNode: _searchFocusNode,
-              enabled: !_disabled,
-              hint: widget.searchHint.isEmpty ? widget.hint : widget.searchHint,
-              size: widget.size,
-              leading: preview,
-              trailing: AnimatedRotation(
-                turns: open ? 0.5 : 0,
-                duration: tokens.motion.fast,
-                child: Icon(
-                  LucideIcons.chevronDown,
-                  size: 16,
-                  color: tokens.colors.mutedForeground,
+        TapRegion(
+          groupId: _tapRegionGroup,
+          child: CompositedTransformTarget(
+            key: _targetKey,
+            link: _link,
+            child: SizedBox(
+              key: const ValueKey<String>('ui-combobox-trigger'),
+              width: widget.shrinkWrap ? _triggerWidth : null,
+              child: UiInput(
+                controller: _queryController,
+                focusNode: _searchFocusNode,
+                enabled: !_disabled,
+                hint:
+                    widget.searchHint.isEmpty ? widget.hint : widget.searchHint,
+                size: widget.size,
+                leading: preview,
+                trailing: AnimatedRotation(
+                  turns: open ? 0.5 : 0,
+                  duration: tokens.motion.fast,
+                  child: Icon(
+                    LucideIcons.chevronDown,
+                    size: 16,
+                    color: tokens.colors.mutedForeground,
+                  ),
                 ),
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) {
+                  if (indexes.isNotEmpty) {
+                    _pick(widget.options[indexes.first]);
+                  }
+                },
               ),
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) {
-                if (indexes.isNotEmpty) {
-                  _pick(widget.options[indexes.first]);
-                }
-              },
             ),
           ),
         ),
@@ -487,8 +483,6 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     );
     if (geometry == null) return;
 
-    _targetOverlayRect = geometry.targetOverlayRect;
-    _targetGlobalRect = geometry.targetGlobalRect;
     _triggerWidth = geometry.triggerWidth;
     _openAbove = geometry.openAbove;
     _menuMaxHeight = geometry.maxHeight;

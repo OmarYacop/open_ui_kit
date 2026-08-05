@@ -1627,12 +1627,19 @@ void main() {
       await tester.tap(find.text('Pick one'));
       await tester.pump();
       expect(find.text('One'), findsOneWidget);
+      final menuTopBefore = tester
+          .getRect(find.byKey(const ValueKey<String>('ui-select-menu')))
+          .top;
 
       await tester.dragFrom(const Offset(20, 280), const Offset(0, -180));
       await tester.pump();
 
       expect(scrollController.offset, greaterThan(0));
-      expect(find.text('One'), findsNothing);
+      expect(find.text('One'), findsOneWidget);
+      final menuTopAfter = tester
+          .getRect(find.byKey(const ValueKey<String>('ui-select-menu')))
+          .top;
+      expect(menuTopAfter, lessThan(menuTopBefore));
     });
 
     testWidgets('open dropdown closes when the trigger is tapped again',

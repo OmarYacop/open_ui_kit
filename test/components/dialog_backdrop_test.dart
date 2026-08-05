@@ -3,10 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) => MaterialApp(
-      home: UiTheme(
+      builder: (context, appChild) => UiTheme(
         tokens: UiThemeData.light(effects: UiEffectsTokens.full),
-        child: Scaffold(body: child),
+        child: appChild ?? const SizedBox.shrink(),
       ),
+      home: Scaffold(body: child),
     );
 
 void main() {

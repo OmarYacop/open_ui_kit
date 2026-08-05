@@ -348,10 +348,15 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
             );
           },
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return UiNavigationTransition(
+            return AnimatedBuilder(
               animation: animation,
-              style: widget.phoneTransitionStyle,
               child: child,
+              builder: (context, child) => UiNavigationTransition(
+                animation: animation,
+                style: widget.phoneTransitionStyle,
+                reverse: animation.status == AnimationStatus.reverse,
+                child: child!,
+              ),
             );
           },
           transitionDuration: widget.transitionDuration.resolve(context),

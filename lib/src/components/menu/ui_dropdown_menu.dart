@@ -81,9 +81,11 @@ class UiMenuSubmenu extends UiMenuNode {
 
 /// Dropdown menu surface + trigger.
 ///
-/// The [trigger] widget is made tappable; on tap (and optionally long
-/// press) an overlay with the [items] renders below. Keyboard users can
-/// move up/down through the rows and activate them with Enter/Space.
+/// The [trigger] widget is made tappable; on tap (and optionally long press)
+/// an overlay with the [items] renders below. When [openOnLongPress] is true,
+/// the initiating pointer can drag across items and release to select one.
+/// Keyboard users can move up/down through the rows and activate them with
+/// Enter/Space.
 class UiDropdownMenu extends StatefulWidget {
   const UiDropdownMenu({
     super.key,
@@ -93,14 +95,23 @@ class UiDropdownMenu extends StatefulWidget {
     this.maxWidth = 320,
     this.openOnLongPress = false,
     this.closeOnSelect = true,
+    this.dismissOnTapOutside = true,
   });
 
   final Widget trigger;
   final List<UiMenuNode> items;
   final double minWidth;
   final double maxWidth;
+
+  /// Opens the menu on long press and enables drag-to-select for that press.
   final bool openOnLongPress;
   final bool closeOnSelect;
+
+  /// Whether a pointer tap outside the trigger and menu dismisses it.
+  ///
+  /// Outside taps never block the underlying control. Scroll and drag gestures
+  /// do not dismiss the menu. Defaults to true.
+  final bool dismissOnTapOutside;
 
   @override
   State<UiDropdownMenu> createState() => _UiDropdownMenuState();
@@ -108,17 +119,23 @@ class UiDropdownMenu extends StatefulWidget {
 
 class _UiDropdownMenuState extends State<UiDropdownMenu> {
   final GlobalKey _targetKey = GlobalKey();
-  final LayerLink _link = LayerLink();
   final FocusScopeNode _focusScope = FocusScopeNode(debugLabel: 'UiMenu');
+  final Object _tapRegionGroup = Object();
   OverlayEntry? _entry;
   int? _focusIndex;
+  final List<GlobalKey> _itemKeys = <GlobalKey>[];
+  int? _activePointer;
+  bool _dragSelecting = false;
   // Placement state — set by `_resolveOverlayPlacement` right before
   // inserting the overlay entry. Mirrors the same idea as `UiSelect`:
   // if there's more room above the trigger than below, flip the menu.
   bool _openAbove = false;
   double _menuMaxHeight = 360;
+  double _menuWidth = 220;
+  bool _contentFits = true;
   double? _triggerWidth;
-  Rect? _targetGlobalRect;
+  double _overlayLeft = 0;
+  double _overlayTop = 0;
 
   @override
   void dispose() {
@@ -143,6 +160,15 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
     return acc;
   }
 
+  void _syncItemKeys(int length) {
+    while (_itemKeys.length < length) {
+      _itemKeys.add(GlobalKey());
+    }
+    if (_itemKeys.length > length) {
+      _itemKeys.removeRange(length, _itemKeys.length);
+    }
+  }
+
   void _toggle() {
     if (_entry != null) {
       _close();
@@ -152,14 +178,19 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
   }
 
   void _open() {
-    final overlay = Overlay.maybeOf(context);
+    final overlay = UiLayeredOverlay.maybeOf(
+          context,
+          UiOverlayLayer.floating,
+        ) ??
+        Overlay.maybeOf(context);
     if (overlay == null) return;
-    _focusIndex = 0;
+    final items = _flatItems();
+    _syncItemKeys(items.length);
+    _focusIndex = items.isEmpty ? null : 0;
     _resolveOverlayPlacement(overlay);
-    final capturedThemes = InheritedTheme.capture(
-      from: context,
-      to: overlay.context,
-    );
+    // Semantic layer overlays are siblings of the page subtree rather than
+    // ancestors, so capture all inherited themes at the trigger boundary.
+    final capturedThemes = InheritedTheme.capture(from: context, to: null);
     _entry = OverlayEntry(
       builder: (overlayContext) => capturedThemes.wrap(
         UiScrollConfiguration(child: _buildOverlay(overlayContext)),
@@ -177,35 +208,182 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
   /// logic used by `UiSelect` so both overlays behave the same when
   /// they're near the top or bottom of the screen.
   void _resolveOverlayPlacement(OverlayState overlay) {
-    // Rough height estimate — menus mix items, separators, and group
-    // captions so an exact measurement is impractical without a dry
-    // layout pass. 40pt per node is close enough for the ceiling we
-    // clamp to, and the inner scroll view handles overflow either way.
-    final estimated = widget.items.length * 40.0 + 16.0;
-    final ceiling = math.min(360.0, estimated);
+    final tokens = UiThemeTokens.of(context);
+    final textScaler =
+        MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
+    final bodyStyle = tokens.typography.body;
+    final captionStyle = tokens.typography.caption;
+    final surfaceInset = tokens.spacing.x2 / 1.5;
+    final itemGap = tokens.spacing.x1;
+    final bodyHeight =
+        textScaler.scale(bodyStyle.fontSize ?? 14) * (bodyStyle.height ?? 1) +
+            tokens.spacing.x3;
+    final captionHeight = textScaler.scale(captionStyle.fontSize ?? 12) *
+            (captionStyle.height ?? 1) +
+        tokens.spacing.x3;
+
+    double nodeHeight(UiMenuNode node) => switch (node) {
+          UiMenuItem() || UiMenuSubmenu() => bodyHeight,
+          UiMenuSeparator() => 1 + tokens.spacing.x2,
+          UiMenuGroup() => (node.label == null ? 0 : captionHeight) +
+              node.items.length * bodyHeight +
+              math.max(0, node.items.length - 1) * itemGap,
+        };
+
+    // Match shadcn's p-1 content inset. Unlike the previous fixed 360px
+    // ceiling, the desired height accounts for every row inside groups and
+    // lets a menu use all of the safe viewport when it is available.
+    final estimated = widget.items.fold<double>(
+          surfaceInset * 2,
+          (height, node) => height + nodeHeight(node),
+        ) +
+        math.max(0, widget.items.length - 1) * itemGap;
+    final desiredWidth = _preferredMenuWidth(
+      tokens: tokens,
+      textScaler: textScaler,
+      surfaceInset: surfaceInset,
+    );
     final geometry = resolveUiAnchoredOverlayGeometry(
       context: context,
       targetKey: _targetKey,
       overlay: overlay,
       desiredHeight: estimated,
-      maxHeight: ceiling,
-      crampedAvailableHeight: 120,
-      allowOverflowWhenCramped: true,
+      maxHeight: estimated,
+      desiredWidth: desiredWidth,
+      minWidth: math.min(widget.minWidth, desiredWidth),
     );
     if (geometry == null) return;
 
-    _targetGlobalRect = geometry.targetGlobalRect;
     _triggerWidth = geometry.triggerWidth;
     _openAbove = geometry.openAbove;
-    _menuMaxHeight = geometry.maxHeight;
+    // Geometry describes the complete surface. The constraints below apply
+    // inside the menu's content inset on each edge.
+    _menuMaxHeight = math.max(0, geometry.maxHeight - surfaceInset * 2);
+    _menuWidth = math.max(
+      0,
+      math.min(desiredWidth, geometry.width) - surfaceInset * 2,
+    );
+    _contentFits = estimated <= geometry.maxHeight + 0.5;
+    final outerHeight = math.min(estimated, geometry.maxHeight);
+    _overlayLeft = geometry.targetOverlayRect.left + geometry.horizontalOffset;
+    _overlayTop = geometry.openAbove
+        ? geometry.targetOverlayRect.top - geometry.gap - outerHeight
+        : geometry.targetOverlayRect.bottom + geometry.gap;
+  }
+
+  double _preferredMenuWidth({
+    required UiThemeTokens tokens,
+    required TextScaler textScaler,
+    required double surfaceInset,
+  }) {
+    double textWidth(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: textScaler,
+        maxLines: 1,
+      )..layout();
+      return painter.width;
+    }
+
+    final rowPadding = tokens.spacing.x2 * 2;
+    final bodyStyle = tokens.typography.body;
+    final captionStyle = tokens.typography.caption;
+
+    double itemWidth(UiMenuItem item) {
+      var width = rowPadding + textWidth(item.label, bodyStyle);
+      if (item.leading != null) width += 16 + tokens.spacing.x2;
+      if (item.loading) {
+        width += tokens.spacing.x3 + 14;
+      } else if (item.shortcut != null) {
+        width +=
+            tokens.spacing.x3 + textWidth(item.shortcut!.label, captionStyle);
+      }
+      return width;
+    }
+
+    double nodeWidth(UiMenuNode node) => switch (node) {
+          UiMenuItem() => itemWidth(node),
+          UiMenuSubmenu() => rowPadding +
+              textWidth(node.label, bodyStyle) +
+              (node.leading == null ? 0 : 16 + tokens.spacing.x2) +
+              tokens.spacing.x3 +
+              16,
+          UiMenuSeparator() => 0,
+          UiMenuGroup() => math.max(
+              node.label == null
+                  ? 0
+                  : rowPadding + textWidth(node.label!, captionStyle),
+              node.items.fold<double>(
+                0,
+                (width, item) => math.max(width, itemWidth(item)),
+              ),
+            ),
+        };
+
+    final contentWidth = widget.items.fold<double>(
+      0,
+      (width, node) => math.max(width, nodeWidth(node)),
+    );
+    return math.min(
+      widget.maxWidth,
+      math.max(widget.minWidth, contentWidth + surfaceInset * 2),
+    );
   }
 
   void _close({bool notify = true}) {
     final entry = _entry;
     _entry = null;
     _focusIndex = null;
+    _dragSelecting = false;
     entry?.remove();
     if (notify && mounted) setState(() {});
+  }
+
+  void _beginDragSelection() {
+    if (_entry == null) _open();
+    if (_entry == null) return;
+    _dragSelecting = true;
+  }
+
+  int? _itemAt(Offset globalPosition) {
+    for (var index = 0; index < _itemKeys.length; index++) {
+      final renderObject = _itemKeys[index].currentContext?.findRenderObject();
+      if (renderObject is! RenderBox || !renderObject.hasSize) continue;
+      final bounds =
+          renderObject.localToGlobal(Offset.zero) & renderObject.size;
+      if (bounds.contains(globalPosition)) return index;
+    }
+    return null;
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    if (!_dragSelecting || event.pointer != _activePointer) return;
+    final index = _itemAt(event.position);
+    if (_focusIndex == index) return;
+    _focusIndex = index;
+    _entry?.markNeedsBuild();
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    if (event.pointer != _activePointer) return;
+    _activePointer = null;
+    if (!_dragSelecting) return;
+    _dragSelecting = false;
+    final index = _itemAt(event.position);
+    final items = _flatItems();
+    if (index != null && index < items.length) {
+      _activate(items[index]);
+    } else {
+      _entry?.markNeedsBuild();
+    }
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    if (event.pointer != _activePointer) return;
+    _activePointer = null;
+    _dragSelecting = false;
+    _entry?.markNeedsBuild();
   }
 
   Future<void> _activate(UiMenuItem item) async {
@@ -264,8 +442,8 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
               if (node.label != null)
                 Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.x3,
-                    vertical: tokens.spacing.x1,
+                    horizontal: tokens.spacing.x2,
+                    vertical: tokens.spacing.x3 / 2,
                   ),
                   child: UiText(
                     node.label!,
@@ -273,75 +451,75 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
                     tone: UiTextTone.muted,
                   ),
                 ),
-              for (final item in node.items)
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(vertical: tokens.spacing.x1 / 2),
-                  child: _MenuRow(
-                    item: item,
-                    focused: (++rowIndex) == _focusIndex,
-                    onActivate: _activate,
-                  ),
+              for (var index = 0; index < node.items.length; index++) ...[
+                if (index > 0) SizedBox(height: tokens.spacing.x1),
+                _MenuRow(
+                  key: _itemKeys[rowIndex + 1],
+                  item: node.items[index],
+                  focused: (++rowIndex) == _focusIndex,
+                  onActivate: _activate,
                 ),
+              ],
             ],
           );
         case UiMenuItem():
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.x1 / 2),
-            child: _MenuRow(
-              item: node,
-              focused: (++rowIndex) == _focusIndex,
-              onActivate: _activate,
-            ),
+          return _MenuRow(
+            key: _itemKeys[rowIndex + 1],
+            item: node,
+            focused: (++rowIndex) == _focusIndex,
+            onActivate: _activate,
           );
         case UiMenuSubmenu():
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.x1 / 2),
-            child: _SubmenuRow(submenu: node),
-          );
+          return _SubmenuRow(submenu: node);
       }
     }
 
-    final verticalOffset = tokens.spacing.x1;
     return Stack(
       children: [
-        Positioned.fill(
-          child: Listener(
-            behavior: HitTestBehavior.opaque,
-            onPointerDown: _handleOverlayPointerDown,
-          ),
-        ),
-        CompositedTransformFollower(
-          link: _link,
-          targetAnchor: _openAbove ? Alignment.topLeft : Alignment.bottomLeft,
-          followerAnchor: _openAbove ? Alignment.bottomLeft : Alignment.topLeft,
-          offset: Offset(0, _openAbove ? -verticalOffset : verticalOffset),
-          child: FocusScope(
-            node: _focusScope,
-            autofocus: true,
-            onKeyEvent: _handleKey,
-            child: _ScaleFade(
-              // When opening upward, anchor the scale animation to the
-              // bottom-left so the reveal grows *toward* the trigger.
-              origin: _openAbove ? Alignment.bottomLeft : Alignment.topLeft,
-              child: UiBox(
-                background: c.popover,
-                border: Border.all(color: c.border),
-                borderRadius: tokens.radius.mdAll,
-                boxShadow: tokens.shadows.md,
-                padding: EdgeInsets.all(tokens.spacing.x2),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: widget.minWidth,
-                    maxWidth: widget.maxWidth,
-                    maxHeight: _menuMaxHeight,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [for (final n in widget.items) buildNode(n)],
+        Positioned(
+          left: _overlayLeft,
+          top: _overlayTop,
+          child: UiAnchoredOverlayTapRegion(
+            groupId: _tapRegionGroup,
+            enabled: widget.dismissOnTapOutside,
+            onDismiss: _close,
+            child: FocusScope(
+              node: _focusScope,
+              autofocus: true,
+              onKeyEvent: _handleKey,
+              child: _ScaleFade(
+                // When opening upward, anchor the scale animation to the
+                // bottom-left so the reveal grows *toward* the trigger.
+                origin: _openAbove ? Alignment.bottomLeft : Alignment.topLeft,
+                child: UiBox(
+                  background: c.popover,
+                  border: Border.all(color: c.border),
+                  borderRadius: tokens.radius.lgAll,
+                  boxShadow: tokens.shadows.md,
+                  padding: EdgeInsets.all(tokens.spacing.x2 / 1.5),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: _menuWidth,
+                      maxWidth: _menuWidth,
+                      maxHeight: _menuMaxHeight,
                     ),
+                    child: Builder(builder: (context) {
+                      final children = <Widget>[];
+                      for (final node in widget.items) {
+                        if (children.isNotEmpty) {
+                          children.add(SizedBox(height: tokens.spacing.x1));
+                        }
+                        children.add(buildNode(node));
+                      }
+                      final content = Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: children,
+                      );
+                      return _contentFits
+                          ? content
+                          : SingleChildScrollView(child: content);
+                    }),
                   ),
                 ),
               ),
@@ -352,33 +530,34 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
     );
   }
 
-  void _handleOverlayPointerDown(PointerDownEvent event) {
-    final targetRect = _targetGlobalRect;
-    if (targetRect == null || targetRect.contains(event.position)) {
-      _close();
-      return;
-    }
-    _close();
-  }
-
   @override
   Widget build(BuildContext context) {
     final open = _entry != null;
-    return CompositedTransformTarget(
-      key: _targetKey,
-      link: _link,
-      child: UiPressable(
-        onPressed: _toggle,
-        onLongPress: widget.openOnLongPress ? _toggle : null,
-        minTapSize: 0,
-        semanticsLabel: UiLocalizations.of(context).menu,
-        builder: (context, state, _) {
-          if (!open || _triggerWidth == null) return widget.trigger;
-          return ConstrainedBox(
-            constraints: BoxConstraints(minWidth: _triggerWidth!),
-            child: widget.trigger,
-          );
-        },
+    return TapRegion(
+      groupId: _tapRegionGroup,
+      child: KeyedSubtree(
+        key: _targetKey,
+        child: Listener(
+          onPointerDown: widget.openOnLongPress
+              ? (event) => _activePointer = event.pointer
+              : null,
+          onPointerMove: widget.openOnLongPress ? _handlePointerMove : null,
+          onPointerUp: widget.openOnLongPress ? _handlePointerUp : null,
+          onPointerCancel: widget.openOnLongPress ? _handlePointerCancel : null,
+          child: UiPressable(
+            onPressed: _toggle,
+            onLongPress: widget.openOnLongPress ? _beginDragSelection : null,
+            minTapSize: 0,
+            semanticsLabel: UiLocalizations.of(context).menu,
+            builder: (context, state, _) {
+              if (!open || _triggerWidth == null) return widget.trigger;
+              return ConstrainedBox(
+                constraints: BoxConstraints(minWidth: _triggerWidth!),
+                child: widget.trigger,
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -386,6 +565,7 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
 
 class _MenuRow extends StatelessWidget {
   const _MenuRow({
+    super.key,
     required this.item,
     required this.focused,
     required this.onActivate,
@@ -433,10 +613,10 @@ class _MenuRow extends StatelessWidget {
             background: hover
                 ? (item.destructive ? destructiveBg : c.accent)
                 : const Color(0x00000000),
-            borderRadius: tokens.radius.mdAll,
+            borderRadius: tokens.radius.smAll,
             padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.x3,
-              vertical: tokens.spacing.x2,
+              horizontal: tokens.spacing.x2,
+              vertical: tokens.spacing.x3 / 2,
             ),
             child: Row(
               children: [
@@ -501,6 +681,7 @@ class _SubmenuRowState extends State<_SubmenuRow> {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
+    final nestedItems = widget.submenu.items.whereType<UiMenuItem>().toList();
 
     return UiPressable(
       onPressed:
@@ -511,10 +692,10 @@ class _SubmenuRowState extends State<_SubmenuRow> {
         children: [
           UiBox(
             background: state.hovered ? c.accent : const Color(0x00000000),
-            borderRadius: tokens.radius.mdAll,
+            borderRadius: tokens.radius.xsAll,
             padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.x3,
-              vertical: tokens.spacing.x2,
+              horizontal: tokens.spacing.x2,
+              vertical: tokens.spacing.x3 / 2,
             ),
             child: Row(
               children: [
@@ -552,15 +733,16 @@ class _SubmenuRowState extends State<_SubmenuRow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final n in widget.submenu.items)
-                    if (n is UiMenuItem)
-                      _MenuRow(
-                        item: n,
-                        focused: false,
-                        onActivate: (item) async {
-                          await item.onPressed?.call();
-                        },
-                      ),
+                  for (var index = 0; index < nestedItems.length; index++) ...[
+                    if (index > 0) SizedBox(height: tokens.spacing.x1),
+                    _MenuRow(
+                      item: nestedItems[index],
+                      focused: false,
+                      onActivate: (item) async {
+                        await item.onPressed?.call();
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

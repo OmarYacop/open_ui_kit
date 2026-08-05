@@ -14,11 +14,27 @@ class UiDataColumn {
     required this.label,
     this.numeric = false,
     this.flex = 1,
+    this.alignment,
   });
 
   final String label;
   final bool numeric;
   final int flex;
+  final AlignmentGeometry? alignment;
+
+  AlignmentGeometry get resolvedAlignment =>
+      alignment ??
+      (numeric
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart);
+
+  TextAlign get resolvedTextAlign {
+    if (alignment == Alignment.center ||
+        alignment == AlignmentDirectional.center) {
+      return TextAlign.center;
+    }
+    return numeric ? TextAlign.right : TextAlign.left;
+  }
 }
 
 @immutable
@@ -48,6 +64,7 @@ class UiDataTable extends StatelessWidget {
     this.lazyRowThreshold = 50,
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
+    this.scrollable = true,
   })  : rowCount = null,
         rowBuilder = null;
 
@@ -62,6 +79,7 @@ class UiDataTable extends StatelessWidget {
     this.emptyText = 'No records yet.',
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
+    this.scrollable = true,
   })  : rows = const [],
         lazyRowThreshold = 0;
 
@@ -76,6 +94,13 @@ class UiDataTable extends StatelessWidget {
   final int lazyRowThreshold;
   final double maxBodyHeight;
   final double rowExtent;
+
+  /// Whether the table body owns a height-capped vertical scroll view.
+  ///
+  /// Set this to false when the table lives inside another vertical scrollable
+  /// (for example a refreshable page). The body then expands to its rows and
+  /// delegates all vertical scrolling gestures to its ancestor.
+  final bool scrollable;
 
   bool get _isLazy => rowBuilder != null;
 
@@ -132,13 +157,19 @@ class UiDataTable extends StatelessWidget {
         rowBuilder: rowBuilder,
         maxBodyHeight: maxBodyHeight,
         rowExtent: rowExtent,
+        scrollable: scrollable,
       );
     } else {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeaderRow(columns: columns),
-          for (final row in rows) _DataRow(columns: columns, row: row),
+          for (var i = 0; i < rows.length; i++)
+            _DataRow(
+              columns: columns,
+              row: rows[i],
+              showTopBorder: i > 0,
+            ),
         ],
       );
     }
@@ -147,7 +178,12 @@ class UiDataTable extends StatelessWidget {
       background: c.card,
       border: Border.all(color: c.border),
       borderRadius: tokens.radius.lgAll,
-      child: body,
+      padding: const EdgeInsets.all(1),
+      child: ClipRRect(
+        borderRadius: tokens.radius.lgAll,
+        clipBehavior: Clip.antiAlias,
+        child: body,
+      ),
     );
   }
 }
@@ -160,6 +196,7 @@ class _LazyRowsTableBody extends StatelessWidget {
     required this.rowBuilder,
     required this.maxBodyHeight,
     required this.rowExtent,
+    required this.scrollable,
   });
 
   final List<UiDataColumn> columns;
@@ -168,27 +205,35 @@ class _LazyRowsTableBody extends StatelessWidget {
   final UiDataRowBuilder? rowBuilder;
   final double maxBodyHeight;
   final double rowExtent;
+  final bool scrollable;
 
   @override
   Widget build(BuildContext context) {
     final bodyHeight = math.min(maxBodyHeight, rowCount * rowExtent);
+    final rowsList = ListView.builder(
+      primary: false,
+      shrinkWrap: !scrollable,
+      physics: scrollable ? null : const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      itemExtent: rowExtent,
+      itemCount: rowCount,
+      itemBuilder: (context, i) {
+        final row = rowBuilder?.call(context, i) ?? rows[i];
+        return _DataRow(
+          columns: columns,
+          row: row,
+          showTopBorder: i > 0,
+        );
+      },
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _HeaderRow(columns: columns),
-        SizedBox(
-          height: bodyHeight,
-          child: ListView.builder(
-            primary: false,
-            padding: EdgeInsets.zero,
-            itemExtent: rowExtent,
-            itemCount: rowCount,
-            itemBuilder: (context, i) {
-              final row = rowBuilder?.call(context, i) ?? rows[i];
-              return _DataRow(columns: columns, row: row);
-            },
-          ),
-        ),
+        if (scrollable)
+          SizedBox(height: bodyHeight, child: rowsList)
+        else
+          rowsList,
       ],
     );
   }
@@ -221,11 +266,14 @@ class _HeaderRow extends StatelessWidget {
           for (final column in columns)
             Expanded(
               flex: column.flex,
-              child: UiText(
-                column.label,
-                variant: UiTextVariant.caption,
-                tone: UiTextTone.muted,
-                textAlign: column.numeric ? TextAlign.right : TextAlign.left,
+              child: Align(
+                alignment: column.resolvedAlignment,
+                child: UiText(
+                  column.label,
+                  variant: UiTextVariant.caption,
+                  tone: UiTextTone.muted,
+                  textAlign: column.resolvedTextAlign,
+                ),
               ),
             ),
         ],
@@ -235,10 +283,15 @@ class _HeaderRow extends StatelessWidget {
 }
 
 class _DataRow extends StatelessWidget {
-  const _DataRow({required this.columns, required this.row});
+  const _DataRow({
+    required this.columns,
+    required this.row,
+    required this.showTopBorder,
+  });
 
   final List<UiDataColumn> columns;
   final UiDataRow row;
+  final bool showTopBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +312,8 @@ class _DataRow extends StatelessWidget {
 
         return UiBox(
           background: background,
-          border: Border(top: BorderSide(color: c.border)),
+          border:
+              showTopBorder ? Border(top: BorderSide(color: c.border)) : null,
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.x3,
             vertical: tokens.spacing.x2,
@@ -273,9 +327,7 @@ class _DataRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     child: Align(
-                      alignment: columns[i].numeric
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
+                      alignment: columns[i].resolvedAlignment,
                       child: row.cells[i],
                     ),
                   ),

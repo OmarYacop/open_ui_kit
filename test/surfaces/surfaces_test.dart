@@ -5,23 +5,24 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
   return MaterialApp(
-    home: UiTheme(
+    builder: (context, appChild) => UiTheme(
       tokens: UiThemeData.light(effects: UiEffectsTokens.full),
-      child: Scaffold(body: child),
+      child: appChild ?? const SizedBox.shrink(),
     ),
+    home: Scaffold(body: child),
   );
 }
 
 Widget _reducedMotionHost(Widget child) {
   return MaterialApp(
-    builder: (context, appChild) => MediaQuery(
-      data: MediaQuery.of(context).copyWith(disableAnimations: true),
-      child: appChild ?? const SizedBox.shrink(),
-    ),
-    home: UiTheme(
+    builder: (context, appChild) => UiTheme(
       tokens: UiThemeData.light(effects: UiEffectsTokens.full),
-      child: Scaffold(body: child),
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: appChild ?? const SizedBox.shrink(),
+      ),
     ),
+    home: Scaffold(body: child),
   );
 }
 
@@ -65,6 +66,8 @@ void main() {
       paddings,
       contains(const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 24)),
     );
+    expect(find.byKey(const Key('ui_sheet_header_shadow')), findsOneWidget);
+    expect(find.byKey(const Key('ui_sheet_footer_shadow')), findsOneWidget);
   });
 
   testWidgets('sheet opens and returns typed result on controller dismiss', (
@@ -1067,6 +1070,8 @@ void main() {
     );
 
     final headerBefore = tester.getTopLeft(find.text('Drawer title'));
+    expect(find.byKey(const Key('ui_drawer_header_shadow')), findsOneWidget);
+    expect(find.byKey(const Key('ui_drawer_footer_shadow')), findsOneWidget);
     final footerBefore = tester.getTopLeft(find.text('Drawer footer'));
     final bodyBefore = tester.getTopLeft(find.text('Body item 3'));
 

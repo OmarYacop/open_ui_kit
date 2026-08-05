@@ -8,3 +8,5 @@ export 'surfaces/surfaces.dart';
 export 'data_display/data_display.dart';
 export 'navigation/navigation.dart';
 export 'chat/chat.dart';
+export 'schedule/schedule.dart';
+export 'calendar/calendar.dart';

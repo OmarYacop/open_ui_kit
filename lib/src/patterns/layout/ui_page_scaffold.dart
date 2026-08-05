@@ -7,6 +7,7 @@ import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/layout/ui_keyboard_geometry.dart';
+import '../../foundation/effects/ui_component_shadow.dart';
 import 'ui_safe_viewport.dart';
 import 'ui_scroll_edge_fade.dart';
 import 'ui_system_bars.dart';
@@ -263,11 +264,21 @@ class UiPageScaffold extends StatelessWidget {
             width: double.infinity,
             height: topInset,
           ),
-        if (topBar != null) topBar!,
+        if (topBar != null)
+          UiComponentShadow(
+            key: const Key('ui_page_top_bar_shadow'),
+            color: insetColor.withValues(alpha: 0.96),
+            child: topBar!,
+          ),
         if (topBar != null && showTopDivider) const UiDivider(),
         Expanded(child: pageBody),
         if (bottomBar != null && showBottomDivider) const UiDivider(),
-        if (bottomBar != null) bottomBar!,
+        if (bottomBar != null)
+          UiComponentShadow(
+            key: const Key('ui_page_bottom_bar_shadow'),
+            color: bg.withValues(alpha: 0.96),
+            child: bottomBar!,
+          ),
       ],
     );
 
