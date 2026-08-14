@@ -78,7 +78,7 @@ void main() {
       await pumpGoldenFrame(
         tester,
         brightness: Brightness.light,
-        size: const Size(320, 96),
+        size: const Size(320, 140),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Wrap(

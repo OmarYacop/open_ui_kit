@@ -30,6 +30,9 @@ class UiTimeValue {
       : assert(hour >= 0 && hour < 24, 'hour must be 0..23'),
         assert(minute >= 0 && minute < 60, 'minute must be 0..59');
 
+  factory UiTimeValue.fromDateTime(DateTime value) =>
+      UiTimeValue(hour: value.hour, minute: value.minute);
+
   final int hour;
   final int minute;
 

@@ -109,3 +109,38 @@ class UiText extends StatelessWidget {
     }
   }
 }
+
+/// Selectable Open UI typography with the widgets-layer selection system.
+class UiSelectableText extends StatelessWidget {
+  const UiSelectableText(
+    this.data, {
+    super.key,
+    this.variant = UiTextVariant.body,
+    this.tone = UiTextTone.primary,
+    this.textAlign,
+    this.maxLines,
+    this.style,
+  });
+
+  final String data;
+  final UiTextVariant variant;
+  final UiTextTone tone;
+  final TextAlign? textAlign;
+  final int? maxLines;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return SelectableRegion(
+      selectionControls: emptyTextSelectionControls,
+      child: UiText(
+        data,
+        variant: variant,
+        tone: tone,
+        textAlign: textAlign,
+        maxLines: maxLines,
+        style: style,
+      ),
+    );
+  }
+}

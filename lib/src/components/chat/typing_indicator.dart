@@ -4,9 +4,9 @@ import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
-import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../data_display/avatar.dart';
+import 'bubble.dart';
 
 /// A participant currently composing a chat message.
 @immutable
@@ -30,18 +30,19 @@ class UiTypingUser {
 /// Builds the visible and spoken typing-state label.
 typedef UiTypingLabelBuilder = String Function(List<UiTypingUser> users);
 
-/// WhatsApp-style presence row for one or more people composing a message.
+/// A compact, WhatsApp-inspired incoming bubble for active composition.
 ///
-/// Participant changes cross-fade without resizing the surrounding chat, while
-/// the trailing dots run as a staggered wave. An empty [users] list collapses
-/// the component. Motion automatically stops when reduced motion is enabled.
+/// The visible state is deliberately wordless: an avatar group and a three-dot
+/// bubble keep the conversation anchored at its live edge without competing
+/// with message content. The participant names remain available through the
+/// live-region label. An empty [users] list collapses the component.
 class UiTypingIndicator extends StatefulWidget {
   const UiTypingIndicator({
     super.key,
     required this.users,
     this.labelBuilder,
     this.maxVisibleAvatars = 3,
-    this.avatarSize = 24,
+    this.avatarSize = 28,
     this.showAvatars = true,
     this.showDots = true,
     this.animationDuration =
@@ -54,9 +55,15 @@ class UiTypingIndicator extends StatefulWidget {
 
   final List<UiTypingUser> users;
 
-  /// Overrides both the visible label and its live-region announcement.
-  /// Useful for product-specific copy or localization beyond the built-ins.
+  /// Overrides the live-region announcement.
+  ///
+  /// The visual indicator intentionally remains a compact ellipsis bubble,
+  /// matching the chat vocabulary rather than repeating status text in-line.
   final UiTypingLabelBuilder? labelBuilder;
+
+  /// The maximum number of active participants shown in the avatar group.
+  ///
+  /// Pass `0` to suppress the avatars while retaining the typing bubble.
   final int maxVisibleAvatars;
   final double avatarSize;
   final bool showAvatars;
@@ -69,8 +76,13 @@ class UiTypingIndicator extends StatefulWidget {
 }
 
 class _UiTypingIndicatorState extends State<UiTypingIndicator>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _dots = AnimationController(vsync: this);
+  late final AnimationController _presence = AnimationController(
+    vsync: this,
+    value: widget.users.isEmpty ? 0 : 1,
+  )..addStatusListener(_handlePresenceStatus);
+  late List<UiTypingUser> _visibleUsers = widget.users;
 
   bool get _shouldAnimate {
     final reduced = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
@@ -84,6 +96,7 @@ class _UiTypingIndicatorState extends State<UiTypingIndicator>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _configureAnimation();
+    _configurePresence();
   }
 
   @override
@@ -93,6 +106,12 @@ class _UiTypingIndicatorState extends State<UiTypingIndicator>
         oldWidget.users.isEmpty != widget.users.isEmpty ||
         oldWidget.showDots != widget.showDots) {
       _configureAnimation();
+    }
+    if (widget.users.isNotEmpty) {
+      _visibleUsers = widget.users;
+      _presence.forward();
+    } else if (oldWidget.users.isNotEmpty) {
+      _presence.reverse();
     }
   }
 
@@ -107,9 +126,30 @@ class _UiTypingIndicatorState extends State<UiTypingIndicator>
     }
   }
 
+  void _configurePresence() {
+    final motion = UiMotionSpec.resolve(
+      context,
+      duration: UiMotionSpeed.standard,
+      reverseDuration: UiMotionSpeed.fast,
+    );
+    _presence
+      ..duration = motion.duration
+      ..reverseDuration = motion.reverseDuration;
+    if (widget.users.isNotEmpty) _presence.forward();
+  }
+
+  void _handlePresenceStatus(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed &&
+        widget.users.isEmpty &&
+        _visibleUsers.isNotEmpty) {
+      setState(() => _visibleUsers = const []);
+    }
+  }
+
   @override
   void dispose() {
     _dots.dispose();
+    _presence.dispose();
     super.dispose();
   }
 
@@ -121,38 +161,41 @@ class _UiTypingIndicatorState extends State<UiTypingIndicator>
       duration: UiMotionSpeed.standard,
       reverseDuration: UiMotionSpeed.fast,
     );
-    final label = widget.users.isEmpty ? '' : _label(context);
-    final identity = Object.hashAll(widget.users.map((user) => user.id));
+    final users = _visibleUsers;
+    if (users.isEmpty) return const SizedBox.shrink();
+    final animation = CurvedAnimation(
+      parent: _presence,
+      curve: transition.curve,
+      reverseCurve: transition.reverseCurve,
+    );
+    final label = _label(context, users);
+    final identity = Object.hashAll(users.map((user) => user.id));
 
-    return AnimatedSwitcher(
-      duration: transition.duration,
-      reverseDuration: transition.reverseDuration,
-      switchInCurve: transition.curve,
-      switchOutCurve: transition.reverseCurve,
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: SizeTransition(
-          sizeFactor: animation,
-          alignment: Alignment.topCenter,
-          child: child,
-        ),
-      ),
-      child: widget.users.isEmpty
-          ? const SizedBox.shrink(key: ValueKey('typing-indicator-empty'))
-          : Semantics(
-              key: ValueKey(identity),
-              container: true,
-              liveRegion: true,
-              label: label,
-              child: ExcludeSemantics(
-                child: Padding(
-                  padding: widget.padding,
+    return FadeTransition(
+      opacity: animation,
+      child: SizeTransition(
+        sizeFactor: animation,
+        alignment: Alignment.topCenter,
+        child: Semantics(
+          key: ValueKey(identity),
+          container: true,
+          liveRegion: true,
+          label: label,
+          child: ExcludeSemantics(
+            child: Padding(
+              padding: widget.padding,
+              child: SizedBox(
+                width: double.infinity,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (widget.showAvatars) ...[
+                      if (widget.showAvatars &&
+                          widget.maxVisibleAvatars > 0) ...[
                         UiAvatarGroup(
-                          items: widget.users
+                          items: users
                               .map(
                                 (user) => UiAvatarEntry(
                                   name: user.name,
@@ -164,44 +207,36 @@ class _UiTypingIndicatorState extends State<UiTypingIndicator>
                               .toList(growable: false),
                           maxVisible: widget.maxVisibleAvatars,
                           size: widget.avatarSize,
-                          overlap: widget.avatarSize * .62,
-                          showBorder: true,
+                          overlap: widget.avatarSize * (4 / 7),
                         ),
                         SizedBox(width: tokens.spacing.x2),
                       ],
-                      Flexible(
-                        child: AnimatedSwitcher(
-                          duration: transition.duration,
-                          reverseDuration: transition.reverseDuration,
-                          switchInCurve: transition.curve,
-                          switchOutCurve: transition.reverseCurve,
-                          child: UiText(
-                            label,
-                            key: ValueKey(label),
-                            variant: UiTextVariant.bodySm,
-                            tone: UiTextTone.muted,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      if (widget.showDots)
+                        UiBubble(
+                          alignment: UiChatAlignment.start,
+                          variant: UiBubbleVariant.muted,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.spacing.x3,
+                            vertical: tokens.spacing.x2,
                           ),
+                          child: _TypingDots(animation: _dots),
                         ),
-                      ),
-                      if (widget.showDots) ...[
-                        SizedBox(width: tokens.spacing.x2),
-                        _TypingDots(animation: _dots),
-                      ],
                     ],
                   ),
                 ),
               ),
             ),
+          ),
+        ),
+      ),
     );
   }
 
-  String _label(BuildContext context) {
+  String _label(BuildContext context, List<UiTypingUser> users) {
     final builder = widget.labelBuilder;
-    if (builder != null) return builder(List.unmodifiable(widget.users));
+    if (builder != null) return builder(List.unmodifiable(users));
     return UiLocalizations.of(context).typingLabel(
-      widget.users.map((user) => user.name).toList(growable: false),
+      users.map((user) => user.name).toList(growable: false),
     );
   }
 }
@@ -230,7 +265,7 @@ class _TypingDots extends StatelessWidget {
                 opacity: .45 + .55 * lift,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: colors.textMuted,
+                    color: colors.textMuted.withValues(alpha: .78),
                     shape: BoxShape.circle,
                   ),
                   child: const SizedBox.square(dimension: 5),

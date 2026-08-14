@@ -732,6 +732,34 @@ void main() {
     });
 
     testWidgets(
+        'UiPageScaffold uses opaque fade backing for transparent system bars',
+        (tester) async {
+      const darkBacking = Color(0xFF101214);
+      await tester.pumpWidget(
+        _host(
+          const UiPageScaffold(
+            backgroundColor: Color(0x00000000),
+            scrollFadeBackgroundColor: darkBacking,
+            body: Text('body'),
+          ),
+        ),
+      );
+
+      final annotation = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+        find.descendant(
+          of: find.byType(UiPageScaffold),
+          matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+        ),
+      );
+
+      expect(annotation.value.statusBarIconBrightness, Brightness.light);
+      expect(
+        annotation.value.systemNavigationBarIconBrightness,
+        Brightness.light,
+      );
+    });
+
+    testWidgets(
         'UiPageScaffold bleeds vertically and stays horizontally safe by default',
         (tester) async {
       const topInset = 59.0;
@@ -1402,7 +1430,7 @@ void main() {
       }
     });
 
-    testWidgets('collapse progress crossfades into the centered compact title',
+    testWidgets('collapse triggers a snappy time-based title crossfade',
         (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
@@ -1421,22 +1449,9 @@ void main() {
         ),
       );
 
-      double titleOpacity(Key key) {
-        return tester
-            .widget<Opacity>(
-              find
-                  .ancestor(
-                    of: find.byKey(key),
-                    matching: find.byType(Opacity),
-                  )
-                  .first,
-            )
-            .opacity;
-      }
-
       expect(
-        titleOpacity(const Key('ui_navigation_large_title')),
-        greaterThan(0.9),
+        find.byKey(const Key('ui_navigation_large_title')),
+        findsOneWidget,
       );
       expect(
         find.byKey(const Key('ui_navigation_compact_title')),
@@ -1452,19 +1467,65 @@ void main() {
           .getRect(find.byKey(const Key('ui_navigation_large_title')))
           .top;
       expect(scrolledTop, lessThan(restTop));
+      expect(
+        find.byKey(const Key('ui_navigation_compact_title')),
+        findsNothing,
+      );
 
-      // Scroll enough to collapse the bar fully.
-      controller.jumpTo(80);
+      // Crossing the handoff point starts one short, time-based crossfade.
+      controller.jumpTo(22);
       await tester.pump();
 
+      final largeFade = tester.widget<TweenAnimationBuilder<double>>(
+        find.byKey(const Key('ui_navigation_large_title_fade')),
+      );
+      final compactFade = tester.widget<AnimatedSwitcher>(
+        find.byKey(const Key('ui_navigation_compact_title_fade')),
+      );
+      expect(largeFade.tween.end, 0);
+      expect(largeFade.duration, const Duration(milliseconds: 96));
+      expect(compactFade.duration, const Duration(milliseconds: 96));
       expect(
-        titleOpacity(const Key('ui_navigation_large_title')),
-        0,
+        find.byKey(const Key('ui_navigation_large_title')),
+        findsOneWidget,
       );
       expect(
-        titleOpacity(const Key('ui_navigation_compact_title')),
-        greaterThan(0.9),
+        find.byKey(const Key('ui_navigation_compact_title')),
+        findsOneWidget,
       );
+
+      // The scroll position stays fixed while the crossfade completes.
+      await tester.pump(const Duration(milliseconds: 48));
+      final compactOpacity = tester
+          .widget<Opacity>(
+            find
+                .ancestor(
+                  of: find.byKey(const Key('ui_navigation_compact_title')),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          )
+          .opacity;
+      final largeOpacity = tester
+          .widget<Opacity>(
+            find.descendant(
+              of: find.byKey(const Key('ui_navigation_large_title_fade')),
+              matching: find.byType(Opacity),
+            ),
+          )
+          .opacity;
+      expect(compactOpacity, inExclusiveRange(0, 1));
+      expect(largeOpacity, inExclusiveRange(0, 1));
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('ui_navigation_large_title_fade')),
+          matching: find.byType(ImageFiltered),
+        ),
+        findsOneWidget,
+      );
+      expect(controller.offset, 22);
+
+      await tester.pump(const Duration(milliseconds: 48));
       final compactShadow = tester.widget<UiLegibilityShadow>(
         find
             .ancestor(
@@ -1475,6 +1536,36 @@ void main() {
       );
       expect(compactShadow.blurSigma, greaterThan(2));
       expect(compactShadow.spreadRadius, greaterThan(0.5));
+
+      // Re-crossing the threshold reverses the same brief handoff.
+      controller.jumpTo(20);
+      await tester.pump();
+      expect(
+        tester
+            .widget<TweenAnimationBuilder<double>>(
+              find.byKey(const Key('ui_navigation_large_title_fade')),
+            )
+            .tween
+            .end,
+        1,
+      );
+      await tester.pump(const Duration(milliseconds: 48));
+      expect(
+        tester
+            .widget<Opacity>(
+              find.descendant(
+                of: find.byKey(const Key('ui_navigation_large_title_fade')),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        inExclusiveRange(0, 1),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('ui_navigation_compact_title')),
+        findsNothing,
+      );
     });
 
     testWidgets('UiSliverNavigationBar stays pinned for the full scroll view',

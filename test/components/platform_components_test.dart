@@ -508,6 +508,87 @@ void main() {
       expect(overflowSelectedBar.currentIndex, 3);
     });
 
+    testWidgets('detached bottom tab grows with large text', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _host(
+          MediaQuery(
+            data: const MediaQueryData(
+              textScaler: TextScaler.linear(1.6),
+            ),
+            child: UiBottomTabBar(
+              items: const [
+                UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
+                UiBottomTabItem(label: 'Chat', icon: Icon(Icons.chat)),
+                UiBottomTabItem(label: 'Classes', icon: Icon(Icons.school)),
+                UiBottomTabItem(label: 'More', icon: Icon(Icons.menu)),
+              ],
+              currentIndex: 0,
+              onChanged: (_) {},
+              detachLastItem: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester
+            .getSize(
+              find.byKey(const Key('ui_bottom_tab_detached_dock')),
+            )
+            .height,
+        tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).height,
+      );
+    });
+
+    testWidgets('bottom tab scaffold reserves large-text dock height', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _host(
+          MediaQuery(
+            data: const MediaQueryData(
+              textScaler: TextScaler.linear(1.6),
+            ),
+            child: UiBottomTabScaffold(
+              items: const [
+                UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
+                UiBottomTabItem(label: 'Chat', icon: Icon(Icons.chat)),
+                UiBottomTabItem(label: 'Classes', icon: Icon(Icons.school)),
+                UiBottomTabItem(label: 'More', icon: Icon(Icons.menu)),
+              ],
+              currentIndex: 0,
+              onChanged: (_) {},
+              pages: const [
+                SizedBox(),
+                SizedBox(),
+                SizedBox(),
+                SizedBox(),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).height,
+        greaterThan(66),
+      );
+    });
+
     testWidgets('scaffold automatic overflow accepts a custom More label', (
       tester,
     ) async {
@@ -1654,6 +1735,10 @@ void main() {
       expect(const UiTimeValue(hour: 0, minute: 5).formatted12(), '12:05 AM');
       expect(const UiTimeValue(hour: 13, minute: 30).formatted24(), '13:30');
       expect(const UiTimeValue(hour: 13, minute: 30).formatted12(), '1:30 PM');
+      expect(
+        UiTimeValue.fromDateTime(DateTime(2026, 8, 14, 17, 45)),
+        const UiTimeValue(hour: 17, minute: 45),
+      );
     });
   });
 }

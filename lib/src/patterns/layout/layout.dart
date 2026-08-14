@@ -1,5 +1,6 @@
 export 'app_shell.dart';
 export 'ui_collection_page.dart';
+export 'ui_content_page.dart';
 export 'ui_form_page.dart';
 export 'ui_page_layout.dart';
 export 'ui_page_scaffold.dart';

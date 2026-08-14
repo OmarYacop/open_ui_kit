@@ -197,8 +197,13 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
         : widget.items.indexWhere(
             (item) => item.id == oldWidget.items.last.id,
           );
-    final appendedItems =
-        (oldLastIndex < 0 ? widget.items : widget.items.skip(oldLastIndex + 1))
+    // Only messages added after the old tail are arrivals. Treating every new
+    // ID as an arrival makes pagination and restored history incorrectly show
+    // an unread badge.
+    final appendedItems = oldLastIndex < 0
+        ? widget.items.where((item) => !oldIds.contains(item.id)).toList()
+        : widget.items
+            .skip(oldLastIndex + 1)
             .where((item) => !oldIds.contains(item.id))
             .toList(growable: false);
     final appended = appendedItems.length;
@@ -206,9 +211,15 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     final appendedIncoming =
         appendedItems.where((item) => !item.isOutgoing).toList(growable: false);
     if (appendedOutgoing) _dismissUnreadMarker(notify: false);
-    final prepended = oldWidget.items.isNotEmpty &&
-        widget.items.isNotEmpty &&
-        widget.items.first.id != oldWidget.items.first.id;
+    final oldFirstIndex = oldWidget.items.isEmpty
+        ? -1
+        : widget.items.indexWhere(
+            (item) => item.id == oldWidget.items.first.id,
+          );
+    final prepended = oldFirstIndex > 0 &&
+        widget.items
+            .take(oldFirstIndex)
+            .any((item) => !oldIds.contains(item.id));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_scrollController.hasClients) return;
       if (prepended && !_wasAtLiveEdge) {
@@ -225,8 +236,9 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
         await _jumpToLatest();
       } else if (appended > 0 && _wasAtLiveEdge && widget.autoFollow) {
         await _jumpToLatest();
-      } else if (appendedIncoming.isNotEmpty && !_wasAtLiveEdge) {
+      } else if (appendedIncoming.isNotEmpty) {
         _publicController._update(
+          atLiveEdge: false,
           unseenCount: _publicController.unseenCount + appendedIncoming.length,
           firstUnseenMessageId: _publicController.firstUnseenMessageId ??
               appendedIncoming.first.id,

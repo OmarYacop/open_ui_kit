@@ -332,7 +332,15 @@ class UiPageScaffold extends StatelessWidget {
     );
 
     if (syncSystemBars) {
-      final barsColor = paintTopInsetWithTopBar ? insetColor : bg;
+      // A transparent page commonly sits over an opaque branded/background
+      // surface while the scroll fade samples that same backing color. Use
+      // the known opaque sample for system-bar contrast instead of treating
+      // transparency as a light surface and producing dark icons in dark mode.
+      final barsColor = paintTopInsetWithTopBar
+          ? insetColor
+          : bg.a < 0.5
+              ? scrollFadeBackgroundColor
+              : bg;
       content = UiSystemBars(
         style: systemOverlayStyle,
         backgroundColor: barsColor,

@@ -279,6 +279,14 @@ class UiInputState extends State<UiInput>
       // Selection stays available for read-only rows so users can copy
       // displayed text. Disabled rows lock interaction entirely.
       enableInteractiveSelection: !disabled,
+      selectionControls: emptyTextSelectionControls,
+      contextMenuBuilder: (_, editableTextState) =>
+          _UiTextSelectionMenu(editableTextState: editableTextState),
+      // Gesture handling is owned by the surrounding
+      // TextSelectionGestureDetectorBuilder. Leaving this false lets
+      // RenderEditable consume its basic gestures too, which prevents the
+      // platform selection toolbar from being presented reliably.
+      rendererIgnoresPointer: true,
     );
 
     return Column(
@@ -404,5 +412,58 @@ class UiInputState extends State<UiInput>
     // UiSelect/UiButton); multiline gets vertical breathing room.
     final vertical = (maxLines == 1) ? 0.0 : t.spacing.x2;
     return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
+  }
+}
+
+class _UiTextSelectionMenu extends StatelessWidget {
+  const _UiTextSelectionMenu({required this.editableTextState});
+
+  final EditableTextState editableTextState;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    final buttons = editableTextState.contextMenuButtonItems;
+    if (buttons.isEmpty) return const SizedBox.shrink();
+
+    return CustomSingleChildLayout(
+      delegate: TextSelectionToolbarLayoutDelegate(
+        anchorAbove: editableTextState.contextMenuAnchors.primaryAnchor,
+        anchorBelow: editableTextState.contextMenuAnchors.secondaryAnchor ??
+            editableTextState.contextMenuAnchors.primaryAnchor,
+        fitsAbove: true,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.card,
+          border: Border.all(color: tokens.colors.border),
+          borderRadius: tokens.radius.mdAll,
+          boxShadow: tokens.shadows.md,
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.x1),
+          child: Wrap(
+            spacing: tokens.spacing.x1,
+            children: [
+              for (final button in buttons)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: button.onPressed,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.x3,
+                      vertical: tokens.spacing.x2,
+                    ),
+                    child: UiText(
+                      button.label ?? button.type.name,
+                      variant: UiTextVariant.label,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

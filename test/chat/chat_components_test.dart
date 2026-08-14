@@ -22,8 +22,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Ada, Grace and 1 other are typing'), findsOneWidget);
+    expect(find.text('Ada, Grace and 1 other are typing'), findsNothing);
+    expect(find.byType(UiAvatarGroup), findsOneWidget);
     expect(find.byType(UiAvatar), findsNWidgets(3));
+    expect(find.byType(UiBubble), findsOneWidget);
     final typingSemantics = find.bySemanticsLabel(
       'Ada, Grace and 1 other are typing',
     );
@@ -48,6 +50,41 @@ void main() {
     expect(find.byType(UiText), findsNothing);
   });
 
+  testWidgets('typing indicator animates out after users stop typing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const UiTypingIndicator(
+          users: [UiTypingUser(id: 1, name: 'Ada')],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.pumpWidget(_host(const UiTypingIndicator(users: [])));
+    await tester.pump(const Duration(milliseconds: 60));
+
+    expect(find.byType(UiBubble), findsOneWidget);
+    expect(
+      tester
+          .widget<FadeTransition>(
+            find
+                .ancestor(
+                  of: find.byType(UiBubble),
+                  matching: find.byType(FadeTransition),
+                )
+                .first,
+          )
+          .opacity
+          .value,
+      lessThan(1),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byType(UiBubble), findsNothing);
+  });
+
   testWidgets('typing indicator honors custom copy and reduced motion', (
     tester,
   ) async {
@@ -63,9 +100,25 @@ void main() {
       ),
     );
 
-    expect(find.text('Ada is composing'), findsOneWidget);
+    expect(find.bySemanticsLabel('Ada is composing'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('typing indicator is anchored at the directional start', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const Center(
+          child: UiTypingIndicator(
+            users: [UiTypingUser(id: 1, name: 'Ada')],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getTopLeft(find.byType(UiAvatarGroup)).dx, 4);
   });
 
   testWidgets('bubble constrains width and aligns to the logical end', (
@@ -337,6 +390,31 @@ void main() {
     expect(controller.unseenCount, 0);
   });
 
+  testWidgets('scroller queues an arrival when auto-follow is disabled', (
+    tester,
+  ) async {
+    final controller = UiMessageScrollerController();
+    final key = GlobalKey<_ScrollerHarnessState>();
+    await tester.pumpWidget(
+      _host(
+        _ScrollerHarness(
+          key: key,
+          controller: controller,
+          autoFollow: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    key.currentState!.append();
+    await tester.pump();
+    await tester.pump();
+
+    expect(controller.isAtLiveEdge, isFalse);
+    expect(controller.unseenCount, 1);
+    expect(controller.firstUnseenMessageId, '30');
+  });
+
   testWidgets('scroll controls expand reply action beside latest', (
     tester,
   ) async {
@@ -433,10 +511,12 @@ class _ScrollerHarness extends StatefulWidget {
     super.key,
     required this.controller,
     this.initialUnreadMessageId,
+    this.autoFollow = true,
   });
 
   final UiMessageScrollerController controller;
   final String? initialUnreadMessageId;
+  final bool autoFollow;
 
   @override
   State<_ScrollerHarness> createState() => _ScrollerHarnessState();
@@ -455,6 +535,7 @@ class _ScrollerHarnessState extends State<_ScrollerHarness> {
   Widget build(BuildContext context) {
     return UiMessageScroller(
       controller: widget.controller,
+      autoFollow: widget.autoFollow,
       initialUnreadMessageId: widget.initialUnreadMessageId,
       padding: const EdgeInsets.all(16),
       items: [

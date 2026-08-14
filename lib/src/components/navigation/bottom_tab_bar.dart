@@ -10,6 +10,7 @@ import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import 'bottom_tab_metrics.dart';
 import 'tab_layout.dart';
 
 /// One slot in a [UiBottomTabBar].
@@ -175,20 +176,13 @@ class UiBottomTabBar extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
     final bottomInset = MediaQuery.maybePaddingOf(context)?.bottom ?? 0;
-    final textScaler = MediaQuery.textScalerOf(context);
-    final captionFontSize = tokens.typography.caption.fontSize ?? 12;
-    final captionHeight = textScaler.scale(captionFontSize) *
-        (tokens.typography.caption.height ?? 1);
-    final resolvedHeight = math
-            .max(
-              height,
-              _kLiquidTabIconSize +
-                  _kLiquidTabIconGap +
-                  captionHeight +
-                  tokens.spacing.x1,
-            )
-            .ceilToDouble() +
-        1;
+    final resolvedHeight = resolveBottomTabBarHeight(
+      context,
+      items.map((item) => item.label),
+      minimum: height,
+      iconSize: _kLiquidTabIconSize,
+      iconGap: _kLiquidTabIconGap,
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth.isFinite &&
@@ -383,7 +377,7 @@ class UiBottomTabBar extends StatelessWidget {
                                 items: [detachedItem!],
                                 currentIndex: detachedSelected ? 0 : -1,
                                 onChanged: (_) => onChanged(items.length - 1),
-                                height: height,
+                                height: resolvedHeight,
                                 equalWidths: false,
                               ),
                             ),

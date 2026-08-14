@@ -7,11 +7,20 @@ import 'theme/ui_theme_extensions.dart';
 import '../patterns/navigation/ui_navigation_transition.dart';
 
 /// How [UiApp] picks between its light and dark token sets.
-enum UiThemeMode { system, light, dark }
+enum UiThemeMode {
+  /// Follow the operating-system appearance dynamically.
+  system,
+
+  /// Always resolve [UiApp.lightTokens], regardless of system appearance.
+  light,
+
+  /// Always resolve [UiApp.darkTokens], regardless of system appearance.
+  dark,
+}
 
 /// Material-free application root.
 ///
-/// Wraps [WidgetsApp] (not `MaterialApp`) and injects [UiThemeTokens] through a
+/// Wraps [WidgetsApp] and injects [UiThemeTokens] through a
 /// [UiTheme] host, so the whole tree resolves design tokens via
 /// `UiThemeTokens.of(context)` without any Material `Theme`. Routes pushed by
 /// open_ui_kit overlays (`UiSheetScope`, `UiDialogScope`) sit inside the [UiTheme],
@@ -46,6 +55,9 @@ class UiApp extends StatefulWidget {
   final Widget? home;
   final UiThemeTokens? lightTokens;
   final UiThemeTokens? darkTokens;
+
+  /// Appearance policy. Use [UiThemeMode.light] or [UiThemeMode.dark] to force
+  /// a mode; [UiThemeMode.system] is only the default, not a restriction.
   final UiThemeMode mode;
   final Locale? locale;
   final Iterable<LocalizationsDelegate<dynamic>> localizationsDelegates;

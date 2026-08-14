@@ -36,11 +36,28 @@ class UiWavatarCharacteristics {
   final UiWavatarAgeGroup? ageGroup;
 }
 
+/// One distinct identity within a multi-participant [UiWavatar].
+@immutable
+class UiWavatarParticipant {
+  const UiWavatarParticipant({
+    required this.seed,
+    this.characteristics = const UiWavatarCharacteristics(),
+  });
+
+  /// Stable value used to generate this participant's visual identity.
+  final String seed;
+
+  /// Optional information that subtly biases this participant's geometry.
+  final UiWavatarCharacteristics characteristics;
+}
+
 /// A deterministic, locally rendered abstract avatar.
 ///
 /// [UiWavatar] turns [seed] into a stable geometric identity mark. Its layered
 /// shapes loosely suggest a face without depicting a literal person, making it
 /// suitable for contact lists, accounts, and privacy-conscious placeholders.
+/// Supply [participants] to compose up to four independently generated
+/// identities into one shared avatar.
 ///
 /// The component performs no I/O, needs no bundled assets, and has no package
 /// dependencies beyond Flutter.
@@ -51,6 +68,7 @@ class UiWavatar extends StatelessWidget {
     this.size = 40,
     this.backgroundColor,
     this.characteristics = const UiWavatarCharacteristics(),
+    this.participants = const [],
     this.themeMode = UiWavatarThemeMode.adaptive,
     this.shape = BoxShape.circle,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
@@ -68,6 +86,13 @@ class UiWavatar extends StatelessWidget {
 
   /// Optional information that subtly biases the generated identity mark.
   final UiWavatarCharacteristics characteristics;
+
+  /// Distinct identities represented by this avatar.
+  ///
+  /// When non-empty, each participant supplies an independent seed and
+  /// characteristics, and up to the first four participants are painted.
+  /// The avatar's own [seed] continues to define the shared background.
+  final List<UiWavatarParticipant> participants;
 
   /// Whether generated colors adapt to the current platform brightness.
   final UiWavatarThemeMode themeMode;
@@ -93,10 +118,21 @@ class UiWavatar extends StatelessWidget {
       characteristics,
       isDark: isDark,
     );
+    final participantRecipes = participants
+        .take(4)
+        .map(
+          (participant) => _WavatarRecipe.fromSeed(
+            participant.seed,
+            null,
+            participant.characteristics,
+            isDark: isDark,
+          ),
+        )
+        .toList(growable: false);
     final avatar = SizedBox.square(
       dimension: size,
       child: CustomPaint(
-        painter: _WavatarPainter(recipe),
+        painter: _WavatarPainter(recipe, participantRecipes),
         isComplex: false,
         willChange: false,
       ),
@@ -295,9 +331,10 @@ class _HashStream {
 }
 
 class _WavatarPainter extends CustomPainter {
-  const _WavatarPainter(this.recipe);
+  const _WavatarPainter(this.recipe, this.participantRecipes);
 
   final _WavatarRecipe recipe;
+  final List<_WavatarRecipe> participantRecipes;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -309,12 +346,81 @@ class _WavatarPainter extends CustomPainter {
     _paintBackground(canvas);
     _paintOrbit(canvas);
 
-    if (recipe.subject == UiWavatarSubject.team) {
-      _paintIdentity(canvas, const Offset(68, 39), 0.48, -0.05);
-      _paintIdentity(canvas, const Offset(34, 43), 0.55, 0.04);
-      _paintIdentity(canvas, const Offset(53, 65), 0.68, 0);
-    } else {
-      _paintIdentity(canvas, const Offset(50, 52), 1, recipe.rotation);
+    final identities = participantRecipes.isNotEmpty
+        ? participantRecipes
+        : recipe.subject == UiWavatarSubject.team
+            ? [recipe, recipe, recipe]
+            : [recipe];
+
+    switch (identities.length) {
+      case 1:
+        _paintIdentity(
+          canvas,
+          identities[0],
+          const Offset(50, 52),
+          1,
+          identities[0].rotation,
+        );
+      case 2:
+        _paintIdentity(
+          canvas,
+          identities[0],
+          const Offset(66, 43),
+          0.62,
+          -0.05,
+        );
+        _paintIdentity(
+          canvas,
+          identities[1],
+          const Offset(38, 59),
+          0.74,
+          0.04,
+        );
+      case 3:
+        _paintIdentity(
+          canvas,
+          identities[0],
+          const Offset(68, 39),
+          0.48,
+          -0.05,
+        );
+        _paintIdentity(
+          canvas,
+          identities[1],
+          const Offset(34, 43),
+          0.55,
+          0.04,
+        );
+        _paintIdentity(canvas, identities[2], const Offset(53, 65), 0.68, 0);
+      case 4:
+        _paintIdentity(
+          canvas,
+          identities[0],
+          const Offset(69, 37),
+          0.44,
+          -0.05,
+        );
+        _paintIdentity(
+          canvas,
+          identities[1],
+          const Offset(31, 39),
+          0.47,
+          0.05,
+        );
+        _paintIdentity(
+          canvas,
+          identities[2],
+          const Offset(65, 66),
+          0.55,
+          0.03,
+        );
+        _paintIdentity(
+          canvas,
+          identities[3],
+          const Offset(35, 67),
+          0.58,
+          -0.02,
+        );
     }
 
     canvas.restore();
@@ -322,6 +428,7 @@ class _WavatarPainter extends CustomPainter {
 
   void _paintIdentity(
     Canvas canvas,
+    _WavatarRecipe identity,
     Offset center,
     double scale,
     double rotation,
@@ -329,11 +436,11 @@ class _WavatarPainter extends CustomPainter {
     canvas.save();
     canvas.translate(center.dx, center.dy);
     canvas.rotate(rotation);
-    canvas.scale(recipe.glyphScale * scale);
+    canvas.scale(identity.glyphScale * scale);
     canvas.translate(-50, -52);
-    _paintGlyph(canvas);
-    _paintEyes(canvas);
-    _paintExpression(canvas);
+    _paintGlyph(canvas, identity);
+    _paintEyes(canvas, identity);
+    _paintExpression(canvas, identity);
     canvas.restore();
   }
 
@@ -371,11 +478,11 @@ class _WavatarPainter extends CustomPainter {
     }
   }
 
-  void _paintGlyph(Canvas canvas) {
-    final paint = Paint()..color = recipe.glyph;
-    final accent = Paint()..color = recipe.glyphAccent;
+  void _paintGlyph(Canvas canvas, _WavatarRecipe identity) {
+    final paint = Paint()..color = identity.glyph;
+    final accent = Paint()..color = identity.glyphAccent;
 
-    switch (recipe.glyphShape) {
+    switch (identity.glyphShape) {
       case 0:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -431,35 +538,35 @@ class _WavatarPainter extends CustomPainter {
     }
   }
 
-  void _paintEyes(Canvas canvas) {
+  void _paintEyes(Canvas canvas, _WavatarRecipe identity) {
     final y = 48.0;
-    final spacing = recipe.eyeSpacing * 100;
+    final spacing = identity.eyeSpacing * 100;
     final left = Offset(50 - spacing, y);
     final right = Offset(50 + spacing, y);
-    final fill = Paint()..color = recipe.ink;
+    final fill = Paint()..color = identity.ink;
     final stroke = Paint()
-      ..color = recipe.ink
+      ..color = identity.ink
       ..strokeWidth = 2.8
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    switch (recipe.eyeStyle) {
+    switch (identity.eyeStyle) {
       case 0:
-        canvas.drawCircle(left, 2.8 * recipe.eyeScale, fill);
-        canvas.drawCircle(right, 2.8 * recipe.eyeScale, fill);
+        canvas.drawCircle(left, 2.8 * identity.eyeScale, fill);
+        canvas.drawCircle(right, 2.8 * identity.eyeScale, fill);
       case 1:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromCenter(
               center: left,
-              width: 8 * recipe.eyeScale,
-              height: 4 * recipe.eyeScale,
+              width: 8 * identity.eyeScale,
+              height: 4 * identity.eyeScale,
             ),
             const Radius.circular(2),
           ),
           fill,
         );
-        canvas.drawCircle(right, 2.7 * recipe.eyeScale, fill);
+        canvas.drawCircle(right, 2.7 * identity.eyeScale, fill);
       case 2:
         canvas.drawCircle(left, 5.5, stroke);
         canvas.drawCircle(right, 5.5, stroke);
@@ -482,10 +589,10 @@ class _WavatarPainter extends CustomPainter {
     }
   }
 
-  void _paintExpression(Canvas canvas) {
-    final width = recipe.expressionWidth * 100;
+  void _paintExpression(Canvas canvas, _WavatarRecipe identity) {
+    final width = identity.expressionWidth * 100;
     final stroke = Paint()
-      ..color = recipe.ink
+      ..color = identity.ink
       ..strokeWidth = 2.8
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -495,10 +602,10 @@ class _WavatarPainter extends CustomPainter {
       height: 10,
     );
 
-    final style = switch (recipe.subject) {
+    final style = switch (identity.subject) {
       UiWavatarSubject.organization => 1,
       UiWavatarSubject.bot => 2,
-      _ => recipe.expressionStyle,
+      _ => identity.expressionStyle,
     };
     switch (style) {
       case 0:
@@ -519,7 +626,7 @@ class _WavatarPainter extends CustomPainter {
             ),
             const Radius.circular(4),
           ),
-          Paint()..color = recipe.ink,
+          Paint()..color = identity.ink,
         );
       default:
         final wave = Path()
@@ -532,9 +639,29 @@ class _WavatarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WavatarPainter oldDelegate) {
-    return oldDelegate.recipe.hash != recipe.hash ||
-        oldDelegate.recipe.background != recipe.background ||
-        oldDelegate.recipe.characteristicsKey != recipe.characteristicsKey ||
-        oldDelegate.recipe.isDark != recipe.isDark;
+    if (_recipeChanged(oldDelegate.recipe, recipe) ||
+        oldDelegate.participantRecipes.length != participantRecipes.length) {
+      return true;
+    }
+
+    for (var index = 0; index < participantRecipes.length; index++) {
+      if (_recipeChanged(
+        oldDelegate.participantRecipes[index],
+        participantRecipes[index],
+      )) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static bool _recipeChanged(
+    _WavatarRecipe previous,
+    _WavatarRecipe current,
+  ) {
+    return previous.hash != current.hash ||
+        previous.background != current.background ||
+        previous.characteristicsKey != current.characteristicsKey ||
+        previous.isDark != current.isDark;
   }
 }

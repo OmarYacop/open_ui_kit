@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/primitives/ui_box.dart';
+import '../../foundation/primitives/ui_progress.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
@@ -162,8 +163,9 @@ class UiLoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedIcon = icon ??
         switch (indicatorMode) {
-          UiLoadingIndicatorMode.animated => const _Spinner(),
-          UiLoadingIndicatorMode.staticFrame => const _StaticSpinner(),
+          UiLoadingIndicatorMode.animated => const UiSpinner(size: 28),
+          UiLoadingIndicatorMode.staticFrame =>
+            const UiSpinner(size: 28, animated: false),
         };
 
     return _AsyncStateSurface(
@@ -246,76 +248,6 @@ class UiErrorState extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-
-class _Spinner extends StatefulWidget {
-  const _Spinner();
-
-  @override
-  State<_Spinner> createState() => _SpinnerState();
-}
-
-class _SpinnerState extends State<_Spinner>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = UiThemeTokens.colorsOf(context).textPrimary;
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (context, _) => Transform.rotate(
-          angle: _c.value * 6.2831853,
-          child: CustomPaint(painter: _SpinnerPainter(color)),
-        ),
-      ),
-    );
-  }
-}
-
-class _SpinnerPainter extends CustomPainter {
-  _SpinnerPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect.deflate(2), -1.2, 4.5, false, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SpinnerPainter old) => old.color != color;
-}
-
-class _StaticSpinner extends StatelessWidget {
-  const _StaticSpinner();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = UiThemeTokens.colorsOf(context).textPrimary;
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: CustomPaint(painter: _SpinnerPainter(color)),
-    );
-  }
-}
 
 enum _GlyphVariant { empty, error }
 

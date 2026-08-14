@@ -427,7 +427,7 @@ class _LayeredBackSwipeStack extends StatelessWidget {
 
     // Page-background fallback. Pages that don't install their own
     // opaque background (raw widget trees without `UiPageScaffold` /
-    // `Scaffold`) would let the underlying route bleed through during
+    // a transparent root surface would let the underlying route bleed through during
     // the parallax — the outgoing page needs to be opaque so the
     // reveal reads as a slide, not a cross-fade. Wrap both routes in
     // a ColoredBox painted with the theme's page-background token so

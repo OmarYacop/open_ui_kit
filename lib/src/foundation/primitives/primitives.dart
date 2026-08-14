@@ -4,4 +4,5 @@ export 'ui_constrained.dart';
 export 'ui_divider.dart';
 export 'ui_focus_ring.dart';
 export 'ui_pressable.dart';
+export 'ui_progress.dart';
 export 'ui_text.dart';

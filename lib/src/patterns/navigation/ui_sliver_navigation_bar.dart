@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
@@ -18,6 +19,11 @@ import 'ui_navigation_back_button.dart';
 import 'ui_navigation_scope.dart';
 import 'ui_navigation_spec.dart';
 import 'ui_route_entry.dart';
+
+// Match iOS large-title navigation: scrolling selects a discrete title state,
+// then a short time-based crossfade performs the handoff.
+const double _titleSnapThreshold = 0.6;
+const double _titleHandoffBlurSigma = 2.5;
 
 /// Sliver-based navigation bar with large-title collapse behavior.
 ///
@@ -281,9 +287,8 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
           height: minExtent - topInset - bottomHeight,
           child: _CompactRow(
             spec: spec,
-            collapseT: t,
-            showTitle: spec.showCompactTitle && (!useHero || t > 0.001),
-            titleOpacity: useHero ? ((t - 0.5) / 0.36).clamp(0.0, 1.0) : 1,
+            showTitle: spec.showCompactTitle,
+            titleVisible: !useHero || t >= _titleSnapThreshold,
           ),
         ),
         if (bottom != null)
@@ -300,7 +305,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
           // *inside* the Positioned, not around it.
           _LargeTitle(
             spec: spec,
-            collapseT: t,
+            visible: t < _titleSnapThreshold,
             expandedHeight: maxExtent - bottomHeight,
             scrollOffset: shrinkOffset,
           ),
@@ -421,16 +426,13 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
 class _CompactRow extends StatelessWidget {
   const _CompactRow({
     required this.spec,
-    required this.collapseT,
     required this.showTitle,
-    required this.titleOpacity,
+    required this.titleVisible,
   });
 
   final UiNavigationSpec spec;
-  final double collapseT;
-
   final bool showTitle;
-  final double titleOpacity;
+  final bool titleVisible;
 
   @override
   Widget build(BuildContext context) {
@@ -563,35 +565,54 @@ class _CompactRow extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (showTitle) SizedBox(width: tokens.spacing.x2),
+                      if (showTitle && titleVisible)
+                        SizedBox(width: tokens.spacing.x2),
                     ],
                     if (showTitle)
                       Flexible(
-                        child: Opacity(
-                          opacity: titleOpacity,
-                          child: UiLegibilityShadow(
-                            key: const Key(
-                              'ui_navigation_compact_title_shadow',
-                            ),
-                            blurSigma: 4,
-                            spreadRadius: 2.5,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                UiText(
-                                  spec.compactTitle ?? spec.title,
-                                  key: const Key('ui_navigation_compact_title'),
-                                  variant: UiTextVariant.heading,
-                                  style: TextStyle(color: c.textPrimary),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                        child: AnimatedSwitcher(
+                          key: const Key(
+                            'ui_navigation_compact_title_fade',
                           ),
+                          duration: tokens.motion.fast * 0.8,
+                          reverseDuration: tokens.motion.fast * 0.8,
+                          switchInCurve: tokens.motion.standardCurve,
+                          switchOutCurve: tokens.motion.standardCurve,
+                          transitionBuilder: (child, animation) {
+                            return _TitleHandoffTransition(
+                              animation: animation,
+                              blurSigma: _resolvedTitleBlurSigma(tokens),
+                              child: child,
+                            );
+                          },
+                          child: titleVisible
+                              ? UiLegibilityShadow(
+                                  key: const ValueKey('compact-title-visible'),
+                                  blurSigma: 4,
+                                  spreadRadius: 2.5,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      UiText(
+                                        spec.compactTitle ?? spec.title,
+                                        key: const Key(
+                                          'ui_navigation_compact_title',
+                                        ),
+                                        variant: UiTextVariant.heading,
+                                        style: TextStyle(color: c.textPrimary),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox(
+                                  key: ValueKey('compact-title-hidden'),
+                                ),
                         ),
                       ),
                   ],
@@ -710,13 +731,13 @@ class _TitleTrackingActions extends StatelessWidget {
 class _LargeTitle extends StatelessWidget {
   const _LargeTitle({
     required this.spec,
-    required this.collapseT,
+    required this.visible,
     required this.expandedHeight,
     required this.scrollOffset,
   });
 
   final UiNavigationSpec spec;
-  final double collapseT;
+  final bool visible;
   final double expandedHeight;
   final double scrollOffset;
 
@@ -748,18 +769,23 @@ class _LargeTitle extends StatelessWidget {
         : tokens.spacing.x4 +
             44.0 * spec.actions.length +
             tokens.spacing.x2 * (spec.actions.length - 1);
-    final titleOpacity = ((0.62 - collapseT) / 0.48).clamp(0.0, 1.0);
-    final subtitleOpacity = ((0.46 - collapseT) / 0.36).clamp(0.0, 1.0);
-
     return PositionedDirectional(
       start: tokens.spacing.x4,
       end: trailingReserved,
       top: expandedY - scrollOffset,
       child: RepaintBoundary(
         child: IgnorePointer(
-          ignoring: titleOpacity < 0.05,
-          child: Opacity(
-            opacity: titleOpacity,
+          ignoring: !visible,
+          child: TweenAnimationBuilder<double>(
+            key: const Key('ui_navigation_large_title_fade'),
+            tween: Tween<double>(end: visible ? 1 : 0),
+            duration: tokens.motion.fast * 0.8,
+            curve: tokens.motion.standardCurve,
+            builder: (context, opacity, child) => _buildTitleHandoffFrame(
+              opacity: opacity,
+              blurSigma: _resolvedTitleBlurSigma(tokens),
+              child: child!,
+            ),
             child: UiLegibilityShadow(
               key: const Key('ui_navigation_large_title_shadow'),
               child: Column(
@@ -773,17 +799,14 @@ class _LargeTitle extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (spec.subtitle != null && subtitleOpacity > 0.02) ...[
+                  if (spec.subtitle != null) ...[
                     SizedBox(height: tokens.spacing.x1),
-                    Opacity(
-                      opacity: subtitleOpacity,
-                      child: UiText(
-                        spec.subtitle!,
-                        variant: UiTextVariant.bodySm,
-                        tone: UiTextTone.muted,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    UiText(
+                      spec.subtitle!,
+                      variant: UiTextVariant.bodySm,
+                      tone: UiTextTone.muted,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
@@ -792,6 +815,49 @@ class _LargeTitle extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+double _resolvedTitleBlurSigma(UiThemeTokens tokens) {
+  if (!tokens.effects.animateBlur) return 0;
+  return tokens.effects.scaleBlur(_titleHandoffBlurSigma);
+}
+
+Widget _buildTitleHandoffFrame({
+  required double opacity,
+  required double blurSigma,
+  required Widget child,
+}) {
+  final sigma = blurSigma * (1 - opacity);
+  Widget result = child;
+  if (sigma > 0.01) {
+    result = ImageFiltered(
+      imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+      child: result,
+    );
+  }
+  return Opacity(opacity: opacity, child: result);
+}
+
+class _TitleHandoffTransition extends AnimatedWidget {
+  const _TitleHandoffTransition({
+    required Animation<double> animation,
+    required this.blurSigma,
+    required this.child,
+  }) : super(listenable: animation);
+
+  final double blurSigma;
+  final Widget child;
+
+  Animation<double> get animation => listenable as Animation<double>;
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildTitleHandoffFrame(
+      opacity: animation.value,
+      blurSigma: blurSigma,
+      child: child,
     );
   }
 }

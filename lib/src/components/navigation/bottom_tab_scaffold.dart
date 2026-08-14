@@ -11,11 +11,11 @@ import '../../foundation/theme/ui_theme_extensions.dart';
 import '../surfaces/ui_drawer.dart';
 import '../surfaces/ui_responsive_navigation_scaffold.dart';
 import 'bottom_tab_bar.dart';
+import 'bottom_tab_metrics.dart';
 import 'ui_navigation_drawer.dart';
 
 const _kBottomTabScaffoldControlWidth = 72.0;
 const _kBottomTabScaffoldDockPadding = 6.0;
-const _kBottomTabScaffoldBarHeight = 54.0;
 const _kBottomTabScaffoldAccessoryGap = 12.0;
 
 class UiBottomTabRailConfig {
@@ -421,7 +421,11 @@ class _BottomTabBodyState extends State<_BottomTabBody>
         final resolvedChanged = overflow == null
             ? widget.onChanged
             : (int index) => _handleOverflowTap(context, overflow, index);
-        final bodyBottomInset = _resolveBodyBottomInset(context, constraints);
+        final bodyBottomInset = _resolveBodyBottomInset(
+          context,
+          constraints,
+          resolvedItems,
+        );
         final paddedBody = MediaQuery(
           data: _addBottomPadding(
             MediaQuery.of(context),
@@ -558,6 +562,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   double _resolveBodyBottomInset(
     BuildContext context,
     BoxConstraints constraints,
+    List<UiBottomTabItem> items,
   ) {
     final isWide = constraints.maxWidth.isFinite &&
         constraints.maxWidth >= widget.adaptiveBreakpoint;
@@ -569,8 +574,12 @@ class _BottomTabBodyState extends State<_BottomTabBody>
           : UiBottomTabBarLayout.edgeToEdge,
     };
 
+    final barHeight = resolveBottomTabBarHeight(
+      context,
+      items.map((item) => item.label),
+    );
     if (resolvedLayout == UiBottomTabBarLayout.edgeToEdge) {
-      return _kBottomTabScaffoldBarHeight;
+      return barHeight;
     }
 
     final tokens = UiThemeTokens.of(context);
@@ -579,9 +588,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
       minimum: widget.floatingBottomMargin + tokens.spacing.x1,
       reduceSafeArea: false,
     );
-    return _kBottomTabScaffoldBarHeight +
-        _kBottomTabScaffoldDockPadding * 2 +
-        bottomOffset;
+    return barHeight + _kBottomTabScaffoldDockPadding * 2 + bottomOffset;
   }
 
   MediaQueryData _addBottomPadding(

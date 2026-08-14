@@ -129,7 +129,7 @@ class UiButton extends StatelessWidget {
     final radius = tokens.radius.mdAll;
     final textStyle = _textStyleFor(size, tokens);
 
-    return UiPressable(
+    final button = UiPressable(
       enabled: _enabled,
       onPressed: onPressed,
       focusNode: focusNode,
@@ -157,7 +157,7 @@ class UiButton extends StatelessWidget {
                       : null,
                   boxShadow: boxShadow,
                   padding: padding,
-                  alignment: Alignment.center,
+                  alignment: expand ? Alignment.center : null,
                   width: expand ? double.infinity : null,
                   child: _content(context, style.foreground, textStyle, state),
                 ),
@@ -166,6 +166,17 @@ class UiButton extends StatelessWidget {
           ),
         );
       },
+    );
+
+    if (expand) return button;
+
+    // A tight parent (for example, a stretching form column) must not turn a
+    // compact button into a full-width surface and tap target. The outer Align
+    // accepts the parent's constraint while laying out the pressable loosely.
+    return Align(
+      alignment: Alignment.center,
+      widthFactor: 1,
+      child: button,
     );
   }
 

@@ -9,6 +9,7 @@ import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/effects/ui_component_shadow.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
+import '../../foundation/primitives/ui_progress.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Lifecycle states shared by [UiRefresher] and [UiSliverRefresher].
@@ -849,11 +850,7 @@ class _RefreshGlyph extends StatefulWidget {
 }
 
 class _RefreshGlyphState extends State<_RefreshGlyph>
-    with TickerProviderStateMixin {
-  late final AnimationController _spin = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+    with SingleTickerProviderStateMixin {
   late final AnimationController _complete = AnimationController(
     vsync: this,
     duration: Duration.zero,
@@ -875,13 +872,6 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
   void _syncAnimation() {
     final animationsDisabled =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    if (widget.status == UiRefreshStatus.refreshing && !animationsDisabled) {
-      _spin.repeat();
-    } else {
-      _spin.stop();
-      if (widget.status != UiRefreshStatus.completed) _spin.value = 0;
-    }
-
     if (widget.status == UiRefreshStatus.completed) {
       if (animationsDisabled) {
         _complete.value = 1;
@@ -895,23 +885,28 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
 
   @override
   void dispose() {
-    _spin.dispose();
     _complete.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.status == UiRefreshStatus.refreshing) {
+      return UiSpinner(
+        size: 20,
+        strokeWidth: 1.8,
+        color: widget.color,
+      );
+    }
     return SizedBox.square(
       dimension: 20,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_spin, _complete]),
+        animation: _complete,
         builder: (context, _) {
           return CustomPaint(
             painter: _RefreshGlyphPainter(
               status: widget.status,
               progress: widget.progress,
-              phase: _spin.value,
               completion: _complete.value,
               color: widget.color,
             ),
@@ -926,14 +921,12 @@ class _RefreshGlyphPainter extends CustomPainter {
   const _RefreshGlyphPainter({
     required this.status,
     required this.progress,
-    required this.phase,
     required this.completion,
     required this.color,
   });
 
   final UiRefreshStatus status;
   final double progress;
-  final double phase;
   final double completion;
   final Color color;
 
@@ -953,7 +946,6 @@ class _RefreshGlyphPainter extends CustomPainter {
         );
         break;
       case UiRefreshStatus.refreshing:
-        _paintOrbit(canvas, size);
         break;
       case UiRefreshStatus.completed:
         _paintCompletion(canvas, size);
@@ -993,12 +985,11 @@ class _RefreshGlyphPainter extends CustomPainter {
       ..lineTo(center.dx + 4.8, center.dy - 3.6);
   }
 
-  Offset _orbitalPoint(Size size, int index, {double phase = 0}) {
+  Offset _orbitalPoint(Size size, int index) {
     const count = 6;
     final radius = math.min(size.width, size.height) * 0.36;
     final center = size.center(Offset.zero);
-    final angle =
-        -math.pi / 2 + phase * math.pi * 2 + index * math.pi * 2 / count;
+    final angle = -math.pi / 2 + index * math.pi * 2 / count;
     return center + Offset(math.cos(angle), math.sin(angle)) * radius;
   }
 
@@ -1040,24 +1031,6 @@ class _RefreshGlyphPainter extends CustomPainter {
     }
   }
 
-  void _paintOrbit(Canvas canvas, Size size) {
-    const count = 6;
-    final center = size.center(Offset.zero);
-
-    for (var i = 0; i < count; i++) {
-      final point = _orbitalPoint(size, i, phase: phase);
-      final wave = (1 - ((i / count - phase) % 1.0)).clamp(0.0, 1.0);
-      final intensity = Curves.easeOutCubic.transform(wave);
-      canvas.drawCircle(
-        point,
-        1.05 + intensity * 1.15,
-        _fillPaint(color, 0.12 + intensity * 0.58),
-      );
-    }
-
-    canvas.drawCircle(center, 2.3, _fillPaint(color, 0.4));
-  }
-
   void _paintCompletion(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final p = Curves.easeOutCubic.transform(completion.clamp(0.0, 1.0));
@@ -1066,7 +1039,7 @@ class _RefreshGlyphPainter extends CustomPainter {
     if (orbitOpacity > 0) {
       const count = 6;
       for (var i = 0; i < count; i++) {
-        final point = _orbitalPoint(size, i, phase: phase + p * 0.12);
+        final point = _orbitalPoint(size, i);
         canvas.drawCircle(
           Offset.lerp(point, center, p * 0.72)!,
           1.2 * orbitOpacity,
@@ -1105,7 +1078,6 @@ class _RefreshGlyphPainter extends CustomPainter {
   bool shouldRepaint(covariant _RefreshGlyphPainter oldDelegate) {
     return status != oldDelegate.status ||
         progress != oldDelegate.progress ||
-        phase != oldDelegate.phase ||
         completion != oldDelegate.completion ||
         color != oldDelegate.color;
   }

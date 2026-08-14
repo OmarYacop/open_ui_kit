@@ -14,6 +14,14 @@ typedef UiCollectionItemBuilder<T> = Widget Function(
   int index,
 );
 
+/// Builds a header when [item] starts a new collection section.
+/// Return `null` when the item continues the current section.
+typedef UiCollectionSectionBuilder<T> = Widget? Function(
+  BuildContext context,
+  T item,
+  int index,
+);
+
 enum UiCollectionLayout { list, grid, adaptiveGrid }
 
 /// Semantic collection page pattern.
@@ -46,7 +54,10 @@ class UiCollectionPage<T> extends StatelessWidget {
     this.layout = UiCollectionLayout.list,
     this.padding,
     this.itemSpacing,
+    this.sectionBuilder,
+    this.sectionSpacing,
     this.gridMaxCrossAxisExtent = 420,
+    this.gridColumnCount = 2,
     this.gridMainAxisSpacing,
     this.gridCrossAxisSpacing,
     this.gridChildAspectRatio = 1,
@@ -57,7 +68,7 @@ class UiCollectionPage<T> extends StatelessWidget {
     this.refreshIndicatorBuilder,
     this.safeViewportMode = UiSafeViewportMode.all,
     this.breakpoints = UiBreakpoints.standard,
-  });
+  }) : assert(gridColumnCount > 0, 'gridColumnCount must be positive');
 
   final List<T> items;
   final UiCollectionItemBuilder<T> itemBuilder;
@@ -83,7 +94,10 @@ class UiCollectionPage<T> extends StatelessWidget {
   final UiCollectionLayout layout;
   final EdgeInsets? padding;
   final double? itemSpacing;
+  final UiCollectionSectionBuilder<T>? sectionBuilder;
+  final double? sectionSpacing;
   final double gridMaxCrossAxisExtent;
+  final int gridColumnCount;
   final double? gridMainAxisSpacing;
   final double? gridCrossAxisSpacing;
   final double gridChildAspectRatio;
@@ -156,6 +170,32 @@ class UiCollectionPage<T> extends StatelessWidget {
     final collection = LayoutBuilder(
       builder: (context, constraints) {
         final resolvedLayout = _resolveLayout(constraints.maxWidth);
+        final buildSection = sectionBuilder;
+        if (buildSection != null) {
+          final tokens = UiThemeTokens.of(context);
+          final resolvedPadding = _withBodyInsets(
+            context,
+            padding ?? EdgeInsets.all(tokens.spacing.x4),
+          );
+          return CustomScrollView(
+            physics: physics,
+            slivers: [
+              SliverPadding(
+                padding: resolvedPadding,
+                sliver: UiSliverCollection<T>(
+                  items: items,
+                  itemBuilder: itemBuilder,
+                  sectionBuilder: buildSection,
+                  layout: resolvedLayout,
+                  itemSpacing: itemSpacing,
+                  sectionSpacing: sectionSpacing,
+                  gridColumnCount: gridColumnCount,
+                  breakpoints: breakpoints,
+                ),
+              ),
+            ],
+          );
+        }
         switch (resolvedLayout) {
           case UiCollectionLayout.list:
             return _CollectionList<T>(
@@ -191,6 +231,153 @@ class UiCollectionPage<T> extends StatelessWidget {
         ? UiCollectionLayout.list
         : UiCollectionLayout.grid;
   }
+}
+
+/// Section-aware sliver collection with adaptive one/two-column rows.
+///
+/// Section headers always span the available width. Items following a header
+/// are packed into the same row until the next section boundary. This avoids
+/// bespoke `SliverList`/`Row` grouping in feature code while retaining lazy
+/// row construction and full-width headers.
+class UiSliverCollection<T> extends StatelessWidget {
+  const UiSliverCollection({
+    super.key,
+    required this.items,
+    required this.itemBuilder,
+    this.sectionBuilder,
+    this.layout = UiCollectionLayout.list,
+    this.itemSpacing,
+    this.sectionSpacing,
+    this.gridColumnCount = 2,
+    this.breakpoints = UiBreakpoints.standard,
+  }) : assert(gridColumnCount > 0, 'gridColumnCount must be positive');
+
+  final List<T> items;
+  final UiCollectionItemBuilder<T> itemBuilder;
+  final UiCollectionSectionBuilder<T>? sectionBuilder;
+  final UiCollectionLayout layout;
+  final double? itemSpacing;
+  final double? sectionSpacing;
+  final int gridColumnCount;
+  final UiBreakpoints breakpoints;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        final tokens = UiThemeTokens.of(context);
+        final gap = itemSpacing ?? tokens.spacing.x2;
+        final headerGap = sectionSpacing ?? tokens.spacing.x2;
+        final resolvedLayout = layout == UiCollectionLayout.adaptiveGrid
+            ? breakpoints.resolve(constraints.crossAxisExtent) ==
+                    UiFormFactor.phone
+                ? UiCollectionLayout.list
+                : UiCollectionLayout.grid
+            : layout;
+        final columnCount =
+            resolvedLayout == UiCollectionLayout.list ? 1 : gridColumnCount;
+        final headers = List<Widget?>.generate(
+          items.length,
+          (index) => sectionBuilder?.call(context, items[index], index),
+          growable: false,
+        );
+        final blocks = _collectionBlocks(headers, columnCount);
+
+        return SliverList.builder(
+          itemCount: blocks.length,
+          itemBuilder: (context, blockIndex) {
+            final block = blocks[blockIndex];
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: blockIndex == blocks.length - 1 ? 0 : gap,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (block.header != null) ...[
+                    block.header!,
+                    SizedBox(height: headerGap),
+                  ],
+                  _CollectionRow<T>(
+                    indices: block.indices,
+                    items: items,
+                    itemBuilder: itemBuilder,
+                    gap: gap,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _CollectionRow<T> extends StatelessWidget {
+  const _CollectionRow({
+    required this.indices,
+    required this.items,
+    required this.itemBuilder,
+    required this.gap,
+  });
+
+  final List<int> indices;
+  final List<T> items;
+  final UiCollectionItemBuilder<T> itemBuilder;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (indices.length == 1) {
+      final index = indices.single;
+      return itemBuilder(context, items[index], index);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var position = 0; position < indices.length; position++) ...[
+          if (position > 0) SizedBox(width: gap),
+          Expanded(
+            child: itemBuilder(
+              context,
+              items[indices[position]],
+              indices[position],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+List<_CollectionBlock> _collectionBlocks(
+  List<Widget?> headers,
+  int columnCount,
+) {
+  final blocks = <_CollectionBlock>[];
+  var index = 0;
+  while (index < headers.length) {
+    final row = <int>[index];
+    var next = index + 1;
+    while (row.length < columnCount &&
+        next < headers.length &&
+        headers[next] == null) {
+      row.add(next);
+      next++;
+    }
+    blocks.add(_CollectionBlock(header: headers[index], indices: row));
+    index = next;
+  }
+  return blocks;
+}
+
+class _CollectionBlock {
+  const _CollectionBlock({required this.header, required this.indices});
+
+  final Widget? header;
+  final List<int> indices;
 }
 
 class _CollectionList<T> extends StatelessWidget {

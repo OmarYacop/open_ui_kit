@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.0 - 2026-08-14
+
+### Added
+
+- Added `UiAdaptiveSheetScope` for token-driven phone sheets and constrained
+  tablet/desktop modal surfaces.
+- Added section-aware `UiSliverCollection` support and exposed it through
+  `UiCollectionPage` for adaptive full-width headers and grid rows.
+- Added `UiContentPage` for token-spaced, titled, refreshable content pages.
+- Added `UiDismissKeyboard` for reusable page-level focus dismissal.
+
+### Changed
+
+- `UiWavatar` now supports one-to-four-shape group compositions through
+  `UiWavatarParticipant`, with an independent seed and characteristics for
+  each participant.
+- Transparent `UiPageScaffold` surfaces now use their opaque scroll-fade
+  backing color to keep status and navigation bar icons legible in dark mode.
+- Refined `UiTypingIndicator` into a compact incoming ellipsis bubble with
+  the active participant avatar, while retaining localized live-region
+  announcements. `UiMessageScroller` now distinguishes real tail arrivals
+  from loaded history and queues arrivals correctly when auto-follow is off.
+
 ## 0.6.0 - 2026-08-05
 
 ### Added

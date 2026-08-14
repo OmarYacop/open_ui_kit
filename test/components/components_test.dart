@@ -122,6 +122,99 @@ void main() {
       expect(adult.shouldRepaint(child), isTrue);
     });
 
+    testWidgets('participant list controls shape count and caps at four', (
+      tester,
+    ) async {
+      Future<CustomPainter> painterFor(
+        List<UiWavatarParticipant> participants,
+      ) async {
+        await tester.pumpWidget(
+          _host(
+            UiWavatar(
+              seed: 'same-team',
+              participants: participants,
+            ),
+          ),
+        );
+        return tester
+            .widget<CustomPaint>(
+              find.descendant(
+                of: find.byType(UiWavatar),
+                matching: find.byType(CustomPaint),
+              ),
+            )
+            .painter!;
+      }
+
+      const participants = [
+        UiWavatarParticipant(seed: 'ada'),
+        UiWavatarParticipant(seed: 'grace'),
+        UiWavatarParticipant(seed: 'linus'),
+        UiWavatarParticipant(seed: 'margaret'),
+        UiWavatarParticipant(seed: 'alan'),
+      ];
+      final one = await painterFor(participants.take(1).toList());
+      final two = await painterFor(participants.take(2).toList());
+      final three = await painterFor(participants.take(3).toList());
+      final four = await painterFor(participants.take(4).toList());
+      final moreThanFour = await painterFor(participants);
+
+      expect(two.shouldRepaint(one), isTrue);
+      expect(three.shouldRepaint(two), isTrue);
+      expect(four.shouldRepaint(three), isTrue);
+      expect(moreThanFour.shouldRepaint(four), isFalse);
+    });
+
+    testWidgets('each participant has an independent generated identity', (
+      tester,
+    ) async {
+      Future<CustomPainter> painterFor(
+        List<UiWavatarParticipant> participants,
+      ) async {
+        await tester.pumpWidget(
+          _host(UiWavatar(seed: 'group', participants: participants)),
+        );
+        return tester
+            .widget<CustomPaint>(
+              find.descendant(
+                of: find.byType(UiWavatar),
+                matching: find.byType(CustomPaint),
+              ),
+            )
+            .painter!;
+      }
+
+      final original = await painterFor(
+        const [
+          UiWavatarParticipant(seed: 'ada'),
+          UiWavatarParticipant(seed: 'assistant'),
+        ],
+      );
+      final changedSeed = await painterFor(
+        const [
+          UiWavatarParticipant(seed: 'grace'),
+          UiWavatarParticipant(seed: 'assistant'),
+        ],
+      );
+      final changedCharacteristics = await painterFor(
+        const [
+          UiWavatarParticipant(
+            seed: 'grace',
+            characteristics: UiWavatarCharacteristics(
+              ageGroup: UiWavatarAgeGroup.child,
+            ),
+          ),
+          UiWavatarParticipant(seed: 'assistant'),
+        ],
+      );
+
+      expect(changedSeed.shouldRepaint(original), isTrue);
+      expect(
+        changedCharacteristics.shouldRepaint(changedSeed),
+        isTrue,
+      );
+    });
+
     testWidgets(
         'adaptive colors respond to brightness while fixed colors do not',
         (tester) async {
@@ -333,6 +426,55 @@ void main() {
   });
 
   group('UiButton', () {
+    testWidgets('expand controls the button surface and tap target width', (
+      tester,
+    ) async {
+      var compactTaps = 0;
+
+      Future<void> pumpButton({required bool expand}) {
+        return tester.pumpWidget(
+          _host(
+            SizedBox(
+              key: const Key('button-width-constraint'),
+              width: 320,
+              child: UiButton(
+                label: 'Forgot password',
+                expand: expand,
+                onPressed: () => compactTaps++,
+              ),
+            ),
+          ),
+        );
+      }
+
+      await pumpButton(expand: false);
+
+      final compactSurface = find.descendant(
+        of: find.byType(UiButton),
+        matching: find.byType(DecoratedBox),
+      );
+      final compactRect = tester.getRect(compactSurface);
+      final availableRect = tester.getRect(
+        find.byKey(const Key('button-width-constraint')),
+      );
+
+      expect(compactRect.width, lessThan(availableRect.width));
+
+      await tester.tapAt(Offset(availableRect.left + 1, compactRect.center.dy));
+      expect(compactTaps, 0);
+
+      await tester.tap(find.text('Forgot password'));
+      expect(compactTaps, 1);
+
+      await pumpButton(expand: true);
+
+      final expandedSurface = find.descendant(
+        of: find.byType(UiButton),
+        matching: find.byType(DecoratedBox),
+      );
+      expect(tester.getSize(expandedSurface).width, 320);
+    });
+
     testWidgets('renders label and fires onPressed', (tester) async {
       var tapped = 0;
       await tester.pumpWidget(
