@@ -325,8 +325,17 @@ class UiBottomTabBar extends StatelessWidget {
                 children: [
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(end: accessoryExpanded ? 1 : 0),
-                    duration:
-                        presence < 0.999 ? Duration.zero : dockMorphDuration,
+                    // Always animates with the real duration. TweenAnimation-
+                    // Builder already renders at its target with no motion
+                    // on this widget's own first build (Flutter's built-in
+                    // behavior), so this doesn't reintroduce motion for a
+                    // freshly-mounted accessory. What it fixes: expanding
+                    // the accessory while presence is still fading in used
+                    // to force Duration.zero, snapping morphProgress
+                    // instantly to its target instead of animating —
+                    // confirmed via a runtime probe (width jumped in under
+                    // 1ms rather than easing).
+                    duration: dockMorphDuration,
                     curve: tokens.motion.standardCurve,
                     builder: (context, morphProgress, _) => Row(
                       mainAxisSize: MainAxisSize.min,

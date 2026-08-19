@@ -5,6 +5,8 @@ import 'reactive/ui_clock.dart';
 import 'scrolling/ui_scroll_configuration.dart';
 import 'theme/ui_theme_extensions.dart';
 import '../patterns/navigation/ui_navigation_transition.dart';
+import '../patterns/navigation/ui_navigator_history.dart';
+import '../patterns/navigation/ui_page_route.dart';
 
 /// How [UiApp] picks between its light and dark token sets.
 enum UiThemeMode {
@@ -47,6 +49,8 @@ class UiApp extends StatefulWidget {
     this.navigatorObservers = const [],
     this.pageTransitionDuration = UiMotionDuration.standard,
     this.pageReverseTransitionDuration = UiMotionDuration.fast,
+    this.defaultPageTransitionStyle = UiNavigationTransitionStyle.softShift,
+    this.defaultPageSwipeBackEnabled = true,
     this.clockController,
     this.clockTickMode = UiClockTickMode.minute,
     this.clockTickInterval,
@@ -74,6 +78,21 @@ class UiApp extends StatefulWidget {
   final UiMotionDuration pageTransitionDuration;
   final UiMotionDuration pageReverseTransitionDuration;
 
+  /// App-wide default for any route [UiApp] generates itself (e.g. a plain
+  /// `Navigator.pushNamed`) and for [BuildContext.pushUiPage] calls that
+  /// don't override it. Defaults to [UiNavigationTransitionStyle.softShift]
+  /// — the kit's signature push/pop, not a plain cross-fade. A single
+  /// `pushUiPage`/[UiPageRoute] call can still override this per route via
+  /// its own `transitionStyle` argument.
+  final UiNavigationTransitionStyle defaultPageTransitionStyle;
+
+  /// App-wide default for whether pushed routes support the progressive
+  /// iOS edge-swipe-back gesture (see [UiCupertinoBackGestureMixin] — it
+  /// only ever attaches on iOS regardless of this flag). A single
+  /// `pushUiPage`/[UiPageRoute] call can still override this per route via
+  /// its own `swipeBackEnabled` argument.
+  final bool defaultPageSwipeBackEnabled;
+
   final UiClockController? clockController;
   final UiClockTickMode clockTickMode;
   final Duration? clockTickInterval;
@@ -84,6 +103,14 @@ class UiApp extends StatefulWidget {
 
 class _UiAppState extends State<UiApp> {
   final HeroController _heroController = HeroController();
+  final UiNavigatorHistoryObserver _historyObserver =
+      UiNavigatorHistoryObserver();
+
+  @override
+  void dispose() {
+    _historyObserver.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +130,10 @@ class _UiAppState extends State<UiApp> {
         (observer) => observer is HeroController,
       ))
         _heroController,
+      if (!widget.navigatorObservers.any(
+        (observer) => observer is UiNavigatorHistoryObserver,
+      ))
+        _historyObserver,
       ...widget.navigatorObservers,
     ];
 
@@ -118,23 +149,22 @@ class _UiAppState extends State<UiApp> {
       localeResolutionCallback: widget.localeResolutionCallback,
       localeListResolutionCallback: widget.localeListResolutionCallback,
       debugShowCheckedModeBanner: widget.debugShowCheckedModeBanner,
+      // UiPageRoute is Open UI Kit's standard push/pop: the same
+      // UiNavigationTransition (softShift by default — fade + subtle
+      // shift + scale, not a plain cross-fade) plus a progressive
+      // iOS edge-swipe-to-pop, matching how iOS users actually expect a
+      // push to behave. Any route WidgetsApp generates by default — and
+      // BuildContext.pushUiPage, for routes pushed explicitly — both go
+      // through this, so every push/pop in an app built on UiApp reads as
+      // one signature motion.
       pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
-        return PageRouteBuilder<T>(
+        return UiPageRoute<T>(
           settings: settings,
+          builder: builder,
           transitionDuration: routeDuration,
           reverseTransitionDuration: routeReverseDuration,
-          pageBuilder: (ctx, _, __) => builder(ctx),
-          transitionsBuilder: (ctx, animation, _, child) {
-            final tokens = UiThemeTokens.of(ctx);
-            return UiNavigationTransition(
-              animation: CurvedAnimation(
-                parent: animation,
-                curve: tokens.motion.standardCurve,
-                reverseCurve: tokens.motion.standardCurve,
-              ),
-              child: child,
-            );
-          },
+          transitionStyle: widget.defaultPageTransitionStyle,
+          swipeBackEnabled: widget.defaultPageSwipeBackEnabled,
         );
       },
       builder: (context, child) {
@@ -148,8 +178,15 @@ class _UiAppState extends State<UiApp> {
             title: widget.title,
             child: UiTheme(
               tokens: tokens,
-              child: UiScrollConfiguration(
-                child: child ?? const SizedBox.shrink(),
+              child: UiPageRouteDefaults(
+                transitionStyle: widget.defaultPageTransitionStyle,
+                swipeBackEnabled: widget.defaultPageSwipeBackEnabled,
+                child: UiNavigatorHistoryScope(
+                  observer: _historyObserver,
+                  child: UiScrollConfiguration(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
               ),
             ),
           ),

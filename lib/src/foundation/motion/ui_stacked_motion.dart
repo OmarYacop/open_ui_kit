@@ -79,6 +79,11 @@ class UiStackedOverlaySurface extends StatelessWidget {
     this.curve = Curves.easeOutCubic,
     this.scaleAlignment = Alignment.center,
     this.applyOpacity = true,
+    @Deprecated(
+      'UiStackedOverlaySurface now derives scale directly from the single '
+      'depth timeline; this flag no longer has an effect and will be '
+      'removed.',
+    )
     this.implicitScaleAnimation = true,
     this.repaintBoundary = true,
   });
@@ -124,28 +129,26 @@ class UiStackedOverlaySurface extends StatelessWidget {
         final resolvedScaleAlignment = scaleAlignment.resolve(
           Directionality.maybeOf(context) ?? TextDirection.ltr,
         );
-        final scaled = implicitScaleAnimation
-            ? AnimatedScale(
-                duration: resolvedDuration,
-                curve: curve,
-                alignment: resolvedScaleAlignment,
-                scale: depthScale * (visible ? 1.0 : 0.98),
-                child: child,
-              )
-            : Transform.scale(
-                alignment: resolvedScaleAlignment,
-                scale: depthScale * (visible ? 1.0 : 0.98),
-                child: child,
-              );
+        // depthValue is already the sole animated timeline for this surface
+        // (driven by the outer TweenAnimationBuilder). Scale and opacity are
+        // pure functions of it, applied directly, so there is exactly one
+        // progress owner instead of nested implicit animations re-animating
+        // an already-animated value.
+        final scaled = Transform.scale(
+          alignment: resolvedScaleAlignment,
+          scale: depthScale * (visible ? 1.0 : 0.98),
+          child: child,
+        );
         Widget current = Transform.translate(
           offset: entranceOffset + depthOffset,
           child: scaled,
         );
         if (applyOpacity) {
-          current = AnimatedOpacity(
-            duration: resolvedDuration,
-            curve: curve,
-            opacity: visible ? depthOpacity * progress : 0.0,
+          current = Opacity(
+            opacity: (visible ? depthOpacity * progress : 0.0).clamp(
+              0.0,
+              1.0,
+            ),
             child: current,
           );
         }

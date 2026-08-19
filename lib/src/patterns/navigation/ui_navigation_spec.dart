@@ -230,14 +230,23 @@ class UiNavigationBackConfig {
     this.label,
     this.history = const <UiNavigationBackHistoryItem>[],
     this.onHistorySelected,
+    this.showLabel = false,
   });
 
-  /// Title shown in the back button; defaults to [UiNavigationSpec.title]
-  /// when omitted.
+  /// Title shown in the back button when [showLabel] is `true`; defaults to
+  /// [UiNavigationSpec.title] when omitted. Always used for the button's
+  /// semantics announcement and as the seeded root of the history menu,
+  /// even when not painted.
   final String? label;
   final VoidCallback onPressed;
   final List<UiNavigationBackHistoryItem> history;
   final ValueChanged<UiNavigationBackHistoryItem>? onHistorySelected;
+
+  /// Whether [label] is painted next to the chevron. Defaults to `false`
+  /// (iOS-style chevron-only), leaving more room for the title and
+  /// trailing actions. Set to `true` to restore the previous
+  /// chevron-plus-title look.
+  final bool showLabel;
 
   @override
   bool operator ==(Object other) {
@@ -246,7 +255,8 @@ class UiNavigationBackConfig {
         other.label == label &&
         other.onPressed == onPressed &&
         UiNavigationSpec._listEq(other.history, history) &&
-        other.onHistorySelected == onHistorySelected;
+        other.onHistorySelected == onHistorySelected &&
+        other.showLabel == showLabel;
   }
 
   @override
@@ -255,5 +265,6 @@ class UiNavigationBackConfig {
         onPressed,
         Object.hashAll(history),
         onHistorySelected,
+        showLabel,
       );
 }
