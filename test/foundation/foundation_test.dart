@@ -38,6 +38,17 @@ void main() {
       expect(t.caption.fontSize, isNotNull);
       expect(t.body.fontSize, isNotNull);
       expect(t.caption.fontSize!, lessThan(t.body.fontSize!));
+      expect(t.displayXl.fontSize, 34);
+      expect(t.displayLg.fontSize, 32);
+      expect(t.title.fontSize, 24);
+      expect(t.heading.fontSize, 20);
+      expect(t.body.fontSize, 16);
+      expect(t.bodySm.fontSize, 14);
+      expect(t.caption.fontSize, 13);
+      expect(t.label.fontSize, 14);
+      expect(t.labelSm.fontSize, 13);
+      expect(t.micro.fontSize, 12);
+      expect(t.displayXl.fontSize! - t.micro.fontSize!, lessThanOrEqualTo(22));
     });
   });
 

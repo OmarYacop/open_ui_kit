@@ -6,6 +6,7 @@ import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiSize, UiButtonMetrics;
+import 'text_selection/ui_text_selection_controls.dart';
 
 typedef UiInputValidator = String? Function(String value);
 
@@ -105,6 +106,12 @@ class UiInputState extends State<UiInput>
       GlobalKey<EditableTextState>();
   late final TextSelectionGestureDetectorBuilder _selectionGestureBuilder;
 
+  // EditableText defaults showSelectionHandles to false; TextField (Material)
+  // and CupertinoTextField both compute it per selection change instead of
+  // hardcoding true, so a long-press shows handles but pressing Home in an
+  // otherwise-empty field doesn't. Mirrored here to match that behavior.
+  bool _showSelectionHandles = false;
+
   @override
   GlobalKey<EditableTextState> get editableTextKey => _editableTextKey;
 
@@ -201,6 +208,36 @@ class UiInputState extends State<UiInput>
     widget.onChanged?.call(value);
   }
 
+  // Ported from Material's `_TextFieldState._shouldShowSelectionHandles` so
+  // UiInput's handle visibility matches TextField/CupertinoTextField: shown
+  // on long-press or stylus handwriting, or once there's text to select;
+  // withheld for keyboard-driven selection, read-only collapsed selections,
+  // and disabled fields.
+  bool _shouldShowSelectionHandles(SelectionChangedCause? cause) {
+    if (!_selectionGestureBuilder.shouldShowSelectionToolbar ||
+        !_selectionGestureBuilder.shouldShowSelectionHandles) {
+      return false;
+    }
+    if (cause == SelectionChangedCause.keyboard) return false;
+    if (widget.readOnly && _controller.selection.isCollapsed) return false;
+    if (!widget.enabled) return false;
+    if (cause == SelectionChangedCause.longPress ||
+        cause == SelectionChangedCause.stylusHandwriting) {
+      return true;
+    }
+    return _controller.text.isNotEmpty;
+  }
+
+  void _handleSelectionChanged(
+    TextSelection selection,
+    SelectionChangedCause? cause,
+  ) {
+    final willShow = _shouldShowSelectionHandles(cause);
+    if (willShow != _showSelectionHandles) {
+      setState(() => _showSelectionHandles = willShow);
+    }
+  }
+
   Widget _buildTappable({required bool disabled, required Widget child}) {
     if (disabled) return child;
     return _selectionGestureBuilder.buildGestureDetector(
@@ -279,9 +316,15 @@ class UiInputState extends State<UiInput>
       // Selection stays available for read-only rows so users can copy
       // displayed text. Disabled rows lock interaction entirely.
       enableInteractiveSelection: !disabled,
-      selectionControls: emptyTextSelectionControls,
+      selectionControls: uiAdaptiveTextSelectionControls,
+      showSelectionHandles: _showSelectionHandles,
+      onSelectionChanged: _handleSelectionChanged,
       contextMenuBuilder: (_, editableTextState) =>
-          _UiTextSelectionMenu(editableTextState: editableTextState),
+          SystemContextMenu.isSupportedByField(editableTextState)
+              ? SystemContextMenu.editableText(
+                  editableTextState: editableTextState,
+                )
+              : _UiTextSelectionMenu(editableTextState: editableTextState),
       // Gesture handling is owned by the surrounding
       // TextSelectionGestureDetectorBuilder. Leaving this false lets
       // RenderEditable consume its basic gestures too, which prevents the

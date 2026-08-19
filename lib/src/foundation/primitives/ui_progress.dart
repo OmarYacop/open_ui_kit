@@ -4,7 +4,12 @@ import 'package:flutter/widgets.dart';
 
 import '../theme/ui_theme_extensions.dart';
 
-/// Design-system loading spinner implemented without Material or Cupertino.
+/// Design-system orbital spinner implemented without Material or Cupertino.
+///
+/// With a [value], the orbit fills progressively and remains still. Without a
+/// value, the same fully charged orbit rotates. This lets interactions such as
+/// pull-to-refresh move from user-controlled progress to indeterminate work
+/// without replacing the indicator.
 class UiSpinner extends StatefulWidget {
   const UiSpinner({
     super.key,
@@ -16,8 +21,14 @@ class UiSpinner extends StatefulWidget {
   });
 
   final double size;
+
+  /// Diameter of each fully charged orbital dot.
   final double strokeWidth;
   final Color? color;
+
+  /// Determinate progress in the inclusive range 0–1.
+  ///
+  /// Leave null for an indeterminate, rotating spinner.
   final double? value;
 
   /// Whether an indeterminate spinner rotates.
@@ -83,9 +94,9 @@ class _UiSpinnerState extends State<UiSpinner>
             angle: _controller.value * math.pi * 2,
             child: CustomPaint(
               painter: _UiSpinnerPainter(
-                color,
-                widget.strokeWidth,
-                widget.value,
+                color: color,
+                dotDiameter: widget.strokeWidth,
+                value: widget.value,
               ),
             ),
           ),
@@ -96,32 +107,65 @@ class _UiSpinnerState extends State<UiSpinner>
 }
 
 class _UiSpinnerPainter extends CustomPainter {
-  const _UiSpinnerPainter(this.color, this.strokeWidth, this.value);
+  const _UiSpinnerPainter({
+    required this.color,
+    required this.dotDiameter,
+    required this.value,
+  });
 
   final Color color;
-  final double strokeWidth;
+  final double dotDiameter;
   final double? value;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(
-      Offset.zero & size,
-      -math.pi / 2,
-      value == null ? math.pi * 1.45 : math.pi * 2 * value!.clamp(0.0, 1.0),
-      false,
-      paint,
+    const dotCount = 6;
+    final shortestSide = math.min(size.width, size.height);
+    final center = size.center(Offset.zero);
+    final orbitRadius = shortestSide * 0.34;
+    final dotRadius = math.min(dotDiameter / 2, shortestSide * 0.12);
+    final progress = value?.clamp(0.0, 1.0) ?? 1.0;
+    final charged = Curves.easeOutCubic.transform(progress) * dotCount;
+
+    for (var index = 0; index < dotCount; index++) {
+      final angle = -math.pi / 2 + index * math.pi * 2 / dotCount;
+      final point =
+          center + Offset(math.cos(angle), math.sin(angle)) * orbitRadius;
+      final fill = (charged - index).clamp(0.0, 1.0).toDouble();
+      final trail = (index + 1) / dotCount;
+
+      canvas.drawCircle(
+        point,
+        dotRadius * 0.55,
+        Paint()..color = color.withValues(alpha: 0.1),
+      );
+      if (fill > 0) {
+        canvas.drawCircle(
+          point,
+          dotRadius * (0.72 + fill * 0.28),
+          Paint()
+            ..color = color.withValues(
+              alpha: fill * (0.28 + trail * 0.5),
+            ),
+        );
+      }
+    }
+
+    final centerProgress = Curves.easeOutCubic.transform(progress);
+    canvas.drawCircle(
+      center,
+      dotRadius * (0.9 + centerProgress * 0.55),
+      Paint()
+        ..color = color.withValues(
+          alpha: 0.28 + centerProgress * 0.38,
+        ),
     );
   }
 
   @override
   bool shouldRepaint(covariant _UiSpinnerPainter oldDelegate) =>
       oldDelegate.color != color ||
-      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.dotDiameter != dotDiameter ||
       oldDelegate.value != value;
 }
 

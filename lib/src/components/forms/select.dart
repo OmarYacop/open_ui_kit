@@ -116,7 +116,7 @@ class UiSelect<T> extends StatefulWidget {
     this.errorText,
     this.validator,
     this.enabled = true,
-    this.size = UiSize.md,
+    this.size = UiSize.lg,
     this.placement = UiSelectPlacement.auto,
     this.optionBuilder,
     this.valueBuilder,
@@ -133,6 +133,10 @@ class UiSelect<T> extends StatefulWidget {
   final String? errorText;
   final UiSelectValidator<T>? validator;
   final bool enabled;
+
+  /// Defaults to [UiSize.lg] to match [UiInput]'s default so a Select
+  /// trigger and a text field placed side by side in a form render at the
+  /// same height without callers having to pass `size` explicitly.
   final UiSize size;
 
   /// How the overlay positions itself relative to the trigger.

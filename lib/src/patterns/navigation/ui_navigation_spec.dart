@@ -228,6 +228,7 @@ class UiNavigationBackConfig {
   const UiNavigationBackConfig({
     required this.onPressed,
     this.label,
+    this.showLabel = true,
     this.history = const <UiNavigationBackHistoryItem>[],
     this.onHistorySelected,
   });
@@ -236,6 +237,14 @@ class UiNavigationBackConfig {
   /// when omitted.
   final String? label;
   final VoidCallback onPressed;
+
+  /// Whether [label] renders next to the chevron.
+  ///
+  /// [label] (or its fallback) is still used as the button's semantics
+  /// label and as the long-press history menu's seed entry when set to
+  /// `false` — only the visible text is dropped, freeing the width it
+  /// would have reserved for the centered title.
+  final bool showLabel;
   final List<UiNavigationBackHistoryItem> history;
   final ValueChanged<UiNavigationBackHistoryItem>? onHistorySelected;
 
@@ -244,6 +253,7 @@ class UiNavigationBackConfig {
     if (identical(this, other)) return true;
     return other is UiNavigationBackConfig &&
         other.label == label &&
+        other.showLabel == showLabel &&
         other.onPressed == onPressed &&
         UiNavigationSpec._listEq(other.history, history) &&
         other.onHistorySelected == onHistorySelected;
@@ -252,6 +262,7 @@ class UiNavigationBackConfig {
   @override
   int get hashCode => Object.hash(
         label,
+        showLabel,
         onPressed,
         Object.hashAll(history),
         onHistorySelected,

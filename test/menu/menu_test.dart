@@ -105,7 +105,6 @@ void main() {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
-          openOnLongPress: true,
           trigger: const Text('Quick actions'),
           items: [
             UiMenuItem(label: 'First', onPressed: () => selected = 'First'),
@@ -137,7 +136,6 @@ void main() {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
-          openOnLongPress: true,
           trigger: const Text('Quick actions'),
           items: [
             UiMenuItem(label: 'First', onPressed: () => selected = true),
@@ -295,7 +293,7 @@ void main() {
     final wideText = tester.getRect(find.text('A wider menu item'));
     final menuRect = tester.getRect(surface);
     expect(menuRect.width, greaterThan(wideText.width));
-    expect(menuRect.width, lessThan(320));
+    expect(menuRect.width, lessThanOrEqualTo(320));
 
     final firstRow = tester.getRect(
       find
@@ -415,6 +413,50 @@ void main() {
       ),
     );
     expect(row.borderRadius, tokens.radius.smAll);
+  });
+
+  testWidgets('open menu follows its trigger while the page scrolls',
+      (tester) async {
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.binding.setSurfaceSize(const Size(400, 500));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ListView(
+            controller: controller,
+            children: [
+              const SizedBox(height: 120),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: UiDropdownMenu(
+                  trigger: const Text('Scrolling trigger'),
+                  items: [
+                    UiMenuItem(label: 'Scrolling action', onPressed: () {}),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 800),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Scrolling trigger'));
+    await tester.pumpAndSettle();
+    final triggerBefore = tester.getTopLeft(find.text('Scrolling trigger')).dy;
+    final menuBefore = tester.getTopLeft(find.text('Scrolling action')).dy;
+
+    controller.jumpTo(60);
+    await tester.pump();
+
+    final triggerAfter = tester.getTopLeft(find.text('Scrolling trigger')).dy;
+    final menuAfter = tester.getTopLeft(find.text('Scrolling action')).dy;
+    expect(triggerAfter - triggerBefore, closeTo(-60, 0.01));
+    expect(menuAfter - menuBefore, closeTo(-60, 0.01));
+    expect(find.text('Scrolling action'), findsOneWidget);
   });
 
   testWidgets('navigation chrome paints and receives input above dropdowns',

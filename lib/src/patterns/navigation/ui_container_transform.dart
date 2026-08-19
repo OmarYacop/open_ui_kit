@@ -304,6 +304,59 @@ class UiContainerFlightScope extends InheritedWidget {
   }
 }
 
+/// Eases [child] in and out with the ambient [UiContainerFlightScope]
+/// progress instead of popping with the rest of the destination content.
+///
+/// Meant for chrome that sits on top of a container transform's destination
+/// page — a back button, trailing actions — so it reads as dissolving into
+/// focus the way iOS bar-button content transitions do, rather than
+/// appearing abruptly at the content-occlusion switch point. Fades in over
+/// the top [revealStart] fraction of the flight (on both push and pop, since
+/// [UiContainerFlightScope.progress] is 1 at the fully open end regardless of
+/// direction) while a blur relaxes to zero across the same window.
+///
+/// Renders [child] unchanged where no [UiContainerFlightScope] is in scope
+/// (progress defaults to 1), and skips the blur under reduced motion.
+class UiContainerFlightReveal extends StatelessWidget {
+  const UiContainerFlightReveal({
+    super.key,
+    required this.child,
+    this.revealStart = 0.55,
+    this.maxBlurSigma = 8,
+    this.curve = Curves.easeOut,
+  })  : assert(revealStart >= 0 && revealStart < 1),
+        assert(maxBlurSigma >= 0);
+
+  final Widget child;
+
+  /// Progress fraction where the reveal begins; 1 is the fully open end.
+  final double revealStart;
+  final double maxBlurSigma;
+  final Curve curve;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = UiContainerFlightScope.maybeOf(context)?.progress ?? 1;
+    final reveal = ((progress - revealStart) / (1 - revealStart)).clamp(
+      0.0,
+      1.0,
+    );
+    final eased = curve.transform(reveal);
+    if (eased >= 1) return child;
+
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    Widget result = Opacity(opacity: eased, child: child);
+    final blurSigma = reduceMotion ? 0.0 : (1 - eased) * maxBlurSigma;
+    if (blurSigma > 0.01) {
+      result = ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: result,
+      );
+    }
+    return IgnorePointer(ignoring: eased < 0.99, child: result);
+  }
+}
+
 /// Geometry shared by iOS-style source tiles and their route transition.
 abstract final class UiContainerTransformGeometry {
   /// A compact source uses a pronounced continuous-corner silhouette instead
@@ -679,6 +732,108 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
 
 enum _UiSharedContainerRole { compact, expanded }
 
+/// Identifies the thumbnail/preview region inside [UiOpenContainer]'s
+/// `closedBuilder` and the matching region inside its `pageBuilder`.
+///
+/// Wrap the same visual (for example the cover image) with this widget in
+/// both builders and the [UiContainerTransformStyle.iosZoom] flight will fly
+/// that single element directly from its compact bounds to its expanded
+/// bounds, instead of only cross-fading it with the rest of the content.
+///
+/// If only one side supplies a preview, the pairing is skipped for that
+/// flight and the region falls back to the standard cross-fade. Outside a
+/// container flight, or with [UiContainerTransformStyle.container], this
+/// widget renders [child] unchanged.
+class UiContainerPreview extends StatelessWidget {
+  const UiContainerPreview({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = _UiContainerPreviewScope.maybeOf(context);
+    if (scope == null) return child;
+
+    return _UiContainerPreviewMarker(
+      key: _UiContainerPreviewGlobalKey(scope.containerTag, scope.role),
+      hidden: scope.hidden,
+      child: child,
+    );
+  }
+}
+
+class _UiContainerPreviewMarker extends StatelessWidget {
+  const _UiContainerPreviewMarker({
+    required super.key,
+    required this.hidden,
+    required this.child,
+  });
+
+  final bool hidden;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // Always the same widget shape regardless of [hidden] — only leaf
+    // properties change — so toggling visibility never restructures (and
+    // therefore never remounts) [child]'s subtree.
+    return IgnorePointer(
+      ignoring: hidden,
+      child: ExcludeSemantics(
+        excluding: hidden,
+        child: Opacity(opacity: hidden ? 0 : 1, child: child),
+      ),
+    );
+  }
+}
+
+/// A [GlobalKey] with value equality on (containerTag, role), unlike
+/// [GlobalObjectKey] which compares its wrapped value with `identical()`.
+/// Freshly constructed instances built from the same pair must still resolve
+/// to the same registered element across frames.
+class _UiContainerPreviewGlobalKey extends GlobalKey<State<StatefulWidget>> {
+  const _UiContainerPreviewGlobalKey(this.containerTag, this.role)
+      : super.constructor();
+
+  final Object containerTag;
+  final _UiSharedContainerRole role;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _UiContainerPreviewGlobalKey &&
+        other.containerTag == containerTag &&
+        other.role == role;
+  }
+
+  @override
+  int get hashCode => Object.hash(containerTag, role);
+}
+
+class _UiContainerPreviewScope extends InheritedWidget {
+  const _UiContainerPreviewScope({
+    required this.containerTag,
+    required this.role,
+    required this.hidden,
+    required super.child,
+  });
+
+  final Object containerTag;
+  final _UiSharedContainerRole role;
+  final bool hidden;
+
+  static _UiContainerPreviewScope? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_UiContainerPreviewScope>();
+  }
+
+  @override
+  bool updateShouldNotify(_UiContainerPreviewScope oldWidget) {
+    return containerTag != oldWidget.containerTag ||
+        role != oldWidget.role ||
+        hidden != oldWidget.hidden;
+  }
+}
+
 class _UiSharedContainerHero extends StatelessWidget {
   const _UiSharedContainerHero({
     required this.tag,
@@ -731,6 +886,7 @@ class _UiSharedContainerHero extends StatelessWidget {
       flightShuttleBuilder: _buildFlight,
       child: _UiSharedContainerSurface(
         role: role,
+        containerTag: tag,
         naturalSize: naturalSize,
         borderRadius: borderRadius,
         backgroundColor: backgroundColor,
@@ -765,6 +921,8 @@ class _UiSharedContainerHero extends StatelessWidget {
       reverseDuration: reverseDuration,
       direction: direction,
       sourceFlightLayout: sourceFlightLayout,
+      pathMotion: pathMotion,
+      centerPullStrength: centerPullStrength,
     );
   }
 }
@@ -772,6 +930,7 @@ class _UiSharedContainerHero extends StatelessWidget {
 class _UiSharedContainerSurface extends StatelessWidget {
   const _UiSharedContainerSurface({
     required this.role,
+    required this.containerTag,
     required this.naturalSize,
     required this.borderRadius,
     required this.backgroundColor,
@@ -781,6 +940,7 @@ class _UiSharedContainerSurface extends StatelessWidget {
   });
 
   final _UiSharedContainerRole role;
+  final Object containerTag;
   final Size naturalSize;
   final BorderRadius borderRadius;
   final Color backgroundColor;
@@ -813,6 +973,16 @@ class _UiSharedContainerSurface extends StatelessWidget {
   }
 }
 
+/// Last-known preview rects/widgets for one flight, so the preview keeps
+/// flying using stale-but-valid data once the compact side's live content
+/// leaves the tree (see [_UiSharedContainerFlight._buildPreviewFlight]).
+class _UiContainerPreviewFlightCache {
+  Rect? compactRect;
+  Rect? expandedRect;
+  Widget? compactWidget;
+  Widget? expandedWidget;
+}
+
 class _UiSharedContainerFlight extends StatelessWidget {
   const _UiSharedContainerFlight({
     required this.animation,
@@ -824,6 +994,8 @@ class _UiSharedContainerFlight extends StatelessWidget {
     required this.reverseDuration,
     required this.direction,
     required this.sourceFlightLayout,
+    required this.pathMotion,
+    required this.centerPullStrength,
   });
 
   final Animation<double> animation;
@@ -835,9 +1007,21 @@ class _UiSharedContainerFlight extends StatelessWidget {
   final Duration reverseDuration;
   final HeroFlightDirection direction;
   final UiContainerSourceFlightLayout sourceFlightLayout;
+  final UiContainerPathMotion pathMotion;
+  final double centerPullStrength;
 
   @override
   Widget build(BuildContext context) {
+    final boundaryKey = GlobalKey();
+    // Sticky: once both sides of a paired UiContainerPreview are seen, the
+    // preview keeps flying via the cache below even after the compact side
+    // is later dropped from the tree at the content-occlusion switch point
+    // (see the `!showExpanded` guard around compactContent). Without this,
+    // hasPreviewPairLive would go false right at the switch, the overlay
+    // would disappear, and the image would jump to its resting layout
+    // position instead of continuing to fly to the destination rect.
+    var previewFlightActivated = false;
+    final previewCache = _UiContainerPreviewFlightCache();
     return AnimatedBuilder(
       animation: animation,
       builder: (context, _) {
@@ -879,107 +1063,143 @@ class _UiSharedContainerFlight extends StatelessWidget {
           morphProgress,
         );
 
+        final containerTag = compact.containerTag;
+        final previewCompactKey = _UiContainerPreviewGlobalKey(
+          containerTag,
+          _UiSharedContainerRole.compact,
+        );
+        final previewExpandedKey = _UiContainerPreviewGlobalKey(
+          containerTag,
+          _UiSharedContainerRole.expanded,
+        );
+        final hasPreviewPairLive =
+            previewCompactKey.currentWidget is _UiContainerPreviewMarker &&
+                previewExpandedKey.currentWidget
+                    is _UiContainerPreviewMarker;
+        if (hasPreviewPairLive) previewFlightActivated = true;
+
         return LayoutBuilder(
           builder: (context, constraints) {
             final currentSize = constraints.biggest;
             final compactContent = RepaintBoundary(
-              child:
-                  sourceFlightLayout == UiContainerSourceFlightLayout.responsive
-                      ? SizedBox.expand(
-                          key: const Key('ui_ios_zoom_source_content'),
-                          child: compact.child,
-                        )
-                      : _UiNaturalSizeLayer(
-                          size: compact.naturalSize,
-                          contentKey: const Key('ui_ios_zoom_source_content'),
-                          child: compact.child,
-                        ),
+              child: _UiContainerPreviewScope(
+                containerTag: containerTag,
+                role: _UiSharedContainerRole.compact,
+                hidden: previewFlightActivated,
+                child: sourceFlightLayout ==
+                        UiContainerSourceFlightLayout.responsive
+                    ? SizedBox.expand(
+                        key: const Key('ui_ios_zoom_source_content'),
+                        child: compact.child,
+                      )
+                    : _UiNaturalSizeLayer(
+                        size: compact.naturalSize,
+                        contentKey: const Key('ui_ios_zoom_source_content'),
+                        child: compact.child,
+                      ),
+              ),
             );
 
-            return DecoratedBox(
-              key: const Key('ui_ios_zoom_shadow'),
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                boxShadow: [
-                  ...?shadows,
-                  BoxShadow(
-                    color: const Color(0x26000000).withValues(
-                      alpha: 0.15 * shadowProgress,
-                    ),
-                    blurRadius: 28 * shadowProgress,
-                    offset: Offset(0, 10 * shadowProgress),
-                  ),
-                ],
-              ),
+            return KeyedSubtree(
+              key: boundaryKey,
               child: DecoratedBox(
-                key: const Key('ui_ios_zoom_plate'),
+                key: const Key('ui_ios_zoom_shadow'),
                 decoration: BoxDecoration(
-                  color: backgroundColor,
                   borderRadius: radius,
-                  border: border,
+                  boxShadow: [
+                    ...?shadows,
+                    BoxShadow(
+                      color: const Color(0x26000000).withValues(
+                        alpha: 0.15 * shadowProgress,
+                      ),
+                      blurRadius: 28 * shadowProgress,
+                      offset: Offset(0, 10 * shadowProgress),
+                    ),
+                  ],
                 ),
-                child: ClipRRect(
-                  key: const Key('ui_container_transform_surface'),
-                  borderRadius: radius,
-                  clipBehavior: Clip.antiAlias,
-                  child: UiContainerFlightScope(
-                    progress: morphProgress,
-                    size: currentSize,
+                child: DecoratedBox(
+                  key: const Key('ui_ios_zoom_plate'),
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
                     borderRadius: radius,
-                    inFlight: true,
-                    direction: direction == HeroFlightDirection.push
-                        ? UiContainerFlightDirection.opening
-                        : UiContainerFlightDirection.closing,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        IgnorePointer(
-                          child: ExcludeSemantics(
-                            excluding: !showExpanded,
-                            child: Opacity(
-                              key: const Key(
-                                'ui_ios_zoom_destination_opacity',
-                              ),
-                              opacity: showExpanded ? 1 : 0,
-                              child: RepaintBoundary(
-                                child: _UiNaturalSizeLayer(
-                                  size: expanded.naturalSize,
-                                  contentKey: const Key(
-                                    'ui_ios_zoom_destination_content',
+                    border: border,
+                  ),
+                  child: ClipRRect(
+                    key: const Key('ui_container_transform_surface'),
+                    borderRadius: radius,
+                    clipBehavior: Clip.antiAlias,
+                    child: UiContainerFlightScope(
+                      progress: morphProgress,
+                      size: currentSize,
+                      borderRadius: radius,
+                      inFlight: true,
+                      direction: direction == HeroFlightDirection.push
+                          ? UiContainerFlightDirection.opening
+                          : UiContainerFlightDirection.closing,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          IgnorePointer(
+                            child: ExcludeSemantics(
+                              excluding: !showExpanded,
+                              child: Opacity(
+                                key: const Key(
+                                  'ui_ios_zoom_destination_opacity',
+                                ),
+                                opacity: showExpanded ? 1 : 0,
+                                child: RepaintBoundary(
+                                  child: _UiContainerPreviewScope(
+                                    containerTag: containerTag,
+                                    role: _UiSharedContainerRole.expanded,
+                                    hidden: previewFlightActivated,
+                                    child: _UiNaturalSizeLayer(
+                                      size: expanded.naturalSize,
+                                      contentKey: const Key(
+                                        'ui_ios_zoom_destination_content',
+                                      ),
+                                      child: expanded.child,
+                                    ),
                                   ),
-                                  child: expanded.child,
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        if (!showExpanded)
-                          IgnorePointer(
-                            child: ExcludeSemantics(
-                              child: Opacity(
-                                key: const Key(
-                                  'ui_ios_zoom_source_opacity',
+                          if (!showExpanded)
+                            IgnorePointer(
+                              child: ExcludeSemantics(
+                                child: Opacity(
+                                  key: const Key(
+                                    'ui_ios_zoom_source_opacity',
+                                  ),
+                                  opacity: 1,
+                                  child: compactContent,
                                 ),
-                                opacity: 1,
-                                child: compactContent,
                               ),
                             ),
-                          ),
-                        if (contentSwitch.coverOpacity > 0 &&
-                            contentOcclusion.peakOpacity > 0)
-                          IgnorePointer(
-                            child: ExcludeSemantics(
-                              child: Opacity(
-                                key: const Key(
-                                  'ui_ios_zoom_content_cover',
+                          if (previewFlightActivated)
+                            _buildPreviewFlight(
+                              cache: previewCache,
+                              boundaryKey: boundaryKey,
+                              containerTag: containerTag,
+                              morphProgress: morphProgress,
+                              showExpanded: showExpanded,
+                            ),
+                          if (contentSwitch.coverOpacity > 0 &&
+                              contentOcclusion.peakOpacity > 0)
+                            IgnorePointer(
+                              child: ExcludeSemantics(
+                                child: Opacity(
+                                  key: const Key(
+                                    'ui_ios_zoom_content_cover',
+                                  ),
+                                  opacity: contentSwitch.coverOpacity *
+                                      contentOcclusion.peakOpacity,
+                                  child: ColoredBox(color: contentCoverColor),
                                 ),
-                                opacity: contentSwitch.coverOpacity *
-                                    contentOcclusion.peakOpacity,
-                                child: ColoredBox(color: contentCoverColor),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -989,6 +1209,100 @@ class _UiSharedContainerFlight extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Flies the paired [UiContainerPreview] region from its compact rect to
+  /// its expanded rect, measured relative to [boundaryKey]. Both natural-size
+  /// content layers are always present in the tree at this point (only their
+  /// opacity differs), so their descendants' render boxes reflect this
+  /// frame's real layout one tick after they first mount.
+  ///
+  /// Measurements are cached in [cache] and refreshed whenever a live read
+  /// succeeds. The compact side stops being live once its content leaves the
+  /// tree at the content-occlusion switch point (see the `!showExpanded`
+  /// guard in [build]); from then on this keeps flying using the last known
+  /// compact rect/widget instead of losing its start point and disappearing.
+  Widget _buildPreviewFlight({
+    required _UiContainerPreviewFlightCache cache,
+    required GlobalKey boundaryKey,
+    required Object containerTag,
+    required double morphProgress,
+    required bool showExpanded,
+  }) {
+    final boundaryObject = boundaryKey.currentContext?.findRenderObject();
+    if (boundaryObject is RenderBox && boundaryObject.hasSize) {
+      final compactKey = _UiContainerPreviewGlobalKey(
+        containerTag,
+        _UiSharedContainerRole.compact,
+      );
+      final expandedKey = _UiContainerPreviewGlobalKey(
+        containerTag,
+        _UiSharedContainerRole.expanded,
+      );
+
+      cache.compactRect =
+          _localPreviewRect(compactKey, boundaryObject) ?? cache.compactRect;
+      cache.expandedRect =
+          _localPreviewRect(expandedKey, boundaryObject) ?? cache.expandedRect;
+      cache.compactWidget =
+          (compactKey.currentWidget as _UiContainerPreviewMarker?)?.child ??
+              cache.compactWidget;
+      cache.expandedWidget =
+          (expandedKey.currentWidget as _UiContainerPreviewMarker?)?.child ??
+              cache.expandedWidget;
+    }
+
+    final compactRect = cache.compactRect;
+    final expandedRect = cache.expandedRect;
+    final compactWidget = cache.compactWidget;
+    final expandedWidget = cache.expandedWidget;
+    if (compactRect == null ||
+        expandedRect == null ||
+        compactWidget == null ||
+        expandedWidget == null) {
+      return const SizedBox.shrink();
+    }
+
+    final positionProgress = switch (pathMotion) {
+      UiContainerPathMotion.direct => morphProgress,
+      UiContainerPathMotion.centerPull =>
+        UiContainerTransformGeometry.centerPullProgress(
+          morphProgress,
+          strength: centerPullStrength,
+        ),
+    };
+    final size = Size.lerp(compactRect.size, expandedRect.size, morphProgress)!;
+    final center = Offset.lerp(
+      compactRect.center,
+      expandedRect.center,
+      positionProgress,
+    )!;
+    final rect = Rect.fromCenter(
+      center: center,
+      width: size.width,
+      height: size.height,
+    );
+
+    return Positioned.fromRect(
+      key: const Key('ui_container_preview_flight'),
+      rect: rect,
+      child: IgnorePointer(
+        child: ExcludeSemantics(
+          child: showExpanded ? expandedWidget : compactWidget,
+        ),
+      ),
+    );
+  }
+
+  static Rect? _localPreviewRect(GlobalKey key, RenderBox boundary) {
+    final renderObject = key.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize) {
+      return null;
+    }
+    final origin = renderObject.localToGlobal(Offset.zero, ancestor: boundary);
+    return origin & renderObject.size;
   }
 }
 

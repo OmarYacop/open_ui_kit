@@ -74,13 +74,17 @@ class UiCheckbox extends StatelessWidget {
                 children: [
                   UiFocusRing(
                     visible: state.focused && !hasError,
-                    borderRadius: tokens.radius.smAll,
+                    borderRadius: tokens.radius.xsAll,
                     child: UiBox(
                       width: 16,
                       height: 16,
                       background: boxColor,
                       border: Border.all(color: borderColor, width: 1.5),
-                      borderRadius: tokens.radius.smAll,
+                      // `radius.sm` (10) exceeds half the 16pt box, so it
+                      // rounds into a full circle — indistinguishable from
+                      // UiRadio's `radius.pill`. `radius.xs` (6) keeps this
+                      // a checkbox-shaped rounded square.
+                      borderRadius: tokens.radius.xsAll,
                       alignment: Alignment.center,
                       child: Icon(
                         LucideIcons.check,

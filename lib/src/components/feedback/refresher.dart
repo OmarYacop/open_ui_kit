@@ -891,11 +891,18 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.status == UiRefreshStatus.refreshing) {
+    if (widget.status == UiRefreshStatus.idle ||
+        widget.status == UiRefreshStatus.dragging ||
+        widget.status == UiRefreshStatus.armed ||
+        widget.status == UiRefreshStatus.refreshing) {
       return UiSpinner(
+        key: const Key('refresh_spinner'),
         size: 20,
-        strokeWidth: 1.8,
+        strokeWidth: 4,
         color: widget.color,
+        value: widget.status == UiRefreshStatus.refreshing
+            ? null
+            : widget.progress,
       );
     }
     return SizedBox.square(
@@ -906,7 +913,6 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
           return CustomPaint(
             painter: _RefreshGlyphPainter(
               status: widget.status,
-              progress: widget.progress,
               completion: _complete.value,
               color: widget.color,
             ),
@@ -920,13 +926,11 @@ class _RefreshGlyphState extends State<_RefreshGlyph>
 class _RefreshGlyphPainter extends CustomPainter {
   const _RefreshGlyphPainter({
     required this.status,
-    required this.progress,
     required this.completion,
     required this.color,
   });
 
   final UiRefreshStatus status;
-  final double progress;
   final double completion;
   final Color color;
 
@@ -938,13 +942,6 @@ class _RefreshGlyphPainter extends CustomPainter {
       case UiRefreshStatus.idle:
       case UiRefreshStatus.dragging:
       case UiRefreshStatus.armed:
-        _paintCharge(
-          canvas,
-          size,
-          progress: progress,
-          armed: status == UiRefreshStatus.armed,
-        );
-        break;
       case UiRefreshStatus.refreshing:
         break;
       case UiRefreshStatus.completed:
@@ -993,44 +990,6 @@ class _RefreshGlyphPainter extends CustomPainter {
     return center + Offset(math.cos(angle), math.sin(angle)) * radius;
   }
 
-  void _paintCharge(
-    Canvas canvas,
-    Size size, {
-    required double progress,
-    required bool armed,
-  }) {
-    const count = 6;
-    final center = size.center(Offset.zero);
-    final clamped = progress.clamp(0.0, 1.0).toDouble();
-    final eased = Curves.easeOutCubic.transform(clamped);
-    final charged = armed ? count.toDouble() : eased * count;
-
-    for (var i = 0; i < count; i++) {
-      final point = _orbitalPoint(size, i);
-      final fill = (charged - i).clamp(0.0, 1.0).toDouble();
-      canvas.drawCircle(point, 1.05, _fillPaint(color, 0.1));
-      if (fill > 0) {
-        canvas.drawCircle(
-          point,
-          1.0 + fill * 1.0,
-          _fillPaint(color, 0.22 + fill * 0.5),
-        );
-      }
-    }
-
-    canvas.drawCircle(
-      center,
-      1.8 + eased * 1.6,
-      _fillPaint(color, armed ? 0.72 : 0.32 + eased * 0.32),
-    );
-
-    if (armed) {
-      final halo = _strokePaint(color.withValues(alpha: 0.22))
-        ..strokeWidth = 1.1;
-      canvas.drawCircle(center, 5.4, halo);
-    }
-  }
-
   void _paintCompletion(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final p = Curves.easeOutCubic.transform(completion.clamp(0.0, 1.0));
@@ -1077,7 +1036,6 @@ class _RefreshGlyphPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RefreshGlyphPainter oldDelegate) {
     return status != oldDelegate.status ||
-        progress != oldDelegate.progress ||
         completion != oldDelegate.completion ||
         color != oldDelegate.color;
   }

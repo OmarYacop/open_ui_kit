@@ -1036,11 +1036,10 @@ class _TabBadge extends StatelessWidget {
       ),
       child: UiText(
         count > 99 ? '99+' : '$count',
-        variant: UiTextVariant.caption,
+        variant: UiTextVariant.micro,
         style: TextStyle(
           color: tokens.colors.onDanger,
           fontWeight: FontWeight.w600,
-          fontSize: 10,
           height: 1.1,
         ),
       ),

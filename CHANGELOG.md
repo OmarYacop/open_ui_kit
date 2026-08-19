@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added `UiFormSubmitController` to gate a form's submit button on whether
+  it's dirty (a field changed from its baseline) combined with validity.
+  Pass `UiFormControllerField`s (field key + `TextEditingController` +
+  optional validator) to `controllers` to seed a field's baseline directly
+  from an existing controller and validate it on every edit, with no
+  separate listener to hand-write; `bindController` covers binding one
+  after construction, and `setValue`/`setValid` cover fields without a
+  controller or validity that isn't per-field. For confirm-style actions
+  with pre-filled valid defaults, read `isValid` directly instead of
+  `canSubmit` so the form doesn't require dirtying before it can be
+  confirmed.
+- Added `UiSlider` for a single continuous/discrete value in a range, with
+  drag, tap-to-jump, and arrow-key interaction.
+- Added `UiRating` for star (or other icon) ratings, with half-rating
+  support and a read-only display mode.
+- Added `UiFileUpload`, a presentational file-selection dropzone that stays
+  dependency-light by delegating the actual file pick to the host app.
+
 ## 0.7.0 - 2026-08-14
 
 ### Added
@@ -13,6 +35,9 @@
 
 ### Changed
 
+- `UiSpinner` now uses the refresher's orbital charge visual for determinate
+  progress and rotates that same visual for indeterminate work. Refreshers,
+  loading buttons, menus, and async states now share this primitive.
 - `UiWavatar` now supports one-to-four-shape group compositions through
   `UiWavatarParticipant`, with an independent seed and characteristics for
   each participant.

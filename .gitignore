@@ -4,3 +4,5 @@ build/
 coverage/
 pubspec.lock
 test/goldens/failures/
+.idea/
+.impeccable/

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/effects/ui_component_shadow.dart';
@@ -74,7 +76,22 @@ class UiSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
-    final bodyPadding = padding ?? EdgeInsets.all(tokens.spacing.x6);
+    final resolvedPadding = (padding ?? EdgeInsets.all(tokens.spacing.x6))
+        .resolve(Directionality.of(context));
+    // The sheet's own bottom corners are square (see borderRadius below) so
+    // it sits flush with the screen edge — a caller's fixed bottom padding
+    // is the only thing standing between its last row and the home
+    // indicator / gesture bar. Hold it to at least that inset. When a
+    // footer is present it, not the body, is what's flush with the edge.
+    final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
+    final bodyPadding = footer != null
+        ? resolvedPadding
+        : EdgeInsets.fromLTRB(
+            resolvedPadding.left,
+            resolvedPadding.top,
+            resolvedPadding.right,
+            math.max(resolvedPadding.bottom, bottomSafeInset),
+          );
 
     return UiBox(
       background: c.card,
@@ -95,12 +112,14 @@ class UiSheet extends StatelessWidget {
               child: header!,
             ),
           Flexible(child: Padding(padding: bodyPadding, child: child)),
-          if (footer != null)
+          if (footer != null) ...[
             UiComponentShadow(
               key: const Key('ui_sheet_footer_shadow'),
               color: c.card.withValues(alpha: 0.96),
               child: footer!,
             ),
+            SizedBox(height: bottomSafeInset),
+          ],
         ],
       ),
     );

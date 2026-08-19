@@ -5,15 +5,19 @@ import '../tokens/ui_typography_tokens.dart';
 
 /// Semantic text roles mapped to [UiTypographyTokens].
 enum UiTextVariant {
+  displayXl,
   displayLg,
   displayMd,
+  title,
   heading,
   subheading,
   bodyLg,
   body,
   bodySm,
   label,
+  labelSm,
   caption,
+  micro,
   mono,
 }
 
@@ -68,10 +72,14 @@ class UiText extends StatelessWidget {
 
   static TextStyle _resolveVariant(UiTypographyTokens t, UiTextVariant v) {
     switch (v) {
+      case UiTextVariant.displayXl:
+        return t.displayXl;
       case UiTextVariant.displayLg:
         return t.displayLg;
       case UiTextVariant.displayMd:
         return t.displayMd;
+      case UiTextVariant.title:
+        return t.title;
       case UiTextVariant.heading:
         return t.heading;
       case UiTextVariant.subheading:
@@ -84,8 +92,12 @@ class UiText extends StatelessWidget {
         return t.bodySm;
       case UiTextVariant.label:
         return t.label;
+      case UiTextVariant.labelSm:
+        return t.labelSm;
       case UiTextVariant.caption:
         return t.caption;
+      case UiTextVariant.micro:
+        return t.micro;
       case UiTextVariant.mono:
         return t.mono;
     }

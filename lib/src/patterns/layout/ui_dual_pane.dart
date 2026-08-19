@@ -7,6 +7,7 @@ import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../navigation/ui_navigation_transition.dart';
+import '../navigation/ui_page_route.dart';
 
 /// Selection controller for [UiDualPane].
 ///
@@ -88,12 +89,13 @@ class UiDualPane<T> extends StatefulWidget {
     this.gap = 12,
     this.showDivider = true,
     this.breakpoints = UiBreakpoints.standard,
-    this.phoneTransitionStyle = UiNavigationTransitionStyle.softShift,
+    this.phoneTransitionStyle,
     this.transitionDuration = UiMotionDuration.standard,
     this.reverseTransitionDuration = UiMotionDuration.standard,
     this.phoneUsesRootNavigator = true,
     this.tabletMode = UiDualPaneTabletMode.split,
     this.collapseDetailWithoutSelection = false,
+    this.phoneEdgeSwipePop,
   });
 
   final UiDualPaneController<T> controller;
@@ -104,7 +106,12 @@ class UiDualPane<T> extends StatefulWidget {
   final double gap;
   final bool showDivider;
   final UiBreakpoints breakpoints;
-  final UiNavigationTransitionStyle phoneTransitionStyle;
+
+  /// Style for the phone-pushed detail route. `null` (the default) falls
+  /// back to [UiApp]'s `defaultPageTransitionStyle` ambiently ([UiPageRouteDefaults]),
+  /// same as [BuildContext.pushUiPage] — so this stays in sync with the
+  /// app-wide push/pop style unless explicitly overridden here.
+  final UiNavigationTransitionStyle? phoneTransitionStyle;
   final UiMotionDuration transitionDuration;
   final UiMotionDuration reverseTransitionDuration;
 
@@ -119,6 +126,23 @@ class UiDualPane<T> extends StatefulWidget {
   /// selected. Chat-style layouts generally leave this false so their empty
   /// detail state remains visible.
   final bool collapseDetailWithoutSelection;
+
+  /// Whether the phone-pushed detail route supports an edge-drag-from-the-
+  /// left gesture to pop, the way a native iOS push does.
+  ///
+  /// Backed by [UiCupertinoBackGestureMixin], which only ever attaches the
+  /// gesture on iOS — Android's system back gesture already pops a real
+  /// `Navigator` route like this one without any help, and this mixin
+  /// specifically reimplements Apple's own edge-swipe convention rather
+  /// than a cross-platform one, so there is no "force it on Android" to
+  /// opt into. `null` (the default) and `true` both mean "enabled where
+  /// it's a native convention"; pass `false` to opt a specific
+  /// [UiDualPane] out of it entirely, including on iOS.
+  ///
+  /// The gesture drives the route's own transition directly, so it always
+  /// plays exactly [phoneTransitionStyle] — there is no separate
+  /// drag-preview visual to configure.
+  final bool? phoneEdgeSwipePop;
 
   @override
   State<UiDualPane<T>> createState() => _UiDualPaneState<T>();
@@ -324,13 +348,45 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
       context,
       rootNavigator: widget.phoneUsesRootNavigator,
     );
+    // iOS users expect an edge-drag from the left to pop a pushed page —
+    // nothing in a bare PageRouteBuilder provides that gesture on its own
+    // (unlike CupertinoPageRoute, which owns it internally).
+    // UiCupertinoBackGestureMixin only ever attaches the gesture on iOS
+    // regardless of this flag (Android's system back gesture already pops
+    // a real Navigator route without any help, and this mixin
+    // specifically reimplements Apple's own convention, not a
+    // cross-platform one) — `false` disables it there too; `true`/`null`
+    // both mean "enabled where it's a native convention". Both flags fall
+    // back to UiApp's app-wide default (UiPageRouteDefaults) before the
+    // kit's own hard-coded default, so this pane stays in sync with the
+    // rest of the app's push/pop unless explicitly overridden.
+    final pageDefaults = UiPageRouteDefaults.maybeOf(context);
+    final swipeEnabled =
+        widget.phoneEdgeSwipePop ?? pageDefaults?.swipeBackEnabled ?? true;
+    final transitionStyle = widget.phoneTransitionStyle ??
+        pageDefaults?.transitionStyle ??
+        UiNavigationTransitionStyle.softShift;
 
     unawaited(
       navigator
           .push<void>(
-        PageRouteBuilder<void>(
-          opaque: true,
-          pageBuilder: (routeContext, animation, secondaryAnimation) {
+        // UiPageRoute is Open UI Kit's standard push/pop (see its own
+        // doc) — using it here, the same as UiApp uses for its default
+        // routes, is what makes this phone-pushed detail read as the
+        // same signature motion as every other push in the app rather
+        // than a bespoke one. Its edge-swipe gesture drives this route's
+        // own transition directly, so the interactive drag isn't a
+        // separately hand-built preview: nothing here needs to snapshot
+        // or composite the primary pane underneath, because Flutter's
+        // own Navigator already paints both routes correctly for any
+        // in-flight transition.
+        UiPageRoute<void>(
+          swipeBackEnabled: swipeEnabled,
+          transitionStyle: transitionStyle,
+          transitionDuration: widget.transitionDuration.resolve(context),
+          reverseTransitionDuration:
+              widget.reverseTransitionDuration.resolve(context),
+          builder: (routeContext) {
             return UiDualPaneScope<T>(
               controller: widget.controller,
               child: AnimatedBuilder(
@@ -347,21 +403,6 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
               ),
             );
           },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return AnimatedBuilder(
-              animation: animation,
-              child: child,
-              builder: (context, child) => UiNavigationTransition(
-                animation: animation,
-                style: widget.phoneTransitionStyle,
-                reverse: animation.status == AnimationStatus.reverse,
-                child: child!,
-              ),
-            );
-          },
-          transitionDuration: widget.transitionDuration.resolve(context),
-          reverseTransitionDuration:
-              widget.reverseTransitionDuration.resolve(context),
         ),
       )
           .whenComplete(() {

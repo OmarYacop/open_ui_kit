@@ -257,6 +257,86 @@ Prefer:
 - `UiRadioGroup<T>` for single-choice groups.
 - `UiSwitch` for immediate on/off settings.
 - `UiFilterChip` for filter toggles.
+- `UiSlider` for a single continuous/discrete value in a range.
+- `UiRating` for star (or other icon) ratings, including read-only display.
+- `UiFileUpload` for a file-selection dropzone; it never opens a picker
+  itself — wire `onTap` to the host app's own file-picking package and feed
+  the result back in via `fileName`/`fileSizeLabel`.
+
+### Gating submit on "ready to submit"
+
+Gate a submit button on whether the form is actually ready rather than
+always enabling it (or gating on a loading flag alone). `UiFormSubmitController`
+combines two signals into one `canSubmit`: **dirty** (a tracked field differs
+from its baseline — on an edit form that's the persisted value, on a
+creation form the baseline is just empty, so this reads as "the user has
+started filling it in") and **valid** (every bound field's validator
+passes). If a form should be submittable purely on validity with no baseline
+to diff against — e.g. a confirm action that's pre-filled with valid
+defaults — read `isValid` directly instead of `canSubmit`; see the second
+example below.
+
+```dart
+final email = TextEditingController(text: actor.email);
+late final submitGate = UiFormSubmitController(
+  controllers: [
+    UiFormControllerField('email', email, validator: emailField('Invalid email')),
+  ],
+);
+
+// ...
+UiInput(controller: email, validator: emailField('Invalid email'));
+
+ValueListenableBuilder<bool>(
+  valueListenable: submitGate,
+  builder: (context, canSubmit, _) => UiButton(
+    onPressed: canSubmit ? _save : null,
+    ...
+  ),
+);
+
+@override
+void dispose() {
+  submitGate.dispose(); // before disposing any controller it's bound to
+  email.dispose();
+  super.dispose();
+}
+```
+
+Each `UiFormControllerField` pairs a field key with a `TextEditingController`
+the caller already owns — its current text becomes that field's baseline,
+and the same `validator` you'd pass `UiInput` gates `isValid`/`canSubmit` as
+the user types, so there's no separate "recompute validity on every
+keystroke" listener to hand-write. The controller itself is still owned and
+disposed by the caller (dispose `submitGate` first). `bindController` covers
+binding one later, after construction. Fields without a controller
+(switches, selects, image paths, …) report through `submitGate.setValue(field,
+value)` directly, and any validity that isn't captured by a bound field's
+own validator — cross-field checks, an async/server-side check, … — through
+`submitGate.setValid(bool)`. `UiFormSubmitController` itself validates
+nothing; it only combines "changed" with every validity signal it's given
+into one gate. After a successful save, call `submitGate.markClean()` to
+re-baseline.
+
+For a confirm-style action that starts pre-filled with valid defaults (e.g.
+"Cancel class" with a sensible default already selected), requiring the user
+to touch something first would be a regression — they should be able to
+confirm immediately. Track validity only, and read `isValid` instead of
+`canSubmit`:
+
+```dart
+late final submitGate = UiFormSubmitController(); // no controllers/baseline
+// ...
+submitGate.setValid(_isSelectionValid()); // call from every field's onChanged
+
+AnimatedBuilder(
+  animation: submitGate,
+  builder: (context, _) => UiButton(
+    onPressed: submitGate.isValid ? _confirm : null,
+    ...
+  ),
+);
+```
 
 ## Feedback Effects And Indicators
 
@@ -352,6 +432,9 @@ Use kit-provided states:
 - `UiCardSkeleton`, `UiSkeletonBar`, and `UiSkeletonText` for skeleton loading.
 - `UiAlert` for inline notices.
 - `UiToast` / `UiToaster` for transient feedback.
+- `UiSpinner` for compact indeterminate work or determinate interaction
+  progress. Switching `value` from a number to null preserves the same orbital
+  indicator and starts its rotation.
 - `UiPageScaffold.onRefresh` for page-level pull-to-refresh whose feedback
   must remain above navigation chrome.
 - `UiRefresher` and `UiSliverRefresher` for pull-to-refresh inside standalone

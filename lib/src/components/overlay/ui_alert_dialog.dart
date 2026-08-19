@@ -118,6 +118,7 @@ class UiAlertDialog extends StatelessWidget {
                             child: UiButton(
                               label: confirmLabel,
                               intent: confirmIntent,
+                              expand: true,
                               onPressed: onConfirm,
                             ),
                           ),
@@ -127,6 +128,7 @@ class UiAlertDialog extends StatelessWidget {
                             child: UiButton(
                               label: cancelLabel,
                               intent: UiIntent.neutral,
+                              expand: true,
                               onPressed: onCancel,
                             ),
                           ),

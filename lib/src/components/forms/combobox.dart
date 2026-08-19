@@ -42,7 +42,7 @@ class UiCombobox<T> extends StatefulWidget {
     this.searchHint = 'Search...',
     this.emptyText = 'No results found.',
     this.enabled = true,
-    this.size = UiSize.md,
+    this.size = UiSize.lg,
     this.placement = UiSelectPlacement.auto,
     this.optionBuilder,
     this.valueBuilder,
@@ -59,6 +59,10 @@ class UiCombobox<T> extends StatefulWidget {
   final String searchHint;
   final String emptyText;
   final bool enabled;
+
+  /// Defaults to [UiSize.lg] to match [UiInput]'s default — the combobox
+  /// trigger is itself a [UiInput], so keeping the same default keeps it
+  /// the same height as plain text fields in the same form.
   final UiSize size;
   final UiSelectPlacement placement;
   final UiSelectOptionBuilder<T>? optionBuilder;

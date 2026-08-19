@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
+import '../../foundation/primitives/ui_progress.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/theme/ui_intent.dart';
@@ -194,7 +195,11 @@ class UiButton extends StatelessWidget {
       return SizedBox(
         width: iconSize,
         height: iconSize,
-        child: _Spinner(color: fg),
+        child: UiSpinner(
+          size: iconSize,
+          strokeWidth: iconSize * 0.2,
+          color: fg,
+        ),
       );
     }
 
@@ -348,63 +353,6 @@ class UiButton extends StatelessWidget {
     final l = (hsl.lightness + amount).clamp(0.0, 1.0);
     return hsl.withLightness(l).toColor();
   }
-}
-
-class _Spinner extends StatefulWidget {
-  const _Spinner({required this.color});
-  final Color color;
-
-  @override
-  State<_Spinner> createState() => _SpinnerState();
-}
-
-class _SpinnerState extends State<_Spinner>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        return Transform.rotate(
-          angle: _controller.value * 6.2831853,
-          child: CustomPaint(
-            painter: _SpinnerPainter(widget.color),
-            size: const Size.square(14),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SpinnerPainter extends CustomPainter {
-  _SpinnerPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect.deflate(1), -1.2, 4.5, false, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SpinnerPainter old) => old.color != color;
 }
 
 /// Shared sizing ratios used by [UiButton] and any other

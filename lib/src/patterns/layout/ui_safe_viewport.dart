@@ -23,6 +23,16 @@ enum UiSafeViewportMode {
   /// Consume both top and bottom insets. Default for most pages.
   all,
 
+  /// Consume only the left/right insets (landscape notch / rounded-corner
+  /// hardware), leaving top and bottom untouched.
+  ///
+  /// Useful for a content region nested under chrome (a top bar, a day
+  /// strip) that already goes edge-to-edge on its own — the surrounding
+  /// page opts out of [left]/[right] insets so that chrome can bleed to
+  /// the screen edge, and this mode picks the insets back up for just the
+  /// content below it.
+  horizontal,
+
   /// Consume the top inset + the soft-keyboard height when it's raised.
   /// When the keyboard is down, the home-indicator inset is still
   /// applied so the page doesn't run under the gesture bar.
@@ -76,6 +86,15 @@ class UiSafeViewport extends StatelessWidget {
         return SafeArea(
           top: false,
           bottom: true,
+          left: left,
+          right: right,
+          minimum: minimum,
+          child: child,
+        );
+      case UiSafeViewportMode.horizontal:
+        return SafeArea(
+          top: false,
+          bottom: false,
           left: left,
           right: right,
           minimum: minimum,

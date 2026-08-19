@@ -41,10 +41,9 @@ class UiNavigationCountBadge extends StatelessWidget {
           alignment: Alignment.center,
           child: UiText(
             label,
-            variant: UiTextVariant.caption,
+            variant: UiTextVariant.micro,
             style: TextStyle(
               color: tokens.colors.primaryForeground,
-              fontSize: compact ? 10 : null,
               fontWeight: FontWeight.w700,
               height: 1,
             ),

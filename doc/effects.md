@@ -6,7 +6,9 @@ Open UI Kit resolves costly visual effects through `UiEffectsTokens`.
 
 1. `OPEN_UI_EFFECTS_LEVEL=full|reduced` selects a build-wide level when set.
 2. Otherwise, the theme's `UiEffectsTokens.level` is used.
-3. `adaptive` resolves to `full` on iOS/macOS and `reduced` elsewhere.
+3. `adaptive` resolves to `full` on every platform. Effects are an Open
+   UI-owned budget independent of the host operating system; Android is not
+   assumed to need a reduced budget by default.
 4. Reduced-motion or accessible-navigation preferences reduce the result.
 5. `OPEN_UI_ENABLE_BACKDROP_FILTERS=false` disables every kit-owned backdrop
    filter regardless of the runtime or theme selection.

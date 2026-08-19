@@ -236,7 +236,8 @@ class _CalendarTimeLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = UiThemeTokens.colorsOf(context);
+    final tokens = UiThemeTokens.of(context);
+    final colors = tokens.colors;
     final match = RegExp(r'^(.+?)\s+(AM|PM)$', caseSensitive: false)
         .firstMatch(label.trim());
     final hour = match?.group(1) ?? label;
@@ -246,18 +247,16 @@ class _CalendarTimeLabel extends StatelessWidget {
         children: [
           TextSpan(
             text: hour,
-            style: TextStyle(
+            style: tokens.typography.bodySm.copyWith(
               color: colors.textMuted,
-              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
           if (period != null)
             TextSpan(
               text: ' $period',
-              style: TextStyle(
+              style: tokens.typography.micro.copyWith(
                 color: colors.textMuted.withValues(alpha: .72),
-                fontSize: 9,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -333,9 +332,8 @@ class _PositionedCalendarEvent extends StatelessWidget {
                             event.title,
                             maxLines: layout.height < 56 ? 1 : 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: tokens.typography.label.copyWith(
                               color: foreground,
-                              fontSize: 13,
                               fontWeight: FontWeight.w700,
                               height: 1.08,
                             ),
@@ -347,9 +345,8 @@ class _PositionedCalendarEvent extends StatelessWidget {
                                 event.metadata!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: tokens.typography.micro.copyWith(
                                   color: foreground.withValues(alpha: .82),
-                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -361,9 +358,8 @@ class _PositionedCalendarEvent extends StatelessWidget {
                                 event.subtitle!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: tokens.typography.micro.copyWith(
                                   color: foreground.withValues(alpha: .72),
-                                  fontSize: 11,
                                 ),
                               ),
                             ),
@@ -395,7 +391,8 @@ class _CurrentTimeLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = UiThemeTokens.colorsOf(context).danger;
+    final tokens = UiThemeTokens.of(context);
+    final color = tokens.colors.danger;
     final badge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
@@ -404,9 +401,8 @@ class _CurrentTimeLine extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: UiThemeTokens.colorsOf(context).onDanger,
-          fontSize: 11,
+        style: tokens.typography.micro.copyWith(
+          color: tokens.colors.onDanger,
           fontWeight: FontWeight.w700,
         ),
       ),

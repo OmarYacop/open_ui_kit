@@ -65,6 +65,7 @@ class UiMediaPreview extends StatelessWidget {
         width: _finiteOrNull(width),
         height: _finiteOrNull(height),
         fit: fit,
+        gaplessPlayback: true,
         errorBuilder: (_, __, ___) => _fallback(context),
       );
     }

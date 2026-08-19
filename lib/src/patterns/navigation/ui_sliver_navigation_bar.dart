@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
@@ -13,6 +14,7 @@ import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import '../layout/ui_page_scaffold.dart';
 import '../layout/ui_scroll_edge_fade.dart';
 import '../layout/ui_system_bars.dart';
 import 'ui_navigation_back_button.dart';
@@ -24,6 +26,27 @@ import 'ui_route_entry.dart';
 // then a short time-based crossfade performs the handoff.
 const double _titleSnapThreshold = 0.6;
 const double _titleHandoffBlurSigma = 2.5;
+
+/// Stable identity for [UiNavigationSpec.actions] used to key the trailing
+/// row's [AnimatedSwitcher].
+///
+/// Callers (e.g. a page's `build()`) commonly construct a fresh `actions`
+/// list — and fresh action widget instances — on every rebuild, even when
+/// the rendered content hasn't actually changed (a role toggle, a focus
+/// change, any unrelated `setState` above the nav bar). Widgets don't get
+/// value equality by default, so hashing the widget *instances*
+/// (`Object.hashAll(spec.actions)`) produced a different key on every one
+/// of those rebuilds, making [AnimatedSwitcher] treat the row as brand new
+/// and replay its enter transition — visually, the actions (e.g. a language
+/// switcher) kept "animating in" on unrelated changes.
+///
+/// Keying off each widget's own [Key] (when the caller supplied one) or,
+/// failing that, its [Widget.runtimeType] keeps the identity stable across
+/// rebuilds that don't change *what* is being shown, while still animating
+/// when the action set genuinely changes shape (an action added/removed,
+/// or swapped for a differently-typed one).
+String _actionsIdentity(List<Widget> actions) =>
+    actions.map((w) => w.key?.toString() ?? w.runtimeType.toString()).join('|');
 
 /// Sliver-based navigation bar with large-title collapse behavior.
 ///
@@ -70,6 +93,7 @@ class UiSliverNavigationBar extends StatelessWidget {
     this.floating = false,
     this.stretch = false,
     this.adaptToPersistentRail = true,
+    this.showTitleLegibilityShadow,
     this.bottom,
     this.bottomHeight = 0,
   });
@@ -88,9 +112,17 @@ class UiSliverNavigationBar extends StatelessWidget {
   final bool floating;
   final bool stretch;
 
-  /// Replaces the mobile glass treatment with a non-pinned content header
-  /// when the page is hosted next to a persistent navigation rail.
+  /// Adapts the navigation surface when the page is hosted next to a
+  /// persistent rail. Tablet layouts retain the phone-style large-title
+  /// collapse; unconstrained desktop layouts use a quiet page header.
   final bool adaptToPersistentRail;
+
+  /// Whether compact and large titles receive a silhouette shadow.
+  ///
+  /// Defaults to `true` outside Apple platforms, where progressive blur is not
+  /// used, and `false` on iOS and macOS. Set explicitly to override the
+  /// platform-adaptive behavior.
+  final bool? showTitleLegibilityShadow;
 
   /// Optional control row attached to the navigation surface. Its height is
   /// included in the sliver geometry so page content starts below it.
@@ -103,14 +135,22 @@ class UiSliverNavigationBar extends StatelessWidget {
         UiNavigationChromeScope.hasPersistentRailOf(context);
     final formFactor = uiFormFactorOf(context);
     final isDesktop = formFactor == UiFormFactor.desktop;
+    final usesNativeTabletNavigation = hasPersistentRail &&
+        switch (defaultTargetPlatform) {
+          TargetPlatform.iOS || TargetPlatform.android => true,
+          _ => false,
+        };
     final useQuietPageHeader = spec.largeTitle &&
         spec.back == null &&
-        (hasPersistentRail || isDesktop);
+        isDesktop &&
+        !usesNativeTabletNavigation;
     if (useQuietPageHeader) {
       return SliverToBoxAdapter(child: _RailPageHeader(spec: spec));
     }
 
-    final effectiveSpec = (hasPersistentRail || isDesktop) && spec.back == null
+    final useQuietDesktopSurface =
+        isDesktop && !usesNativeTabletNavigation && spec.back == null;
+    final effectiveSpec = useQuietDesktopSurface
         ? spec.copyWith(
             surface: UiNavigationSurface.solid,
             blurSigma: 0,
@@ -127,6 +167,11 @@ class UiSliverNavigationBar extends StatelessWidget {
         topInset +
         attachedBottomHeight;
     final minH = collapsedHeight + topInset + attachedBottomHeight;
+    final effectiveTitleLegibilityShadow = showTitleLegibilityShadow ??
+        switch (defaultTargetPlatform) {
+          TargetPlatform.iOS || TargetPlatform.macOS => false,
+          _ => true,
+        };
 
     return SliverPersistentHeader(
       pinned: pinned,
@@ -136,6 +181,7 @@ class UiSliverNavigationBar extends StatelessWidget {
         topInset: topInset,
         expandedHeight: maxH,
         collapsedHeight: minH,
+        showTitleLegibilityShadow: effectiveTitleLegibilityShadow,
         bottom: bottom,
         bottomHeight: attachedBottomHeight,
       ),
@@ -151,6 +197,10 @@ class _RailPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
+    final safeTopInset = MediaQuery.paddingOf(context).top;
+    final bodyTopInset = UiPageBodyInsets.topOf(context);
+    final fadeClearance =
+        bodyTopInset > safeTopInset ? bodyTopInset - safeTopInset : 0.0;
 
     return SafeArea(
       bottom: false,
@@ -159,6 +209,8 @@ class _RailPageHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compactPane = constraints.maxWidth < 520;
+          final baseTopPadding =
+              compactPane ? tokens.spacing.x4 : tokens.spacing.x6;
           final animateTypography = !MediaQuery.disableAnimationsOf(context);
           final responsiveDuration =
               animateTypography ? tokens.motion.standard : Duration.zero;
@@ -168,7 +220,7 @@ class _RailPageHeader extends StatelessWidget {
             curve: tokens.motion.standardCurve,
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.x4,
-              compactPane ? tokens.spacing.x4 : tokens.spacing.x6,
+              baseTopPadding + fadeClearance,
               tokens.spacing.x4,
               tokens.spacing.x4,
             ),
@@ -235,6 +287,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.topInset,
     required this.expandedHeight,
     required this.collapsedHeight,
+    required this.showTitleLegibilityShadow,
     required this.bottom,
     required this.bottomHeight,
   });
@@ -243,6 +296,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double topInset;
   final double expandedHeight;
   final double collapsedHeight;
+  final bool showTitleLegibilityShadow;
   final Widget? bottom;
   final double bottomHeight;
 
@@ -289,6 +343,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
             spec: spec,
             showTitle: spec.showCompactTitle,
             titleVisible: !useHero || t >= _titleSnapThreshold,
+            showTitleLegibilityShadow: showTitleLegibilityShadow,
           ),
         ),
         if (bottom != null)
@@ -308,6 +363,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
             visible: t < _titleSnapThreshold,
             expandedHeight: maxExtent - bottomHeight,
             scrollOffset: shrinkOffset,
+            showTitleLegibilityShadow: showTitleLegibilityShadow,
           ),
         if (useHero &&
             spec.actionsFollowTitleCollapse &&
@@ -348,7 +404,9 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     if (showEdgeFade) {
       content = UiScrollEdgeFade(
         backgroundColor: c.background,
-        extent: minExtent,
+        // Cover the full expanded-title region so title legibility comes from
+        // the material behind it rather than a silhouette shadow on the text.
+        extent: maxExtent,
         maxOpacity: overlapsContent ? 0.92 : 0.78,
         showBottom: false,
         paintOverChild: false,
@@ -418,6 +476,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
         old.topInset != topInset ||
         old.expandedHeight != expandedHeight ||
         old.collapsedHeight != collapsedHeight ||
+        old.showTitleLegibilityShadow != showTitleLegibilityShadow ||
         old.bottom != bottom ||
         old.bottomHeight != bottomHeight;
   }
@@ -428,11 +487,13 @@ class _CompactRow extends StatelessWidget {
     required this.spec,
     required this.showTitle,
     required this.titleVisible,
+    required this.showTitleLegibilityShadow,
   });
 
   final UiNavigationSpec spec;
   final bool showTitle;
   final bool titleVisible;
+  final bool showTitleLegibilityShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -487,12 +548,15 @@ class _CompactRow extends StatelessWidget {
           0.0,
           constraints.maxWidth - horizontalPadding,
         );
+        final backShowsLabel = spec.back?.showLabel ?? true;
         final compactBackMaxWidth = math.min(112.0, contentWidth * 0.28);
         final roomyBackMaxWidth = math.min(260.0, contentWidth * 0.32);
-        final backMaxWidth = math.max(
-          44.0,
-          contentWidth >= 600 ? roomyBackMaxWidth : compactBackMaxWidth,
-        );
+        final backMaxWidth = !backShowsLabel
+            ? 44.0
+            : math.max(
+                44.0,
+                contentWidth >= 600 ? roomyBackMaxWidth : compactBackMaxWidth,
+              );
         final trailingWidth =
             spec.actions.isEmpty || spec.actionsFollowTitleCollapse
                 ? 0.0
@@ -512,6 +576,7 @@ class _CompactRow extends StatelessWidget {
                   constraints: BoxConstraints(maxWidth: backMaxWidth),
                   child: UiNavigationBackButton(
                     label: resolvedBackLabel,
+                    showLabel: backShowsLabel,
                     onPressed: spec.back!.onPressed,
                     history: seededHistory,
                     onHistorySelected: onHistorySelected,
@@ -528,7 +593,7 @@ class _CompactRow extends StatelessWidget {
                 switchOutCurve: tokens.motion.standardCurve,
                 transitionBuilder: _chromeTransition,
                 child: UiLegibilityShadow(
-                  key: ValueKey('actions:${Object.hashAll(spec.actions)}'),
+                  key: ValueKey('actions:${_actionsIdentity(spec.actions)}'),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -586,10 +651,9 @@ class _CompactRow extends StatelessWidget {
                             );
                           },
                           child: titleVisible
-                              ? UiLegibilityShadow(
+                              ? _TitleLegibility(
                                   key: const ValueKey('compact-title-visible'),
-                                  blurSigma: 4,
-                                  spreadRadius: 2.5,
+                                  enabled: showTitleLegibilityShadow,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
@@ -734,12 +798,14 @@ class _LargeTitle extends StatelessWidget {
     required this.visible,
     required this.expandedHeight,
     required this.scrollOffset,
+    required this.showTitleLegibilityShadow,
   });
 
   final UiNavigationSpec spec;
   final bool visible;
   final double expandedHeight;
   final double scrollOffset;
+  final bool showTitleLegibilityShadow;
 
   double _lineHeightFor(TextStyle s) => (s.fontSize ?? 16) * (s.height ?? 1.2);
 
@@ -786,8 +852,9 @@ class _LargeTitle extends StatelessWidget {
               blurSigma: _resolvedTitleBlurSigma(tokens),
               child: child!,
             ),
-            child: UiLegibilityShadow(
-              key: const Key('ui_navigation_large_title_shadow'),
+            child: _TitleLegibility(
+              enabled: showTitleLegibilityShadow,
+              shadowKey: const Key('ui_navigation_large_title_shadow'),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,6 +883,24 @@ class _LargeTitle extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _TitleLegibility extends StatelessWidget {
+  const _TitleLegibility({
+    super.key,
+    required this.enabled,
+    required this.child,
+    this.shadowKey,
+  });
+
+  final bool enabled;
+  final Widget child;
+  final Key? shadowKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return enabled ? UiLegibilityShadow(key: shadowKey, child: child) : child;
   }
 }
 

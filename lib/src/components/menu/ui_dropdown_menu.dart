@@ -12,6 +12,7 @@ import '../../foundation/overlay/overlay.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/primitives/ui_pressable.dart';
+import '../../foundation/primitives/ui_progress.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/scrolling/ui_scroll_configuration.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -93,7 +94,7 @@ class UiDropdownMenu extends StatefulWidget {
     required this.items,
     this.minWidth = 220,
     this.maxWidth = 320,
-    this.openOnLongPress = false,
+    this.openOnLongPress = true,
     this.closeOnSelect = true,
     this.dismissOnTapOutside = true,
   });
@@ -121,6 +122,9 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
   final GlobalKey _targetKey = GlobalKey();
   final FocusScopeNode _focusScope = FocusScopeNode(debugLabel: 'UiMenu');
   final Object _tapRegionGroup = Object();
+  final Map<ScrollPosition, double> _anchorScrollOffsets =
+      <ScrollPosition, double>{};
+  OverlayState? _overlay;
   OverlayEntry? _entry;
   int? _focusIndex;
   final List<GlobalKey> _itemKeys = <GlobalKey>[];
@@ -191,6 +195,8 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
     // Semantic layer overlays are siblings of the page subtree rather than
     // ancestors, so capture all inherited themes at the trigger boundary.
     final capturedThemes = InheritedTheme.capture(from: context, to: null);
+    _overlay = overlay;
+    _listenToAncestorScrollables();
     _entry = OverlayEntry(
       builder: (overlayContext) => capturedThemes.wrap(
         UiScrollConfiguration(child: _buildOverlay(overlayContext)),
@@ -334,10 +340,53 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
   void _close({bool notify = true}) {
     final entry = _entry;
     _entry = null;
+    _overlay = null;
+    _stopListeningToAncestorScrollables();
     _focusIndex = null;
     _dragSelecting = false;
     entry?.remove();
     if (notify && mounted) setState(() {});
+  }
+
+  void _listenToAncestorScrollables() {
+    _stopListeningToAncestorScrollables();
+    context.visitAncestorElements((element) {
+      if (element case StatefulElement(state: final ScrollableState state)) {
+        final position = state.position;
+        if (!_anchorScrollOffsets.containsKey(position)) {
+          _anchorScrollOffsets[position] = position.pixels;
+          position.addListener(_handleAnchorScroll);
+        }
+      }
+      return true;
+    });
+  }
+
+  void _stopListeningToAncestorScrollables() {
+    for (final position in _anchorScrollOffsets.keys) {
+      position.removeListener(_handleAnchorScroll);
+    }
+    _anchorScrollOffsets.clear();
+  }
+
+  void _handleAnchorScroll() {
+    if (!mounted || _overlay == null || _entry == null) return;
+    for (final position in _anchorScrollOffsets.keys) {
+      final previous = _anchorScrollOffsets[position]!;
+      final delta = position.pixels - previous;
+      _anchorScrollOffsets[position] = position.pixels;
+      switch (position.axisDirection) {
+        case AxisDirection.down:
+          _overlayTop -= delta;
+        case AxisDirection.up:
+          _overlayTop += delta;
+        case AxisDirection.right:
+          _overlayLeft -= delta;
+        case AxisDirection.left:
+          _overlayLeft += delta;
+      }
+    }
+    _entry?.markNeedsBuild();
   }
 
   void _beginDragSelection() {
@@ -637,10 +686,10 @@ class _MenuRow extends StatelessWidget {
                   ),
                 ),
                 if (item.loading)
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: _InlineSpinner(color: fg),
+                  UiSpinner(
+                    size: 14,
+                    strokeWidth: 2.8,
+                    color: fg,
                   )
                 else if (item.shortcut != null) ...[
                   SizedBox(width: tokens.spacing.x3),
@@ -809,59 +858,4 @@ class _ScaleFadeState extends State<_ScaleFade>
       child: widget.child,
     );
   }
-}
-
-class _InlineSpinner extends StatefulWidget {
-  const _InlineSpinner({required this.color});
-  final Color color;
-
-  @override
-  State<_InlineSpinner> createState() => _InlineSpinnerState();
-}
-
-class _InlineSpinnerState extends State<_InlineSpinner>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) => Transform.rotate(
-        angle: _c.value * 6.28318,
-        child: CustomPaint(
-          painter: _SpinnerPainter(widget.color),
-          size: const Size.square(14),
-        ),
-      ),
-    );
-  }
-}
-
-class _SpinnerPainter extends CustomPainter {
-  _SpinnerPainter(this.color);
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect.deflate(1), -1.2, 4.5, false, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SpinnerPainter old) => old.color != color;
 }

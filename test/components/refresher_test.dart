@@ -102,6 +102,58 @@ void main() {
     );
     expect(indicator.details.status, UiRefreshStatus.refreshing);
     expect(find.byType(UiComponentShadow), findsOneWidget);
+    expect(find.byType(UiSpinner), findsOneWidget);
+  });
+
+  testWidgets('release rotates the same spinner used while pulling', (
+    tester,
+  ) async {
+    final completer = Completer<void>();
+    await tester.pumpWidget(
+      _host(
+        UiRefresher(
+          onRefresh: () => completer.future,
+          child: _list(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(ListView)),
+    );
+    for (var step = 0; step < 10; step++) {
+      await gesture.moveBy(const Offset(0, 24));
+      await tester.pump(const Duration(milliseconds: 40));
+    }
+
+    final spinnerFinder = find.byKey(const Key('refresh_spinner'));
+    final heldSpinner = tester.widget<UiSpinner>(spinnerFinder);
+    final heldState = tester.state(spinnerFinder);
+    expect(heldSpinner.value, 1);
+
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 16));
+
+    final releasedSpinner = tester.widget<UiSpinner>(spinnerFinder);
+    expect(releasedSpinner.value, isNull);
+    expect(identical(tester.state(spinnerFinder), heldState), isTrue);
+    final spinnerTransform = find.descendant(
+      of: spinnerFinder,
+      matching: find.byType(Transform),
+    );
+    final initialTransform = List<double>.of(
+      tester.widget<Transform>(spinnerTransform).transform.storage,
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      tester.widget<Transform>(spinnerTransform).transform.storage,
+      isNot(equals(initialTransform)),
+    );
+
+    completer.complete();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('UiPageScaffold owns refresh feedback above compact navigation', (

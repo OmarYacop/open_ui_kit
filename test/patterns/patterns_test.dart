@@ -1023,36 +1023,222 @@ void main() {
           find.text('insets:0.0/$topInset/0.0/$bottomInset'), findsOneWidget);
     });
 
-    testWidgets('UiPageScaffold scroll fade uses transparent page background',
+    testWidgets(
+        'UiPageScaffold keeps the surface-color fade on non-Apple platforms',
         (tester) async {
       const bg = Color(0xFFFFFFFF);
-      await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: UiPageScaffold(
-            backgroundColor: bg,
-            body: SizedBox.expand(),
+      final previous = debugDefaultTargetPlatformOverride;
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await tester.pumpWidget(
+          const Directionality(
+            textDirection: TextDirection.ltr,
+            child: UiPageScaffold(
+              backgroundColor: bg,
+              body: SizedBox.expand(),
+            ),
           ),
-        ),
-      );
+        );
 
-      final gradients = tester
-          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-          .map((box) => box.decoration)
-          .whereType<BoxDecoration>()
-          .map((decoration) => decoration.gradient)
-          .whereType<LinearGradient>()
-          .toList();
+        final gradients = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .map((decoration) => decoration.gradient)
+            .whereType<LinearGradient>()
+            .toList();
 
-      expect(gradients, isNotEmpty);
-      expect(
-        gradients.any(
-          (gradient) => gradient.colors.last == bg.withValues(alpha: 0),
-        ),
-        isTrue,
-        reason:
-            'Light mode fade must not interpolate toward transparent black.',
-      );
+        expect(gradients, isNotEmpty);
+        expect(
+          gradients.any(
+            (gradient) => gradient.colors.last == bg.withValues(alpha: 0),
+          ),
+          isTrue,
+          reason: 'Non-Apple fades must retain the configured surface color.',
+        );
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(ShaderMask), findsNothing);
+        expect(
+          find.byKey(const Key('ui_scroll_edge_progressive_blur')),
+          findsNothing,
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = previous;
+      }
+    });
+
+    testWidgets('UiPageScaffold graduates Apple top blur with an adaptive tint',
+        (tester) async {
+      final previous = debugDefaultTargetPlatformOverride;
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await tester.pumpWidget(
+          _host(
+            const UiPageScaffold(
+              backgroundColor: Color(0xFFFFFFFF),
+              body: SizedBox.expand(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final gradients = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .map((decoration) => decoration.gradient)
+            .whereType<LinearGradient>()
+            .toList();
+        final topFade = gradients.singleWhere(
+          (gradient) => gradient.begin == Alignment.topCenter,
+        );
+        final bottomFade = gradients.singleWhere(
+          (gradient) => gradient.begin == Alignment.bottomCenter,
+        );
+
+        expect(
+          find.byKey(const Key('ui_scroll_edge_progressive_blur')),
+          findsOneWidget,
+          reason: 'Apple should use one continuous shader-driven blur.',
+        );
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(ShaderMask), findsNothing);
+        expect(
+          topFade.colors.first,
+          const Color(0xFFFFFFFF).withValues(alpha: 0.84),
+          reason: 'Light appearance should use a translucent white material.',
+        );
+        expect(
+          bottomFade.colors,
+          [
+            const Color(0xFFFFFFFF).withValues(alpha: 0.84),
+            const Color(0xFFFFFFFF).withValues(alpha: 0.84),
+            const Color(0xFFFFFFFF).withValues(alpha: 0),
+          ],
+          reason: 'The bottom edge should mirror the tint fade without blur.',
+        );
+        expect(bottomFade.stops, const [0, 0.12, 1]);
+
+        await tester.pumpWidget(
+          UiTheme(
+            tokens: UiThemeData.dark(effects: UiEffectsTokens.full),
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiPageScaffold(
+                backgroundColor: Color(0xFF000000),
+                body: SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final darkTopFade = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .map((decoration) => decoration.gradient)
+            .whereType<LinearGradient>()
+            .singleWhere((gradient) => gradient.begin == Alignment.topCenter);
+        expect(
+          darkTopFade.colors.first,
+          const Color(0xFF000000).withValues(alpha: 0.84),
+          reason: 'Dark appearance should use a translucent black material.',
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = previous;
+      }
+    });
+
+    testWidgets('tablet rail uses the mobile large-to-centered title handoff',
+        (tester) async {
+      final previous = debugDefaultTargetPlatformOverride;
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await tester.pumpWidget(
+          _host(
+            UiNavigationChromeScope(
+              hasPersistentRail: true,
+              child: UiPageScaffold(
+                body: CustomScrollView(
+                  controller: controller,
+                  slivers: [
+                    const UiSliverNavigationBar(
+                      spec: UiNavigationSpec(
+                        title: 'Tablet title',
+                        subtitle: 'Tablet subtitle',
+                        surface: UiNavigationSurface.transparent,
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 1200),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final fade = tester.widget<UiScrollEdgeFade>(
+          find.byType(UiScrollEdgeFade),
+        );
+        expect(fade.showTop, isTrue);
+        expect(fade.showBottom, isTrue);
+        expect(
+          find.byKey(const Key('ui_scroll_edge_progressive_blur')),
+          findsOneWidget,
+          reason: 'Tablet layouts should retain the adaptive Apple top blur.',
+        );
+        final navigationSurface = tester.widget<AnimatedContainer>(
+          find
+              .descendant(
+                of: find.byKey(const Key('ui_sliver_navigation_bar_shadow')),
+                matching: find.byType(AnimatedContainer),
+              )
+              .first,
+        );
+        expect(
+          (navigationSurface.decoration! as BoxDecoration).color,
+          const Color(0x00000000),
+          reason: 'Tablet navigation must not cover the page scroll fade.',
+        );
+        expect(find.byType(SliverPersistentHeader), findsOneWidget);
+        expect(
+          find.byKey(const Key('ui_navigation_large_title')),
+          findsOneWidget,
+        );
+        expect(find.text('Tablet subtitle'), findsOneWidget);
+        expect(
+          find.byKey(const Key('ui_navigation_compact_title')),
+          findsNothing,
+        );
+
+        controller.jumpTo(100);
+        await tester.pumpAndSettle();
+
+        final compactTitle = tester.widget<UiText>(
+          find.byKey(const Key('ui_navigation_compact_title')),
+        );
+        expect(compactTitle.data, 'Tablet title');
+        expect(compactTitle.textAlign, TextAlign.center);
+        final largeTitleOpacity = tester
+            .widget<Opacity>(
+              find.descendant(
+                of: find.byKey(const Key('ui_navigation_large_title_fade')),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity;
+        expect(largeTitleOpacity, 0);
+      } finally {
+        debugDefaultTargetPlatformOverride = previous;
+      }
     });
 
     testWidgets('UiPageScaffold scroll fade is full-width by default',
@@ -1067,6 +1253,7 @@ void main() {
       final scaffold = tester.widget<UiPageScaffold>(
         find.byType(UiPageScaffold),
       );
+      expect(scaffold.scrollFadeMaxOpacity, 0.84);
       expect(scaffold.scrollFadeHorizontalInset, 0);
       expect(scaffold.scrollFadeUsesSafeArea, isTrue);
       expect(
@@ -1093,6 +1280,30 @@ void main() {
 
       expect(find.byType(SafeArea), findsNothing);
       expect(find.text('x'), findsOneWidget);
+    });
+
+    testWidgets(
+        'UiSafeViewport horizontal consumes left/right but not top/bottom',
+        (tester) async {
+      const inset = 24.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            padding: EdgeInsets.all(inset),
+          ),
+          child: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: UiSafeViewport(
+              mode: UiSafeViewportMode.horizontal,
+              child: Text('x'),
+            ),
+          ),
+        ),
+      );
+
+      final rect = tester.getRect(find.text('x'));
+      expect(rect.left, inset);
+      expect(rect.top, 0);
     });
 
     testWidgets('UiSafeViewport all consumes MediaQuery top inset',
@@ -1319,6 +1530,63 @@ void main() {
     });
 
     testWidgets(
+        'title shadow defaults off on Apple and on elsewhere, with an override',
+        (tester) async {
+      final previous = debugDefaultTargetPlatformOverride;
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      Widget navigation({bool? showShadow}) => _host(
+            CustomScrollView(
+              slivers: [
+                UiSliverNavigationBar(
+                  showTitleLegibilityShadow: showShadow,
+                  spec: const UiNavigationSpec(
+                    title: 'Settings',
+                    largeTitle: false,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 600)),
+              ],
+            ),
+          );
+
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await tester.pumpWidget(navigation());
+        expect(
+          find.ancestor(
+            of: find.byKey(const Key('ui_navigation_compact_title')),
+            matching: find.byType(UiLegibilityShadow),
+          ),
+          findsOneWidget,
+        );
+
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await tester.pumpWidget(navigation());
+        expect(
+          find.ancestor(
+            of: find.byKey(const Key('ui_navigation_compact_title')),
+            matching: find.byType(UiLegibilityShadow),
+          ),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(navigation(showShadow: true));
+        expect(
+          find.ancestor(
+            of: find.byKey(const Key('ui_navigation_compact_title')),
+            matching: find.byType(UiLegibilityShadow),
+          ),
+          findsOneWidget,
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = previous;
+      }
+    });
+
+    testWidgets(
         'title-following actions stay end aligned and pin without fading',
         (tester) async {
       final controller = ScrollController();
@@ -1379,6 +1647,70 @@ void main() {
       expect(moving.dx, resting.dx);
       expect(moving.dy, lessThan(resting.dy));
       expect(stillPinned, pinned);
+    });
+
+    testWidgets(
+        'compact-row actions keep their state across unrelated rebuilds '
+        'that construct fresh action widget instances', (tester) async {
+      var initCount = 0;
+      var disposeCount = 0;
+      var rebuilds = 0;
+
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              rebuilds++;
+              return CustomScrollView(
+                slivers: [
+                  UiSliverNavigationBar(
+                    spec: UiNavigationSpec(
+                      title: 'Sign up',
+                      largeTitle: false,
+                      actions: [
+                        // A fresh instance every build — the same shape a
+                        // caller's `build()` produces when it constructs
+                        // `actions: [SomeWidget(...)]` as a list literal
+                        // (e.g. AuthScaffold's language switcher) rather
+                        // than hoisting a stable instance.
+                        _LifecycleProbe(
+                          onInit: () => initCount++,
+                          onDispose: () => disposeCount++,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ElevatedButton(
+                      onPressed: () => setState(() {}),
+                      child: const Text('trigger unrelated rebuild'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(initCount, 1);
+      expect(disposeCount, 0);
+
+      // Simulate the reported bug's triggers: an unrelated ancestor
+      // `setState` (a role toggle, a focus/keyboard-inset change) that
+      // rebuilds the nav bar with a brand-new `actions` list each time.
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byType(ElevatedButton));
+        await tester.pump();
+      }
+
+      expect(rebuilds, greaterThan(1));
+      // The action's State must survive unrelated rebuilds instead of being
+      // torn down and recreated (which would replay its entrance
+      // transition every time — the "language switcher animates in again"
+      // bug).
+      expect(initCount, 1);
+      expect(disposeCount, 0);
     });
 
     testWidgets('UiSliverNavigationBar adaptive default is platform-neutral',
@@ -1526,16 +1858,13 @@ void main() {
       expect(controller.offset, 22);
 
       await tester.pump(const Duration(milliseconds: 48));
-      final compactShadow = tester.widget<UiLegibilityShadow>(
-        find
-            .ancestor(
-              of: find.byKey(const Key('ui_navigation_compact_title')),
-              matching: find.byType(UiLegibilityShadow),
-            )
-            .first,
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('ui_navigation_compact_title')),
+          matching: find.byType(UiLegibilityShadow),
+        ),
+        findsOneWidget,
       );
-      expect(compactShadow.blurSigma, greaterThan(2));
-      expect(compactShadow.spreadRadius, greaterThan(0.5));
 
       // Re-crossing the threshold reverses the same brief handoff.
       controller.jumpTo(20);
@@ -1596,7 +1925,7 @@ void main() {
     });
 
     testWidgets(
-        'UiSliverNavigationBar becomes a quiet page header beside a rail',
+        'UiSliverNavigationBar keeps its collapsible header beside a tablet rail',
         (tester) async {
       tester.view.physicalSize = const Size(900, 700);
       tester.view.devicePixelRatio = 1;
@@ -1626,7 +1955,12 @@ void main() {
 
       expect(find.text('Library'), findsOneWidget);
       expect(find.byType(BackdropFilter), findsNothing);
-      expect(find.byType(SliverPersistentHeader), findsNothing);
+      expect(find.byType(UiScrollEdgeFade), findsOneWidget);
+      expect(find.byType(SliverPersistentHeader), findsOneWidget);
+      expect(
+        find.byKey(const Key('ui_navigation_large_title')),
+        findsOneWidget,
+      );
 
       tester.view.physicalSize = const Size(390, 700);
       await tester.pumpWidget(host());
@@ -1635,6 +1969,14 @@ void main() {
       expect(find.byType(BackdropFilter), findsNothing);
       expect(find.byType(UiScrollEdgeFade), findsOneWidget);
       expect(find.byType(SliverPersistentHeader), findsOneWidget);
+      final fade = tester.widget<UiScrollEdgeFade>(
+        find.byType(UiScrollEdgeFade),
+      );
+      expect(
+        fade.extent,
+        greaterThan(52),
+        reason: 'The fade should extend beyond the compact row to the title.',
+      );
     });
 
     testWidgets(
@@ -1717,7 +2059,7 @@ void main() {
       expect(fade.opacity, 1);
     });
 
-    testWidgets('UiSliverStickyRegion pins solid at the top beside a rail',
+    testWidgets('UiSliverStickyRegion pins below the tablet compact title bar',
         (tester) async {
       tester.view.physicalSize = const Size(900, 700);
       tester.view.devicePixelRatio = 1;
@@ -1755,7 +2097,7 @@ void main() {
       final stickyRect = tester.getRect(
         find.byKey(const Key('ui_sliver_sticky_region_surface')),
       );
-      expect(stickyRect.top, closeTo(0, 0.1));
+      expect(stickyRect.top, closeTo(52, 0.1));
       expect(find.byType(BackdropFilter), findsNothing);
 
       final surface = tester.widget<AnimatedContainer>(

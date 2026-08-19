@@ -146,8 +146,18 @@ void main() {
       final confirmRect = tester.getRect(
         find.ancestor(of: find.text('Delete'), matching: find.byType(UiButton)),
       );
+      final stackedButtons = tester.widgetList<UiButton>(
+        find.descendant(
+          of: find.byKey(
+            const ValueKey('ui-alert-dialog-actions-stacked'),
+          ),
+          matching: find.byType(UiButton),
+        ),
+      );
       expect(confirmRect.top, lessThan(cancelRect.top));
       expect(confirmRect.width, closeTo(cancelRect.width, 0.1));
+      expect(stackedButtons, hasLength(2));
+      expect(stackedButtons.every((button) => button.expand), isTrue);
     });
 
     testWidgets(

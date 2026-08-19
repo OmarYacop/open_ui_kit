@@ -696,6 +696,7 @@ void main() {
         ),
       );
       expect(find.text('Save'), findsNothing);
+      expect(find.byType(UiSpinner), findsOneWidget);
     });
 
     testWidgets('lg is visibly larger than sm along the size scale',

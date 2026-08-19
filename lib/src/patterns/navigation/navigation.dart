@@ -1,5 +1,7 @@
 export 'ui_navigation_back_button.dart';
 export 'ui_container_transform.dart';
+export 'ui_cupertino_back_gesture.dart';
+export 'ui_edge_swipe_pop_region.dart';
 export 'ui_navigation_controller.dart';
 export 'ui_navigation_history.dart';
 export 'ui_navigation_host.dart';
@@ -9,5 +11,6 @@ export 'ui_route_entry.dart';
 export 'ui_route_spec.dart';
 export 'ui_navigation_stack.dart';
 export 'ui_navigation_transition.dart';
+export 'ui_page_route.dart';
 export 'ui_sliver_navigation_bar.dart';
 export 'ui_sliver_sticky_region.dart';

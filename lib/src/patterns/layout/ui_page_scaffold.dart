@@ -7,6 +7,7 @@ import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/layout/ui_keyboard_geometry.dart';
+import '../../foundation/layout/ui_navigation_chrome_scope.dart';
 import '../../foundation/effects/ui_component_shadow.dart';
 import 'ui_safe_viewport.dart';
 import 'ui_scroll_edge_fade.dart';
@@ -55,7 +56,7 @@ class UiPageScaffold extends StatelessWidget {
     this.scrollFadeWideExtent = 72,
     this.scrollFadeBottomExtent = 48,
     this.scrollFadeHorizontalInset = 0,
-    this.scrollFadeMaxOpacity = 0.74,
+    this.scrollFadeMaxOpacity = 0.84,
     this.scrollFadeUsesSafeArea = true,
     this.resizeBodyForKeyboard = false,
     this.onRefresh,
@@ -195,6 +196,8 @@ class UiPageScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final bg = backgroundColor ?? tokens.colors.background;
+    final hasPersistentRail =
+        UiNavigationChromeScope.hasPersistentRailOf(context);
     final effectiveTopFadeExtent =
         MediaQuery.sizeOf(context).shortestSide >= 600
             ? scrollFadeWideExtent
@@ -224,8 +227,19 @@ class UiPageScaffold extends StatelessWidget {
     if (consumeFadeBottomInset) {
       effectiveSafeMode = _withoutBottomInset(effectiveSafeMode);
     }
+    final safeTopBodyInset =
+        consumeFadeTopInset ? _effectiveTopSafeInset(media) : 0.0;
+    final railFadeTopBodyInset = hasPersistentRail &&
+            scrollFade &&
+            scrollFadeUsesSafeArea &&
+            scrollFadeTop
+        ? effectiveTopFadeExtent
+        : 0.0;
+    final effectiveTopBodyInset = safeTopBodyInset > railFadeTopBodyInset
+        ? safeTopBodyInset
+        : railFadeTopBodyInset;
     final scrollFadeSafePadding = EdgeInsets.only(
-      top: consumeFadeTopInset ? _effectiveTopSafeInset(media) : 0,
+      top: effectiveTopBodyInset,
       bottom: consumeFadeBottomInset
           ? _effectiveBottomSafeInset(context, media, safeViewportMode)
           : 0,
@@ -354,6 +368,7 @@ class UiPageScaffold extends StatelessWidget {
   UiSafeViewportMode _withoutTopInset(UiSafeViewportMode mode) {
     switch (mode) {
       case UiSafeViewportMode.none:
+      case UiSafeViewportMode.horizontal:
       case UiSafeViewportMode.bottom:
       case UiSafeViewportMode.keyboardAwareNoTop:
         return mode;
@@ -369,6 +384,7 @@ class UiPageScaffold extends StatelessWidget {
   UiSafeViewportMode _withoutBottomInset(UiSafeViewportMode mode) {
     switch (mode) {
       case UiSafeViewportMode.none:
+      case UiSafeViewportMode.horizontal:
       case UiSafeViewportMode.top:
         return mode;
       case UiSafeViewportMode.bottom:
@@ -389,6 +405,7 @@ class UiPageScaffold extends StatelessWidget {
       case UiSafeViewportMode.keyboardAware:
         return true;
       case UiSafeViewportMode.none:
+      case UiSafeViewportMode.horizontal:
       case UiSafeViewportMode.bottom:
       case UiSafeViewportMode.keyboardAwareNoTop:
         return false;
@@ -403,6 +420,7 @@ class UiPageScaffold extends StatelessWidget {
       case UiSafeViewportMode.keyboardAwareNoTop:
         return true;
       case UiSafeViewportMode.none:
+      case UiSafeViewportMode.horizontal:
       case UiSafeViewportMode.top:
         return false;
     }
@@ -430,12 +448,13 @@ class UiPageScaffold extends StatelessWidget {
   }
 }
 
-/// Safe insets that page body scrollables should include in their content
-/// padding when [UiPageScaffold.scrollFadeUsesSafeArea] is enabled.
+/// Resting edge insets that page body scrollables should include in their
+/// content padding when [UiPageScaffold.scrollFadeUsesSafeArea] is enabled.
 ///
 /// The scaffold itself stays visually full-bleed. Scrollable page patterns use
-/// these values to keep content clear of hardware insets while the fade remains
-/// painted at the physical edges.
+/// these values to keep content clear of hardware insets and, beside a
+/// persistent rail, the top scroll-fade region while the fade remains painted
+/// at the physical edges.
 enum UiPageBodyInsetsAspect { top, right, bottom, left }
 
 class UiPageBodyInsets extends InheritedModel<UiPageBodyInsetsAspect> {

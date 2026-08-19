@@ -85,6 +85,12 @@ void main() {
                     loading: true,
                     onChanged: null,
                   ),
+                  const UiSwitch(
+                    value: false,
+                    label: 'Private semantic label',
+                    showLabel: false,
+                    onChanged: null,
+                  ),
                 ],
               );
             },
@@ -102,6 +108,11 @@ void main() {
 
       final loadingNode = tester.getSemantics(find.text('Syncing'));
       expect(loadingNode.hint, contains('loading'));
+      expect(find.text('Private semantic label'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Private semantic label'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('radio group selects options and exposes helper and error text',

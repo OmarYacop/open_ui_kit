@@ -27,3 +27,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+
+flutter:
+  shaders:
+    - lib/src/patterns/layout/shaders/ui_progressive_blur.frag

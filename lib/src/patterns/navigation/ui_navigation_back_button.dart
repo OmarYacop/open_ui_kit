@@ -32,12 +32,17 @@ class UiNavigationBackButton extends StatefulWidget {
     super.key,
     required this.label,
     required this.onPressed,
+    this.showLabel = true,
     this.history = const <UiNavigationBackHistoryItem>[],
     this.onHistorySelected,
   });
 
   final String label;
   final VoidCallback onPressed;
+
+  /// Whether [label] renders next to the chevron. It is always used as the
+  /// button's semantics label regardless of this flag.
+  final bool showLabel;
   final List<UiNavigationBackHistoryItem> history;
   final ValueChanged<UiNavigationBackHistoryItem>? onHistorySelected;
 
@@ -215,16 +220,18 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
                       size: 17,
                       color: resolvedColor,
                     ),
-                    SizedBox(width: tokens.spacing.x1 / 2),
-                    Flexible(
-                      child: UiText(
-                        widget.label,
-                        variant: UiTextVariant.body,
-                        style: TextStyle(color: resolvedColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    if (widget.showLabel) ...[
+                      SizedBox(width: tokens.spacing.x1 / 2),
+                      Flexible(
+                        child: UiText(
+                          widget.label,
+                          variant: UiTextVariant.body,
+                          style: TextStyle(color: resolvedColor),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               );

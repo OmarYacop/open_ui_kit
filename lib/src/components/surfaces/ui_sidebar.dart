@@ -277,11 +277,10 @@ class _SidebarFallbackIcon extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: UiText(
         initial.toUpperCase(),
-        variant: UiTextVariant.caption,
+        variant: UiTextVariant.micro,
         style: TextStyle(
           color: tokens.colors.textPrimary,
           fontWeight: FontWeight.w700,
-          fontSize: 10,
           height: 1,
         ),
       ),

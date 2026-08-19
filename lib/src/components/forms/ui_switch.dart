@@ -12,6 +12,7 @@ class UiSwitch extends StatelessWidget {
     required this.value,
     this.onChanged,
     this.label,
+    this.showLabel = true,
     this.enabled = true,
     this.loading = false,
     this.focusNode,
@@ -21,6 +22,11 @@ class UiSwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
   final String? label;
+
+  /// Whether [label] is rendered next to the switch.
+  ///
+  /// The label remains available to accessibility semantics when hidden.
+  final bool showLabel;
   final bool enabled;
   final bool loading;
   final FocusNode? focusNode;
@@ -87,7 +93,7 @@ class UiSwitch extends StatelessWidget {
                   ),
                 ),
               ),
-              if (label != null) ...[
+              if (label != null && showLabel) ...[
                 SizedBox(width: tokens.spacing.x2),
                 UiText(
                   label!,

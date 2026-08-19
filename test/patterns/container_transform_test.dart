@@ -403,4 +403,174 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'UiContainerPreview flies the thumbnail independently of the rest of '
+    'the content',
+    (tester) async {
+      await tester.pumpWidget(
+        UiApp(
+          home: Align(
+            alignment: Alignment.bottomRight,
+            child: SizedBox(
+              width: 140,
+              height: 180,
+              child: UiOpenContainer(
+                style: UiContainerTransformStyle.iosZoom,
+                surfaceColor: const Color(0xffeeeeee),
+                destinationSurfaceColor: const Color(0xffffffff),
+                closedBuilder: (_, __) => Column(
+                  children: [
+                    UiContainerPreview(
+                      child: Container(
+                        key: const Key('thumb'),
+                        width: 60,
+                        height: 60,
+                        color: const Color(0xffff0000),
+                      ),
+                    ),
+                    const Text('Card title'),
+                  ],
+                ),
+                pageBuilder: (_) => Column(
+                  children: [
+                    UiContainerPreview(
+                      child: Container(
+                        key: const Key('hero'),
+                        width: 300,
+                        height: 300,
+                        color: const Color(0xffff0000),
+                      ),
+                    ),
+                    const Text('Details title'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final closedThumbRect = tester.getRect(find.byKey(const Key('thumb')));
+
+      await tester.tap(find.byKey(const Key('thumb')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump(const Duration(milliseconds: 1));
+
+      final flightKey = find.byKey(const Key('ui_container_preview_flight'));
+      expect(flightKey, findsOneWidget);
+      final earlyRect = tester.getRect(flightKey);
+      expect(earlyRect.width, closeTo(closedThumbRect.width, 1));
+      expect(earlyRect.height, closeTo(closedThumbRect.height, 1));
+
+      await tester.pump(const Duration(milliseconds: 150));
+      final midRect = tester.getRect(flightKey);
+      expect(midRect.width, greaterThan(earlyRect.width));
+
+      await tester.pumpAndSettle();
+      expect(find.text('Details title'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      Navigator.of(tester.element(find.text('Details title'))).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Card title'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'UiContainerPreview keeps flying through the content-occlusion switch '
+    'instead of freezing or disappearing',
+    (tester) async {
+      await tester.pumpWidget(
+        UiApp(
+          home: Align(
+            alignment: Alignment.bottomRight,
+            child: SizedBox(
+              width: 140,
+              height: 180,
+              child: UiOpenContainer(
+                style: UiContainerTransformStyle.iosZoom,
+                sourceFlightLayout: UiContainerSourceFlightLayout.responsive,
+                closedBuilder: (_, __) => UiContainerPreview(
+                  child: Container(
+                    key: const Key('flight_probe_compact'),
+                    width: 60,
+                    height: 60,
+                    color: const Color(0xffff0000),
+                  ),
+                ),
+                pageBuilder: (_) => UiContainerPreview(
+                  child: Container(
+                    key: const Key('flight_probe_expanded'),
+                    width: 300,
+                    height: 300,
+                    color: const Color(0xffff0000),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('flight_probe_compact')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump(const Duration(milliseconds: 1));
+
+      final flightFinder = find.byKey(const Key('ui_container_preview_flight'));
+      expect(flightFinder, findsOneWidget);
+
+      // Before the fix, `hasPreviewPair` (and therefore the overlay) went
+      // permanently false the moment the content-occlusion switch removed
+      // the compact side from the tree (~half way through, per fast/slow
+      // token timing), so the flying rect would freeze or vanish for the
+      // rest of the push instead of continuing on to the destination size.
+      var previousWidth = tester.getRect(flightFinder).width;
+      var sawSwitchPoint = false;
+      var settled = false;
+      for (var i = 0; i < 25; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        final present = flightFinder.evaluate().isNotEmpty;
+        if (!present) {
+          // Once the flight animation fully completes, the shuttle hands
+          // off to the real settled page and the overlay legitimately goes
+          // away for good — that's fine. What must never happen is the
+          // overlay disappearing and then reappearing (a gap mid-flight),
+          // which is what the bug looked like: it vanished right at the
+          // content-occlusion switch and never came back for that push.
+          settled = true;
+          continue;
+        }
+        expect(
+          settled,
+          isFalse,
+          reason: 'flying overlay must not reappear after disappearing '
+              '(frame $i)',
+        );
+        final rect = tester.getRect(flightFinder);
+        expect(
+          rect.width,
+          greaterThanOrEqualTo(previousWidth - 0.5),
+          reason: 'flying rect must not shrink/reset at frame $i',
+        );
+        if (rect.width > previousWidth + 0.5) sawSwitchPoint = true;
+        previousWidth = rect.width;
+      }
+
+      // Sanity: the loop actually ran long enough to cross the
+      // content-occlusion switch point (the rect kept growing past it),
+      // and the flight reached (near) the full destination width before
+      // settling — i.e. it flew all the way, not just partway.
+      expect(sawSwitchPoint, isTrue);
+      expect(previousWidth, greaterThan(600));
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
