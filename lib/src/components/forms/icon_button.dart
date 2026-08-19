@@ -7,11 +7,31 @@ import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/theme/ui_intent.dart';
 import '../forms/button.dart' show UiSize;
 
+/// Below this visual size, a pressed button grows its surface instead of
+/// shrinking its content (see [UiIconButton]'s press treatment) — small
+/// enough that a shrink is barely visible, and a thumb covering the control
+/// benefits from seeing it get bigger rather than smaller underneath.
+const double kUiPressGrowThreshold = 44;
+
+/// How far a small pressed surface grows past [kUiPressGrowThreshold],
+/// as a scale factor. Content inside is counter-scaled by `1 / this` so it
+/// stays visually fixed size while only the surface grows around it.
+const double kUiPressGrowScale = 1.14;
+
 /// Icon-only button primitive.
 ///
 /// Use this for compact toolbar actions, card menus, close buttons, and other
 /// controls where the visible label is an icon. [semanticsLabel] is required so
 /// the control remains accessible.
+///
+/// At every [UiSize] this button's visual footprint (28/36/44) sits at or
+/// below [kUiPressGrowThreshold], so pressing it grows the surface rather
+/// than shrinking the content — a fixed-size icon shrinking by a few
+/// percent is nearly imperceptible, but a thumb covering a small circular
+/// target benefits from feeling it grow underneath, the way iOS's own
+/// small round controls (e.g. keyboard keys) do. [UiButton], whose surface
+/// scales with its label and stays comfortably above the threshold, keeps
+/// the standard whole-surface press shrink instead.
 class UiIconButton extends StatelessWidget {
   const UiIconButton({
     super.key,
@@ -69,11 +89,22 @@ class UiIconButton extends StatelessWidget {
                     : _shift(bg, -0.015))
                 : bg;
 
+        final grows = visualSize <= kUiPressGrowThreshold;
+        final surfaceScale =
+            state.pressed ? (grows ? kUiPressGrowScale : 0.96) : 1.0;
+        // Growing the surface must not grow the icon with it — only the
+        // background behind the thumb should read as "bigger", so the icon
+        // is counter-scaled by the same factor in the opposite direction.
+        // Both Transforms are paint-only (RenderTransform keeps the
+        // child's layout size), so the grown surface can paint outside
+        // this button's laid-out bounds without shifting sibling layout.
+        final contentScale = grows ? 1 / surfaceScale : 1.0;
+
         return UiFocusRing(
           visible: state.focused,
           borderRadius: radius,
           child: Transform.scale(
-            scale: state.pressed ? 0.96 : 1,
+            scale: surfaceScale,
             child: UiBox(
               width: visualSize,
               height: visualSize,
@@ -81,9 +112,12 @@ class UiIconButton extends StatelessWidget {
               border: border == null ? null : Border.all(color: border),
               borderRadius: radius,
               alignment: Alignment.center,
-              child: IconTheme.merge(
-                data: IconThemeData(color: fg, size: iconSize),
-                child: icon,
+              child: Transform.scale(
+                scale: contentScale,
+                child: IconTheme.merge(
+                  data: IconThemeData(color: fg, size: iconSize),
+                  child: icon,
+                ),
               ),
             ),
           ),

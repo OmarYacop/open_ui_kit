@@ -877,6 +877,81 @@ void main() {
       await gesture.up();
       await tester.pump(const Duration(milliseconds: 240));
     });
+
+    testWidgets('pressing a small icon button grows the surface, not the icon',
+        (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiIconButton(
+            icon: const Icon(Icons.close_rounded),
+            semanticsLabel: 'Close',
+            size: UiSize.md, // visual size 36, below the grow threshold
+            onPressed: _noop,
+          ),
+        ),
+      );
+
+      final iconSizeBefore = tester.getSize(find.byIcon(Icons.close_rounded));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(Icons.close_rounded)),
+      );
+      await tester.pump();
+
+      final transforms = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform.getMaxScaleOnAxis())
+          .toList();
+      // The outer (surface) transform grows past 1; content is
+      // counter-scaled back down, so the icon's own rendered size is
+      // unchanged even though a Transform > 1 exists somewhere above it.
+      expect(transforms.any((s) => s > 1.01), isTrue);
+      expect(
+        tester.getSize(find.byIcon(Icons.close_rounded)),
+        iconSizeBefore,
+      );
+
+      await gesture.up();
+      await tester.pump();
+    });
+
+    testWidgets(
+        'every UiIconButton size sits at or below the grow threshold, so '
+        'all of them grow on press rather than shrink', (tester) async {
+      // 28 / 36 / 44 — lg lands exactly on kUiPressGrowThreshold, which is
+      // the point: UiIconButton is the "small circular button" case the
+      // threshold exists for, at every size it offers.
+      for (final size in UiSize.values) {
+        await tester.pumpWidget(
+          _host(
+            UiIconButton(
+              icon: const Icon(Icons.close_rounded),
+              semanticsLabel: 'Close',
+              size: size,
+              onPressed: _noop,
+            ),
+          ),
+        );
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byIcon(Icons.close_rounded)),
+        );
+        await tester.pump();
+
+        final transforms = tester
+            .widgetList<Transform>(find.byType(Transform))
+            .map((t) => t.transform.getMaxScaleOnAxis())
+            .toList();
+        expect(
+          transforms.any((s) => s > 1.01),
+          isTrue,
+          reason: '$size should grow its surface on press',
+        );
+
+        await gesture.up();
+        await tester.pump();
+      }
+    });
   });
 
   group('UiInput', () {

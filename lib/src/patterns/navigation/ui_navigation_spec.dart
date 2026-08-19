@@ -228,22 +228,23 @@ class UiNavigationBackConfig {
   const UiNavigationBackConfig({
     required this.onPressed,
     this.label,
-    this.showLabel = true,
+    this.showLabel = false,
     this.history = const <UiNavigationBackHistoryItem>[],
     this.onHistorySelected,
   });
 
-  /// Title shown in the back button; defaults to [UiNavigationSpec.title]
-  /// when omitted.
+  /// Title shown in the back button when [showLabel] is `true`; defaults to
+  /// [UiNavigationSpec.title] when omitted. Always used for the button's
+  /// semantics announcement and as the seeded root of the history menu,
+  /// even when not painted.
   final String? label;
   final VoidCallback onPressed;
 
-  /// Whether [label] renders next to the chevron.
-  ///
-  /// [label] (or its fallback) is still used as the button's semantics
-  /// label and as the long-press history menu's seed entry when set to
-  /// `false` — only the visible text is dropped, freeing the width it
-  /// would have reserved for the centered title.
+  /// Whether [label] is painted next to the chevron. Defaults to `false`
+  /// (iOS-style chevron-only), leaving more room for the title and
+  /// trailing actions. [label] (or its fallback) is still used as the
+  /// button's semantics label and as the long-press history menu's seed
+  /// entry either way.
   final bool showLabel;
   final List<UiNavigationBackHistoryItem> history;
   final ValueChanged<UiNavigationBackHistoryItem>? onHistorySelected;

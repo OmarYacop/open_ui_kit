@@ -126,7 +126,7 @@ void main() {
         (tester) async {
       final spec = UiNavigationSpec(
         title: 'Detail',
-        back: UiNavigationBackConfig(onPressed: () {}),
+        back: UiNavigationBackConfig(onPressed: () {}, showLabel: true),
       );
       await tester.pumpWidget(
         _host(
@@ -151,6 +151,7 @@ void main() {
         back: UiNavigationBackConfig(
           label: 'Courses',
           onPressed: () {},
+          showLabel: true,
         ),
       );
       await tester.pumpWidget(

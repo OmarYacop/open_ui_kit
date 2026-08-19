@@ -1257,7 +1257,6 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
                   ? Alignment.centerLeft
                   : Alignment.centerRight,
           applyOpacity: false,
-          implicitScaleAnimation: false,
           child: Align(
             alignment: isBottom
                 ? Alignment.bottomCenter

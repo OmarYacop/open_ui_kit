@@ -902,6 +902,125 @@ void main() {
       );
     });
 
+    testWidgets(
+        'expanding the accessory while accessoryPresence is still animating in does not snap',
+        (tester) async {
+      // Regression: the dock/accessory morph used to force Duration.zero
+      // whenever accessoryPresence < 0.999, so requesting expand while the
+      // accessory was still fading in snapped the width instantly instead
+      // of animating — confirmed via a runtime probe (width jumped inside
+      // 1ms). It must now animate smoothly regardless of presence.
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      Widget subject({required bool expanded, required double presence}) =>
+          _host(
+            UiBottomTabBar(
+              items: const [
+                UiBottomTabItem(label: 'Home'),
+                UiBottomTabItem(label: 'Search'),
+              ],
+              currentIndex: 1,
+              onChanged: (_) {},
+              accessoryPresence: presence,
+              accessory: UiBottomTabAccessory(
+                expanded: expanded,
+                leadingItem: const UiBottomTabItem(label: 'Search'),
+                child: const Icon(Icons.search),
+              ),
+            ),
+          );
+
+      // Presence mid-fade-in, accessory still collapsed.
+      await tester.pumpWidget(subject(expanded: false, presence: 0.4));
+      await tester.pump();
+      final before = tester
+          .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
+          .width;
+
+      // Request expand while presence is still only 0.4.
+      await tester.pumpWidget(subject(expanded: true, presence: 0.4));
+      await tester.pump();
+      final immediatelyAfter = tester
+          .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
+          .width;
+      // A snap would jump straight to (close to) the fully expanded width
+      // on the very next frame; an animation stays close to where it
+      // started and grows gradually.
+      expect(
+        immediatelyAfter,
+        lessThan(before + (400 - before) * 0.3),
+        reason: 'expand snapped instead of animating while presence < 1',
+      );
+
+      await tester.pumpAndSettle(); // still at presence 0.4 externally
+      final settled = tester
+          .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
+          .width;
+      expect(settled, greaterThan(before));
+    });
+
+    testWidgets(
+        'switching tabs whose accessories both exist but differ cross-dissolves '
+        'content instead of cutting instantly', (tester) async {
+      // Regression: UiContourPresenceController only animates existence
+      // (null <-> value); a direct value-to-value swap between two tabs
+      // that both have an accessory used to hard-cut the accessory's
+      // content on the very next frame. The abstract
+      // UiContourCrossfadeController layer (ui_contour_crossfade.dart) now
+      // owns this case, applied via _BottomTabBodyState in
+      // bottom_tab_scaffold.dart.
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      const items = [
+        UiBottomTabItem(label: 'Home'),
+        UiBottomTabItem(label: 'Messages'),
+        UiBottomTabItem(label: 'Profile'),
+      ];
+      var currentIndex = 1;
+
+      UiBottomTabAccessory accessoryFor(int index) => UiBottomTabAccessory(
+            leadingItem: items[index],
+            child: Icon(
+              Icons.search,
+              key: ValueKey('accessory-content-$index'),
+            ),
+          );
+
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) => UiBottomTabScaffold(
+              items: items,
+              currentIndex: currentIndex,
+              onChanged: (i) => setState(() => currentIndex = i),
+              pages: const [SizedBox(), SizedBox(), SizedBox()],
+              bottomAccessory: accessoryFor(currentIndex),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('accessory-content-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('accessory-content-2')), findsNothing);
+
+      await tester.tap(find.text('Profile'));
+      await tester.pump();
+
+      // Immediately after the switch both endpoints must be visible —
+      // that is the entire point of a cross-dissolve, as opposed to one
+      // instantly replacing the other.
+      expect(find.byKey(const ValueKey('accessory-content-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('accessory-content-2')), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('accessory-content-1')), findsNothing);
+      expect(find.byKey(const ValueKey('accessory-content-2')), findsOneWidget);
+    });
+
     testWidgets('expanded accessory replaces dock with selected tab island',
         (tester) async {
       tester.view.physicalSize = const Size(390, 700);

@@ -1,3 +1,8 @@
+export 'ui_contour_controller.dart';
+export 'ui_contour_crossfade.dart';
+export 'ui_contour_morph.dart';
+export 'ui_contour_physics.dart';
+export 'ui_contour_presence.dart';
 export 'ui_measured_morph.dart';
 export 'ui_motion_spec.dart';
 export 'ui_motion_tokens.dart';

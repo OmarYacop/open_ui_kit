@@ -20,6 +20,7 @@ import '../layout/ui_system_bars.dart';
 import 'ui_navigation_back_button.dart';
 import 'ui_navigation_scope.dart';
 import 'ui_navigation_spec.dart';
+import 'ui_navigator_history.dart';
 import 'ui_route_entry.dart';
 
 // Match iOS large-title navigation: scrolling selects a discrete title state,
@@ -503,7 +504,14 @@ class _CompactRow extends StatelessWidget {
     final resolvedLogo = spec.brand?.resolveLogo(brightness);
     final showMiddle = showTitle || resolvedLogo != null;
     final runtime = UiNavigationControllerScope.maybeOf(context);
-    final runtimeHistory = runtime?.controller.historyItems() ?? const [];
+    final navHistory = UiNavigatorHistoryScope.maybeOf(context);
+    final modalRoute = ModalRoute.of(context);
+    if (navHistory != null && modalRoute != null) {
+      navHistory.registerTitle(modalRoute, spec.title);
+    }
+    final runtimeHistory = runtime?.controller.historyItems() ??
+        navHistory?.historyItems() ??
+        const <UiNavigationBackHistoryItem>[];
     final configuredHistory = spec.back?.history ?? const [];
     final resolvedHistory =
         configuredHistory.isNotEmpty ? configuredHistory : runtimeHistory;
@@ -548,15 +556,18 @@ class _CompactRow extends StatelessWidget {
           0.0,
           constraints.maxWidth - horizontalPadding,
         );
-        final backShowsLabel = spec.back?.showLabel ?? true;
+        final showBackLabel = spec.back?.showLabel ?? false;
         final compactBackMaxWidth = math.min(112.0, contentWidth * 0.28);
         final roomyBackMaxWidth = math.min(260.0, contentWidth * 0.32);
-        final backMaxWidth = !backShowsLabel
-            ? 44.0
-            : math.max(
+        // Chevron-only (the default): a fixed, comfortable tap width — no
+        // label means nothing to reserve room for, so the title and
+        // actions get that space back instead.
+        final backMaxWidth = showBackLabel
+            ? math.max(
                 44.0,
                 contentWidth >= 600 ? roomyBackMaxWidth : compactBackMaxWidth,
-              );
+              )
+            : 44.0;
         final trailingWidth =
             spec.actions.isEmpty || spec.actionsFollowTitleCollapse
                 ? 0.0
@@ -576,7 +587,7 @@ class _CompactRow extends StatelessWidget {
                   constraints: BoxConstraints(maxWidth: backMaxWidth),
                   child: UiNavigationBackButton(
                     label: resolvedBackLabel,
-                    showLabel: backShowsLabel,
+                    showLabel: showBackLabel,
                     onPressed: spec.back!.onPressed,
                     history: seededHistory,
                     onHistorySelected: onHistorySelected,

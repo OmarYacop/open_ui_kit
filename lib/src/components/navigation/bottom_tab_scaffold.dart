@@ -6,6 +6,9 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../foundation/intl/intl.dart';
 import '../../foundation/layout/layout.dart';
+import '../../foundation/motion/ui_contour_crossfade.dart';
+import '../../foundation/motion/ui_contour_presence.dart';
+import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../surfaces/ui_drawer.dart';
@@ -17,6 +20,14 @@ import 'ui_navigation_drawer.dart';
 const _kBottomTabScaffoldControlWidth = 72.0;
 const _kBottomTabScaffoldDockPadding = 6.0;
 const _kBottomTabScaffoldAccessoryGap = 12.0;
+
+// `UiMotionDuration.standard` (200ms) reads as an instant swap for a small
+// icon-sized cross-dissolve — there isn't enough visible travel for the eye
+// to register a blend rather than a cut. This is deliberately slower,
+// matching the more legible dissolve pace of the reference material.
+const _kAccessoryContentFadeDuration = UiMotionDuration.custom(
+  Duration(milliseconds: 420),
+);
 
 class UiBottomTabRailConfig {
   const UiBottomTabRailConfig({
@@ -346,63 +357,104 @@ class _BottomTabBody extends StatefulWidget {
 }
 
 class _BottomTabBodyState extends State<_BottomTabBody>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _moreDrawerOpen = false;
-  late final AnimationController _accessoryPresence = AnimationController(
-    vsync: this,
-    value: widget.accessory == null ? 0 : 1,
-  )
-    ..addListener(_handleAccessoryTick)
-    ..addStatusListener(_handleAccessoryStatus);
-  UiBottomTabAccessory? _visibleAccessory;
 
-  @override
-  void initState() {
-    super.initState();
-    _visibleAccessory = widget.accessory;
-  }
+  // The abstract Contour presence layer (see ui_contour_presence.dart):
+  // owns a single progress timeline for "does the accessory exist right
+  // now", retains the last accessory while it fades out, and clears it once
+  // settled. This used to be hand-rolled locally with a raw
+  // AnimationController plus a manually retained `_visibleAccessory` field;
+  // it is formalized here specifically because that hand-rolled version had
+  // no equivalent anywhere else in the kit, so every other "optional slot"
+  // component would have had to re-invent it.
+  late final UiContourPresenceController<UiBottomTabAccessory>
+      _accessoryPresence = UiContourPresenceController<UiBottomTabAccessory>(
+    vsync: this,
+  )..addListener(_handleAccessoryTick);
+
+  // The abstract Contour crossfade layer (see ui_contour_crossfade.dart):
+  // owns the "same shell, different content" case that presence above does
+  // not cover — switching from one tab's accessory straight to a different
+  // tab's accessory, both non-null, so presence never leaves `expanded` and
+  // never animates. Without this the accessory's inner content hard-cut.
+  // Identity is keyed by leading-item label rather than object equality
+  // because a fresh `UiBottomTabAccessory` is normally rebuilt every frame
+  // even when it represents the same logical tab.
+  late final UiContourCrossfadeController<UiBottomTabAccessory>
+      _accessoryContentFade =
+      UiContourCrossfadeController<UiBottomTabAccessory>(
+    vsync: this,
+  )..addListener(_handleAccessoryTick);
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final motion = UiThemeTokens.motionOf(context);
-    _accessoryPresence
-      ..duration = motion.fast
-      ..reverseDuration = motion.fast;
+    _accessoryPresence.update(context, widget.accessory);
+    _accessoryContentFade.update(
+      context,
+      widget.accessory,
+      identity: widget.accessory?.leadingItem?.label,
+      duration: _kAccessoryContentFadeDuration,
+    );
   }
 
   @override
   void didUpdateWidget(covariant _BottomTabBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final next = widget.accessory;
-    if (next != null) {
-      _visibleAccessory = next;
-      _accessoryPresence.forward();
-      return;
-    }
-    if (_visibleAccessory != null) {
-      _visibleAccessory = _visibleAccessory!.copyWith(expanded: false);
-      _accessoryPresence.reverse();
-    }
+    _accessoryPresence.update(
+      context,
+      widget.accessory,
+      duration: UiMotionDuration.fast,
+      onRemove: (accessory) => accessory.copyWith(expanded: false),
+    );
+    _accessoryContentFade.update(
+      context,
+      widget.accessory,
+      identity: widget.accessory?.leadingItem?.label,
+      duration: _kAccessoryContentFadeDuration,
+    );
   }
 
   @override
   void dispose() {
     _accessoryPresence
       ..removeListener(_handleAccessoryTick)
-      ..removeStatusListener(_handleAccessoryStatus)
+      ..dispose();
+    _accessoryContentFade
+      ..removeListener(_handleAccessoryTick)
       ..dispose();
     super.dispose();
   }
 
-  void _handleAccessoryTick() {
-    if (mounted) setState(() {});
+  /// The accessory actually handed to [UiBottomTabBar]: the presence
+  /// controller's retained value, with its `child` cross-dissolved when the
+  /// content crossfade has two distinct, non-null endpoints (a same-shell
+  /// content swap). Falls through unchanged for entrance/exit, where the
+  /// presence controller's own geometry already carries the transition.
+  ///
+  /// The dissolve itself (opacity blend, plus a transient blur on
+  /// Apple platforms) is [buildUiContourCrossfade] — shared with any other
+  /// component that swaps same-shell content, not reimplemented here.
+  UiBottomTabAccessory? _resolveRenderedAccessory(BuildContext context) {
+    final current = _accessoryPresence.value;
+    if (current == null) return null;
+    final fadePrevious = _accessoryContentFade.previous;
+    final fadeCurrent = _accessoryContentFade.current;
+    if (fadePrevious == null || fadeCurrent == null) return current;
+    return current.copyWith(
+      child: buildUiContourCrossfade(
+        context,
+        progress: _accessoryContentFade.progress,
+        previous: fadePrevious.child,
+        current: fadeCurrent.child,
+        peakBlurSigma: 6,
+      ),
+    );
   }
 
-  void _handleAccessoryStatus(AnimationStatus status) {
-    if (status == AnimationStatus.dismissed && widget.accessory == null) {
-      setState(() => _visibleAccessory = null);
-    }
+  void _handleAccessoryTick() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -433,7 +485,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
           ),
           child: widget.body,
         );
-        final keyboardInset = (_visibleAccessory?.expanded ?? false)
+        final keyboardInset = (_accessoryPresence.value?.expanded ?? false)
             ? UiKeyboardGeometry.currentInsetOf(context)
             : 0.0;
 
@@ -467,8 +519,8 @@ class _BottomTabBodyState extends State<_BottomTabBody>
                             widget.floatingHorizontalMargin,
                         floatingBottomMargin: widget.floatingBottomMargin,
                         equalWidthsWhenLastSelected: overflow != null,
-                        accessory: _visibleAccessory,
-                        accessoryPresence: _accessoryPresence.value,
+                        accessory: _resolveRenderedAccessory(context),
+                        accessoryPresence: _accessoryPresence.progress,
                       ),
                     ),
                   ),
@@ -544,7 +596,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   }
 
   double _resolveAccessoryReservation(BoxConstraints constraints) {
-    final accessory = _visibleAccessory;
+    final accessory = _accessoryPresence.value;
     if (accessory == null) return 0;
 
     final isWide = constraints.maxWidth.isFinite &&
@@ -556,7 +608,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     };
     if (!floating) return 0;
     return (accessory.collapsedWidth + _kBottomTabScaffoldAccessoryGap) *
-        _accessoryPresence.value;
+        _accessoryPresence.progress;
   }
 
   double _resolveBodyBottomInset(

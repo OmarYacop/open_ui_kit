@@ -171,12 +171,15 @@ class UiButton extends StatelessWidget {
 
     if (expand) return button;
 
-    // A tight parent (for example, a stretching form column) must not turn a
-    // compact button into a full-width surface and tap target. The outer Align
-    // accepts the parent's constraint while laying out the pressable loosely.
+    // A loose parent (for example, a stretching form column, or a tall
+    // loosely-constrained container) must not turn a compact button into a
+    // full-width or full-height surface and tap target. The outer Align
+    // accepts the parent's constraint while laying out the pressable loosely
+    // on both axes.
     return Align(
       alignment: Alignment.center,
       widthFactor: 1,
+      heightFactor: 1,
       child: button,
     );
   }

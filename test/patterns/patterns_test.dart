@@ -2339,6 +2339,7 @@ void main() {
           back: UiNavigationBackConfig(
             label: 'Inbox',
             onPressed: () => backPresses++,
+            showLabel: true,
           ),
         );
 

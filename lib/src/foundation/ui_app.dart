@@ -5,6 +5,7 @@ import 'reactive/ui_clock.dart';
 import 'scrolling/ui_scroll_configuration.dart';
 import 'theme/ui_theme_extensions.dart';
 import '../patterns/navigation/ui_navigation_transition.dart';
+import '../patterns/navigation/ui_navigator_history.dart';
 import '../patterns/navigation/ui_page_route.dart';
 
 /// How [UiApp] picks between its light and dark token sets.
@@ -102,6 +103,14 @@ class UiApp extends StatefulWidget {
 
 class _UiAppState extends State<UiApp> {
   final HeroController _heroController = HeroController();
+  final UiNavigatorHistoryObserver _historyObserver =
+      UiNavigatorHistoryObserver();
+
+  @override
+  void dispose() {
+    _historyObserver.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +130,10 @@ class _UiAppState extends State<UiApp> {
         (observer) => observer is HeroController,
       ))
         _heroController,
+      if (!widget.navigatorObservers.any(
+        (observer) => observer is UiNavigatorHistoryObserver,
+      ))
+        _historyObserver,
       ...widget.navigatorObservers,
     ];
 
@@ -168,8 +181,11 @@ class _UiAppState extends State<UiApp> {
               child: UiPageRouteDefaults(
                 transitionStyle: widget.defaultPageTransitionStyle,
                 swipeBackEnabled: widget.defaultPageSwipeBackEnabled,
-                child: UiScrollConfiguration(
-                  child: child ?? const SizedBox.shrink(),
+                child: UiNavigatorHistoryScope(
+                  observer: _historyObserver,
+                  child: UiScrollConfiguration(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),

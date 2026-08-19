@@ -51,11 +51,7 @@ class _ExamplesScreenState extends State<_ExamplesScreen> {
                 onPressed: () => Navigator.of(context).maybePop(),
               ),
               actions: [
-                UiButton(
-                  label: 'Save',
-                  size: UiSize.sm,
-                  onPressed: _save,
-                ),
+                UiButton(label: 'Save', size: UiSize.sm, onPressed: _save),
               ],
             ),
           ),
@@ -73,10 +69,7 @@ class _ExamplesScreenState extends State<_ExamplesScreen> {
                         spacing: tokens.spacing.x2,
                         runSpacing: tokens.spacing.x2,
                         children: [
-                          UiButton(
-                            label: 'Save changes',
-                            onPressed: _save,
-                          ),
+                          UiButton(label: 'Save changes', onPressed: _save),
                           UiButton(
                             label: 'Cancel',
                             intent: UiIntent.neutral,
