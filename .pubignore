@@ -6,8 +6,15 @@ coverage/
 
 # Golden-test diagnostics are local failure artifacts, not fixtures.
 test/goldens/failures/
+example/test/failures/
 
 # Editor and operating-system metadata.
 .DS_Store
 .idea/
 *.iml
+.impeccable/
+
+# Internal engineering docs, not part of the published package surface.
+AGENTS.md
+performance_audit.md
+.markdownlint-cli2.jsonc
