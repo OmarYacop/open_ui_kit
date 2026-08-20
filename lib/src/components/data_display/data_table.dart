@@ -188,6 +188,144 @@ class UiDataTable extends StatelessWidget {
   }
 }
 
+/// A table that participates directly in an ancestor [CustomScrollView].
+///
+/// Unlike `UiDataTable.lazy(scrollable: false)`, this component never
+/// shrink-wraps its rows. It uses a fixed-extent sliver list so only visible
+/// rows (plus Flutter's small cache extent) are built. Prefer this variant for
+/// large tables embedded in sliver pages.
+class UiSliverDataTable extends StatelessWidget {
+  const UiSliverDataTable.lazy({
+    super.key,
+    required this.columns,
+    required this.rowCount,
+    required this.rowBuilder,
+    this.loading = false,
+    this.errorText,
+    this.onRetry,
+    this.emptyText = 'No records yet.',
+    this.rowExtent = 44,
+  });
+
+  final List<UiDataColumn> columns;
+  final int rowCount;
+  final UiDataRowBuilder rowBuilder;
+  final bool loading;
+  final String? errorText;
+  final VoidCallback? onRetry;
+  final String emptyText;
+  final double rowExtent;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasError = errorText != null && errorText!.isNotEmpty;
+    if (loading || hasError || rowCount == 0) {
+      return SliverToBoxAdapter(
+        child: UiDataTable.lazy(
+          columns: columns,
+          rowCount: rowCount,
+          rowBuilder: rowBuilder,
+          loading: loading,
+          errorText: errorText,
+          onRetry: onRetry,
+          emptyText: emptyText,
+          rowExtent: rowExtent,
+        ),
+      );
+    }
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(child: _SliverTableHeader(columns: columns)),
+        SliverFixedExtentList(
+          itemExtent: rowExtent,
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _SliverTableRow(
+              columns: columns,
+              row: rowBuilder(context, index),
+              index: index,
+              isLast: index == rowCount - 1,
+            ),
+            childCount: rowCount,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SliverTableHeader extends StatelessWidget {
+  const _SliverTableHeader({required this.columns});
+
+  final List<UiDataColumn> columns;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    final border = BorderSide(color: tokens.colors.border);
+    final radius = BorderRadius.only(
+      topLeft: tokens.radius.lg,
+      topRight: tokens.radius.lg,
+    );
+
+    return UiBox(
+      background: tokens.colors.card,
+      border: Border(top: border, left: border, right: border),
+      borderRadius: radius,
+      child: ClipRRect(
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: _HeaderRow(columns: columns),
+      ),
+    );
+  }
+}
+
+class _SliverTableRow extends StatelessWidget {
+  const _SliverTableRow({
+    required this.columns,
+    required this.row,
+    required this.index,
+    required this.isLast,
+  });
+
+  final List<UiDataColumn> columns;
+  final UiDataRow row;
+  final int index;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = UiThemeTokens.of(context);
+    final border = BorderSide(color: tokens.colors.border);
+    final radius = isLast
+        ? BorderRadius.only(
+            bottomLeft: tokens.radius.lg,
+            bottomRight: tokens.radius.lg,
+          )
+        : BorderRadius.zero;
+
+    return UiBox(
+      background: tokens.colors.card,
+      border: Border(
+        left: border,
+        right: border,
+        bottom: isLast ? border : BorderSide.none,
+      ),
+      borderRadius: radius,
+      child: ClipRRect(
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: _DataRow(
+          columns: columns,
+          row: row,
+          showTopBorder: index > 0,
+        ),
+      ),
+    );
+  }
+}
+
 class _LazyRowsTableBody extends StatelessWidget {
   const _LazyRowsTableBody({
     required this.columns,

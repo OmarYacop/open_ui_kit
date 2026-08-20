@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 - 2026-08-20
 
 ### Added
 
@@ -21,6 +21,28 @@
   support and a read-only display mode.
 - Added `UiFileUpload`, a presentational file-selection dropzone that stays
   dependency-light by delegating the actual file pick to the host app.
+- Added `UiMediaGallery` and `UiMediaPreview` for gallery browsing and
+  full-screen media presentation.
+- Added `UiSliverDataTable.lazy` for virtualized tables that participate
+  directly in an ancestor `CustomScrollView`.
+- Added the Contour motion and interaction language, including coordinated
+  morph, crossfade, presence, action-release, and accessory-release primitives.
+- Added page-route, edge-swipe, and navigation-history APIs for custom
+  back-navigation experiences.
+
+### Changed
+
+- `UiSpinner` now uses the refresher's orbital charge visual for determinate
+  progress and rotates that same visual for indeterminate work. Refreshers,
+  loading buttons, menus, and async states now share this primitive.
+- Reduced the published package to the plugin essentials by excluding local
+  test artifacts and internal engineering files.
+
+### Fixed
+
+- Fixed `UiFormSubmitController` notifications when validator or external
+  validity changes alter `canSubmit`, including after unbinding a controller.
+- Fixed the navigation-history flyout when used inside `UiPageScaffold`.
 
 ## 0.7.0 - 2026-08-14
 
@@ -35,9 +57,6 @@
 
 ### Changed
 
-- `UiSpinner` now uses the refresher's orbital charge visual for determinate
-  progress and rotates that same visual for indeterminate work. Refreshers,
-  loading buttons, menus, and async states now share this primitive.
 - `UiWavatar` now supports one-to-four-shape group compositions through
   `UiWavatarParticipant`, with an independent seed and characteristics for
   each participant.

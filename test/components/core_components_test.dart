@@ -371,6 +371,50 @@ void main() {
       expect(built.length, lessThan(200));
     });
 
+    testWidgets('sliver data table virtualizes rows in the parent scroll view',
+        (tester) async {
+      final built = <int>[];
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            slivers: [
+              UiSliverDataTable.lazy(
+                columns: const [
+                  UiDataColumn(label: 'Learner'),
+                  UiDataColumn(label: 'Score', numeric: true),
+                ],
+                rowCount: 200,
+                rowExtent: 48,
+                rowBuilder: (context, index) {
+                  built.add(index);
+                  return UiDataRow(
+                    cells: [
+                      Text('Sliver learner $index'),
+                      Text('${index + 1}'),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Sliver learner 0'), findsOneWidget);
+      expect(find.text('Sliver learner 199'), findsNothing);
+      expect(built.length, lessThan(40));
+
+      await tester.scrollUntilVisible(
+        find.text('Sliver learner 199'),
+        600,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 30,
+      );
+
+      expect(find.text('Sliver learner 199'), findsOneWidget);
+    });
+
     testWidgets('non-scrollable data table delegates scrolling to its parent',
         (tester) async {
       await tester.pumpWidget(
