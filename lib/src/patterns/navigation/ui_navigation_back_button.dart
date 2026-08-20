@@ -82,22 +82,35 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
       _removeMenu();
       return;
     }
-    final overlay = UiLayeredOverlay.maybeOf(
-          context,
-          UiOverlayLayer.floating,
-        ) ??
-        Overlay.maybeOf(context);
+    final layeredOverlay = UiLayeredOverlay.maybeOf(
+      context,
+      UiOverlayLayer.floating,
+    );
+    final overlay = layeredOverlay ?? Overlay.maybeOf(context);
     if (overlay == null) return;
     if (!_resolvePlacement(overlay)) return;
 
-    final capturedThemes = InheritedTheme.capture(
-      from: context,
-      to: overlay.context,
-    );
-    _menuEntry = OverlayEntry(
-      builder: (overlayContext) =>
-          capturedThemes.wrap(_buildMenuOverlay(overlayContext)),
-    );
+    // UiLayeredOverlayHost's per-layer Overlays are siblings of the page
+    // content inside its own Stack, not ancestors of it — so
+    // InheritedTheme.capture (which requires `to` to be an ancestor of
+    // `from`) doesn't apply, and isn't needed: both branches already share
+    // every ancestor above UiLayeredOverlayHost. Only capture for the plain
+    // Overlay.maybeOf fallback, where the overlay (e.g. WidgetsApp's root)
+    // genuinely is an ancestor.
+    if (layeredOverlay != null) {
+      _menuEntry = OverlayEntry(
+        builder: (overlayContext) => _buildMenuOverlay(overlayContext),
+      );
+    } else {
+      final capturedThemes = InheritedTheme.capture(
+        from: context,
+        to: overlay.context,
+      );
+      _menuEntry = OverlayEntry(
+        builder: (overlayContext) =>
+            capturedThemes.wrap(_buildMenuOverlay(overlayContext)),
+      );
+    }
     overlay.insert(_menuEntry!);
   }
 

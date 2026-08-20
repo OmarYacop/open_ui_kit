@@ -519,4 +519,50 @@ void main() {
       expect(find.text('Home'), findsWidgets);
     });
   });
+
+  group('history flyout inside UiPageScaffold', () {
+    // UiPageScaffold wraps its body in UiLayeredOverlayHost, whose
+    // per-layer Overlays are siblings of the page content in its own
+    // Stack — not ancestors of it. _toggleMenu must not assume otherwise
+    // (e.g. via InheritedTheme.capture(to: thatOverlay.context), which
+    // throws "must be an ancestor" for a sibling).
+    testWidgets(
+        'long-press opens the flyout without an ancestor assertion',
+        (tester) async {
+      await tester.pumpWidget(
+        UiApp(
+          lightTokens: UiThemeTokens.light,
+          localizationsDelegates: const [
+            DefaultWidgetsLocalizations.delegate,
+          ],
+          home: UiPageScaffold(
+            body: CustomScrollView(
+              slivers: [
+                UiSliverNavigationBar(
+                  spec: UiNavigationSpec(
+                    title: 'Detail',
+                    back: UiNavigationBackConfig(
+                      label: 'Library',
+                      onPressed: () {},
+                      history: const [
+                        UiNavigationBackHistoryItem(title: 'Library'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverFillRemaining(child: Text('Body')),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.bySemanticsLabel('Library'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Library'), findsWidgets);
+    });
+  });
 }
