@@ -157,8 +157,7 @@ void main() {
       expect(controller.isFieldDirty('imagePath'), isTrue);
     });
 
-    test('bound validator gates isValid/canSubmit as the controller edits',
-        () {
+    test('bound validator gates isValid/canSubmit as the controller edits', () {
       final email = TextEditingController(text: 'a@b.com');
       addTearDown(email.dispose);
 
@@ -167,8 +166,7 @@ void main() {
           UiFormControllerField(
             'email',
             email,
-            validator: (v) =>
-                v.contains('@') ? null : 'Enter a valid email',
+            validator: (v) => v.contains('@') ? null : 'Enter a valid email',
           ),
         ],
       );

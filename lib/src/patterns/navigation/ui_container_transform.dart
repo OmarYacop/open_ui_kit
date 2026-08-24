@@ -1074,8 +1074,7 @@ class _UiSharedContainerFlight extends StatelessWidget {
         );
         final hasPreviewPairLive =
             previewCompactKey.currentWidget is _UiContainerPreviewMarker &&
-                previewExpandedKey.currentWidget
-                    is _UiContainerPreviewMarker;
+                previewExpandedKey.currentWidget is _UiContainerPreviewMarker;
         if (hasPreviewPairLive) previewFlightActivated = true;
 
         return LayoutBuilder(

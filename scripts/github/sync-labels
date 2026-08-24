@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Reconcile the Open UI Kit label taxonomy. Existing labels are updated; unrelated labels stay.
+
+set -euo pipefail
+
+repository="${1:-OmarYacop/open_ui_kit}"
+
+while IFS=$'\t' read -r name color description; do
+  [ -n "$name" ] || continue
+  gh label create "$name" --repo "$repository" --color "$color" --description "$description" --force
+done <<'LABELS'
+area:accessibility	b60205	Semantics, focus, input, contrast, and assistive technology
+area:ci	e99695	GitHub Actions, tests, and continuous integration
+area:components	8250df	Reusable forms, feedback, navigation, overlay, and data-display widgets
+area:docs	0075ca	Documentation, examples, and migration guidance
+area:foundation	5319e7	Tokens, themes, primitives, intents, and platform capabilities
+area:governance	c2e0c6	Repository policy, contribution process, and architecture decisions
+area:localization	1d76db	Localization, text direction, and RTL behavior
+area:motion	fbca04	Motion, transitions, effects, and reduced-motion behavior
+area:patterns	0e8a16	Page, layout, navigation, chat, and higher-level compositions
+area:release	336caf	Package metadata, compatibility, publication, and release automation
+breaking-change	b60205	Breaking public API, behavioral, visual, or compatibility change
+duplicate	cfd3d7	This issue or pull request already exists
+good first issue	7057ff	Good for newcomers
+help wanted	008672	Extra attention is needed
+invalid	e4e669	This does not describe actionable repository work
+priority:p0	b60205	Drop everything: unsafe package, release, or critical accessibility regression
+priority:p1	d93f0b	High priority
+priority:p2	fbca04	Normal priority
+priority:p3	c5def5	Low priority
+question	d876e3	Further information is requested
+status:blocked	d73a4a	Blocked on another decision, dependency, or external event
+status:needs-decision	5319e7	Needs an architecture or product decision
+type:bug	d73a4a	Bug report; implementation branches use the fix type
+type:build	cfd3d7	Build system or dependency tooling
+type:chore	cfd3d7	Maintenance and repository tooling
+type:ci	e99695	CI/CD and workflow changes
+type:docs	0075ca	Documentation only
+type:feat	1f883d	New capability
+type:fix	d73a4a	Bug fix
+type:hotfix	e11d21	Urgent published-package fix
+type:perf	fbca04	Performance-only change
+type:refactor	fbca04	Refactor without behavior change
+type:release	0e8a16	Release and versioning work
+type:security	b60205	Security-relevant change
+type:test	c5def5	Test-only changes
+wontfix	ffffff	This will not be worked on
+LABELS

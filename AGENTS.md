@@ -1,3 +1,24 @@
+<repository-workflow>
+
+# Open UI Kit repository workflow
+
+- Read `doc/development_workflow.md` before material work. It is authoritative for issues,
+  labels, branches, pull requests, CI, stacked PRs, ADRs, and release tags.
+- Use `<type>/<issue>-<short-kebab-description>` branches and Conventional Commit subjects.
+- Plan dependent work as a native GitHub stacked PR: foundations at the bottom, one reviewable
+  outcome per layer, `Part of #issue` on intermediate layers, and `Closes #issue` only on the
+  layer that completes all acceptance criteria.
+- Keep every stack branch in this repository. Put fixes on the layer where they belong, then run
+  `gh stack rebase` and `gh stack push` to cascade them upward.
+- Run `./scripts/ci changed` before handoff. `./scripts/ci all` is the release-level check and
+  includes macOS golden verification.
+- Apply exactly one `type:*`, one or more `area:*`, and exactly one `priority:*` label to every
+  material issue.
+- Never update golden baselines or create, move, reuse, or push a release tag unless the user
+  explicitly requests that action.
+
+</repository-workflow>
+
 # Open UI Kit Agent Guide
 
 This file is for AI coding agents working in apps that use `open_ui_kit`.

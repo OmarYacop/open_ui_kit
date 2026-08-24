@@ -1,0 +1,76 @@
+name: Package or release incident
+description: Record a published-package, release-pipeline, or critical compatibility incident.
+title: "[incident] "
+labels:
+  - "type:bug"
+  - "area:release"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe what happened without including private host-app data or credentials.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - SEV1 — unsafe/broken published package or supply-chain risk
+        - SEV2 — major compatibility or publication degradation with a workaround
+        - SEV3 — limited impact or near miss
+    validations:
+      required: true
+
+  - type: input
+    id: detected-at
+    attributes:
+      label: Detected at (UTC)
+      placeholder: "2026-08-24T12:00:00Z"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: State affected package versions, platforms, consumers, and evidence.
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline (UTC)
+      placeholder: |
+        - HH:MM detected
+        - HH:MM mitigated
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Mitigation or remediation
+    validations:
+      required: true
+
+  - type: textarea
+    id: follow-up
+    attributes:
+      label: Follow-up work
+      description: Link issues for regression coverage, release hardening, and user communication.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria for resolved
+      placeholder: |
+        - [ ] A safe package version is available
+        - [ ] Regression coverage or release protection is in place
+    validations:
+      required: true

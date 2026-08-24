@@ -526,8 +526,7 @@ void main() {
     // Stack — not ancestors of it. _toggleMenu must not assume otherwise
     // (e.g. via InheritedTheme.capture(to: thatOverlay.context), which
     // throws "must be an ancestor" for a sibling).
-    testWidgets(
-        'long-press opens the flyout without an ancestor assertion',
+    testWidgets('long-press opens the flyout without an ancestor assertion',
         (tester) async {
       await tester.pumpWidget(
         UiApp(

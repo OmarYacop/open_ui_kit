@@ -1,0 +1,87 @@
+name: Bug
+description: Report behavior that differs from Open UI Kit's intended contract.
+title: "[bug] "
+labels:
+  - "type:bug"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem in one or two sentences.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: areas
+    attributes:
+      label: Affected areas
+      multiple: true
+      options:
+        - foundation and tokens
+        - components
+        - patterns and navigation
+        - accessibility
+        - localization and RTL
+        - motion and effects
+        - documentation and examples
+        - CI and testing
+        - packaging and release
+        - other (describe below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest widget tree and reliable steps that reproduce the bug.
+      placeholder: |
+        1. Render ...
+        2. Interact with ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Package, Flutter/Dart, OS, device/browser, and host-app versions.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - Blocks release, causes a crash, or creates an accessibility regression
+        - Incorrect behavior with a workaround
+        - Minor or cosmetic
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria for fixed
+      placeholder: |
+        - [ ] Regression test proves the failure and fix
+        - [ ] Public behavior and compatibility are restored
+    validations:
+      required: true

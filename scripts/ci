@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# Repository-local CI entry point. GitHub Actions calls these exact suites.
+
+set -euo pipefail
+
+OPEN_UI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$OPEN_UI_ROOT"
+
+log() {
+  printf '[open-ui-ci] %s\n' "$*"
+}
+
+repo_policy() {
+  log "checking governance files"
+  required_files=(
+    AGENTS.md
+    CONTRIBUTING.md
+    SECURITY.md
+    .github/CODEOWNERS
+    .github/pull_request_template.md
+    .github/ISSUE_TEMPLATE/feature.yml
+    .github/ISSUE_TEMPLATE/bug.yml
+    .github/ISSUE_TEMPLATE/architecture_decision.yml
+    .github/ISSUE_TEMPLATE/release_incident.yml
+    doc/decisions/0000-template.md
+    doc/development_workflow.md
+  )
+
+  missing=0
+  for file in "${required_files[@]}"; do
+    if [ ! -f "$file" ]; then
+      printf 'Missing required governance file: %s\n' "$file" >&2
+      missing=1
+    fi
+  done
+  [ "$missing" -eq 0 ] || return 1
+
+  branch="${GITHUB_HEAD_REF:-$(git symbolic-ref --short HEAD 2>/dev/null || true)}"
+  if [ -n "$branch" ] && [ "$branch" != "main" ]; then
+    pattern='^(feat|fix|hotfix|refactor|perf|security|docs|test|ci|build|chore|release)/([0-9]+-)?[a-z0-9]+(-[a-z0-9]+)*$'
+    if [[ ! "$branch" =~ $pattern ]]; then
+      printf "Branch '%s' must match <type>/<issue>-<short-kebab-description>.\n" "$branch" >&2
+      return 1
+    fi
+  fi
+
+  if grep -R -n -E '^[[:space:]]*uses:[[:space:]]+[^[:space:]]+@(main|master|v[0-9])' .github/workflows; then
+    printf 'GitHub Actions must be pinned to a full commit SHA.\n' >&2
+    return 1
+  fi
+
+  if find test/goldens/failures -type f ! -name '.gitkeep' -print -quit 2>/dev/null | grep -q .; then
+    printf 'Golden failure diagnostics must not be committed.\n' >&2
+    return 1
+  fi
+
+  log "repository policy passed"
+}
+
+quality() {
+  log "checking Dart formatting"
+  dart format --output=none --set-exit-if-changed lib test example
+  log "running Flutter analyzer"
+  flutter analyze --no-pub
+  log "running Flutter tests"
+  tests=()
+  while IFS= read -r file; do
+    tests+=("$file")
+  done < <(find test -type f -name '*_test.dart' ! -path 'test/goldens/*' | sort)
+  flutter test "${tests[@]}" --no-pub
+}
+
+goldens() {
+  log "running macOS golden tests"
+  flutter test \
+    test/goldens/async_states_golden_test.dart \
+    test/goldens/contour_accessory_golden_test.dart \
+    test/goldens/contour_release_golden_test.dart \
+    test/goldens/core_components_golden_test.dart \
+    --no-pub
+}
+
+package_check() {
+  log "checking publishable package"
+  package_snapshot="$(mktemp -d "${TMPDIR:-/tmp}/open-ui-package.XXXXXX")"
+  trap 'rm -rf "$package_snapshot"' RETURN
+  tar \
+    --exclude='./.git' \
+    --exclude='./.dart_tool' \
+    --exclude='./build' \
+    --exclude='./coverage' \
+    --exclude='./pubspec.lock' \
+    --exclude='./example/pubspec.lock' \
+    --exclude='./test/goldens/failures' \
+    -cf - . | tar -xf - -C "$package_snapshot"
+  (
+    cd "$package_snapshot"
+    flutter pub get
+    dart pub publish --dry-run
+  )
+  rm -rf "$package_snapshot"
+  trap - RETURN
+}
+
+release_tag() {
+  tag="${1:-}"
+  if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+    printf "Tag '%s' must match vMAJOR.MINOR.PATCH.\n" "$tag" >&2
+    return 1
+  fi
+  if [ "$(git cat-file -t "refs/tags/$tag" 2>/dev/null || true)" != "tag" ]; then
+    printf "Tag '%s' must be annotated, not lightweight.\n" "$tag" >&2
+    return 1
+  fi
+
+  version="$(sed -n -E 's/^version:[[:space:]]*([^+[:space:]]+).*/\1/p' pubspec.yaml)"
+  if [ "$tag" != "v$version" ]; then
+    printf "Tag '%s' does not match pubspec version '%s'.\n" "$tag" "$version" >&2
+    return 1
+  fi
+
+  git fetch origin main
+  tagged_commit="$(git rev-list -n 1 "$tag")"
+  if ! git merge-base --is-ancestor "$tagged_commit" origin/main; then
+    printf "Tag '%s' does not point to a commit contained in main.\n" "$tag" >&2
+    return 1
+  fi
+  log "release tag passed"
+}
+
+run_all() {
+  repo_policy
+  quality
+  goldens
+  package_check
+}
+
+run_changed() {
+  base_ref="${OPEN_UI_CI_BASE_REF:-origin/main}"
+  if ! git rev-parse --verify "$base_ref" >/dev/null 2>&1; then
+    base_ref="main"
+  fi
+
+  merge_base="$(git merge-base HEAD "$base_ref")"
+  changed_files="$(git diff --name-only "$merge_base"...HEAD; git diff --name-only; git ls-files --others --exclude-standard)"
+
+  if [ -z "$changed_files" ]; then
+    log "no changes detected; running repository policy"
+    repo_policy
+    return
+  fi
+
+  run_quality=0
+  run_goldens=0
+  run_package=0
+  run_everything=0
+  while IFS= read -r file; do
+    case "$file" in
+      .github/workflows/*|scripts/ci)
+        run_everything=1
+        ;;
+      test/*|example/*|analysis_options.yaml)
+        run_quality=1
+        ;;
+      lib/*)
+        run_quality=1
+        run_goldens=1
+        ;;
+      test/goldens/*)
+        run_quality=1
+        run_goldens=1
+        ;;
+      pubspec.yaml|pubspec.lock|.pubignore|LICENSE|README.md|CHANGELOG.md)
+        run_package=1
+        ;;
+    esac
+  done <<EOF
+$changed_files
+EOF
+
+  repo_policy
+  if [ "$run_everything" -eq 1 ]; then
+    quality
+    goldens
+    package_check
+    return
+  fi
+  [ "$run_quality" -eq 0 ] || quality
+  [ "$run_goldens" -eq 0 ] || goldens
+  [ "$run_package" -eq 0 ] || package_check
+}
+
+case "${1:-}" in
+  repo-policy) repo_policy ;;
+  quality) quality ;;
+  goldens) goldens ;;
+  package) package_check ;;
+  release-tag) release_tag "${2:-}" ;;
+  changed) run_changed ;;
+  all) run_all ;;
+  *)
+    printf 'usage: %s <repo-policy|quality|goldens|package|release-tag TAG|changed|all>\n' "$0" >&2
+    exit 2
+    ;;
+esac
