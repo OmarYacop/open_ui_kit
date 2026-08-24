@@ -186,6 +186,46 @@ void main() {
       expect(controller.canSubmit, isTrue);
     });
 
+    test('notifies when an edited field changes from invalid to valid', () {
+      final username = TextEditingController();
+      addTearDown(username.dispose);
+
+      final controller = UiFormSubmitController(
+        controllers: [
+          UiFormControllerField(
+            'username',
+            username,
+            validator: (value) => value.length >= 3 ? null : 'too short',
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      final values = <bool>[];
+      controller.addListener(() => values.add(controller.value));
+
+      username.text = 'a';
+      username.text = 'ada';
+      username.text = 'ad';
+      username.text = 'ada';
+
+      expect(values, [isTrue, isFalse, isTrue]);
+      expect(controller.canSubmit, isTrue);
+    });
+
+    test('notifies when external validity changes on a dirty form', () {
+      final controller = UiFormSubmitController(initialValues: {'name': ''});
+      addTearDown(controller.dispose);
+      controller.setValid(false);
+      controller.setValue('name', 'Ada');
+      final values = <bool>[];
+      controller.addListener(() => values.add(controller.value));
+
+      controller.setValid(true);
+
+      expect(values, [isTrue]);
+      expect(controller.canSubmit, isTrue);
+    });
+
     test('isValid combines every bound validator with setValid', () {
       final email = TextEditingController(text: 'a@b.com');
       final name = TextEditingController(text: 'Ada Lovelace');
@@ -245,6 +285,29 @@ void main() {
 
       controller.unbindController('name');
       expect(controller.isValid, isTrue);
+    });
+
+    test('unbindController notifies when dropping an invalid validator', () {
+      final name = TextEditingController();
+      addTearDown(name.dispose);
+      final controller = UiFormSubmitController(
+        controllers: [
+          UiFormControllerField(
+            'name',
+            name,
+            validator: (v) => v.length >= 3 ? null : 'too short',
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+      name.text = 'a';
+      final values = <bool>[];
+      controller.addListener(() => values.add(controller.value));
+
+      controller.unbindController('name');
+
+      expect(values, [isTrue]);
+      expect(controller.canSubmit, isTrue);
     });
 
     test('unbindController stops tracking further edits', () {

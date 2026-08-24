@@ -98,6 +98,7 @@ class UiFormSubmitController extends ChangeNotifier
   })  : _initial = Map.of(initialValues),
         _current = Map.of(initialValues) {
     _dirty = _computeDirty();
+    _canSubmit = _dirty && isValid;
     for (final f in controllers) {
       bindController(f.field, f.controller, validator: f.validator);
     }
@@ -110,6 +111,7 @@ class UiFormSubmitController extends ChangeNotifier
   final Map<String, UiFormFieldValidator> _validators = {};
 
   late bool _dirty;
+  late bool _canSubmit;
   bool _externalValid = true;
 
   /// Whether any tracked field differs from its initial value.
@@ -133,7 +135,7 @@ class UiFormSubmitController extends ChangeNotifier
       );
 
   /// Whether the form should accept submission: dirty and valid.
-  bool get canSubmit => _dirty && isValid;
+  bool get canSubmit => _canSubmit;
 
   @override
   bool get value => canSubmit;
@@ -160,7 +162,7 @@ class UiFormSubmitController extends ChangeNotifier
     TextEditingController controller, {
     UiFormFieldValidator? validator,
   }) {
-    unbindController(field);
+    _unbindController(field);
     _initial[field] = controller.text;
     _current[field] = controller.text;
     if (validator != null) _validators[field] = validator;
@@ -175,6 +177,11 @@ class UiFormSubmitController extends ChangeNotifier
   /// last known value stays in the snapshot until overwritten by [setValue]
   /// or cleared by [reset].
   void unbindController(String field) {
+    _unbindController(field);
+    _sync();
+  }
+
+  void _unbindController(String field) {
     final controller = _boundControllers.remove(field);
     final listener = _boundListeners.remove(field);
     if (controller != null && listener != null) {
@@ -226,15 +233,17 @@ class UiFormSubmitController extends ChangeNotifier
   }
 
   void _sync() {
-    final before = canSubmit;
     _dirty = _computeDirty();
-    if (canSubmit != before) notifyListeners();
+    final nextCanSubmit = _dirty && isValid;
+    if (nextCanSubmit == _canSubmit) return;
+    _canSubmit = nextCanSubmit;
+    notifyListeners();
   }
 
   @override
   void dispose() {
     for (final field in _boundControllers.keys.toList()) {
-      unbindController(field);
+      _unbindController(field);
     }
     super.dispose();
   }
