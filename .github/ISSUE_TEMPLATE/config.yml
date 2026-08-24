@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Open UI Kit development workflow
+    url: https://github.com/OmarYacop/open_ui_kit/blob/main/doc/development_workflow.md
+    about: Read the issue, pull request, compatibility, and release conventions before filing.
+  - name: Private security report
+    url: https://github.com/OmarYacop/open_ui_kit/security/advisories/new
+    about: Report suspected vulnerabilities privately instead of opening a public issue.

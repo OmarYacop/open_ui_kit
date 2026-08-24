@@ -1,0 +1,113 @@
+name: CI Gate
+
+# Keep this workflow always-triggered and make `CI Gate / gate` the only required check.
+# Every job calls the same repository-owned entry point used by developers.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repo-policy:
+    name: Repository policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check repository policy
+        run: ./scripts/ci repo-policy
+
+  quality:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Run quality suite
+        run: ./scripts/ci quality
+
+  package:
+    name: Package validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Validate publishable package
+        run: ./scripts/ci package
+
+  goldens:
+    name: Golden tests
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Run golden suite
+        run: ./scripts/ci goldens
+
+  gate:
+    name: gate
+    if: always()
+    needs: [repo-policy, quality, package, goldens]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every CI job to pass
+        env:
+          REPO_POLICY_RESULT: ${{ needs.repo-policy.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          GOLDENS_RESULT: ${{ needs.goldens.result }}
+        run: |
+          set -euo pipefail
+          for result in "$REPO_POLICY_RESULT" "$QUALITY_RESULT" "$PACKAGE_RESULT" "$GOLDENS_RESULT"; do
+            if [ "$result" != "success" ]; then
+              echo "One or more required jobs did not pass."
+              exit 1
+            fi
+          done
+          echo "All required jobs passed."

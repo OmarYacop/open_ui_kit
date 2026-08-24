@@ -1,0 +1,84 @@
+name: Feature
+description: Propose a new component, primitive, pattern, or material behavior change.
+title: "[feature] "
+labels:
+  - "type:feat"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the proposed capability in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Explain the host-app or design-system problem and why it belongs in the kit.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: areas
+    attributes:
+      label: Affected areas
+      multiple: true
+      options:
+        - foundation and tokens
+        - components
+        - patterns and navigation
+        - accessibility
+        - localization and RTL
+        - motion and effects
+        - documentation and examples
+        - CI and testing
+        - packaging and release
+        - other (describe below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-scope
+    attributes:
+      label: Proposed scope
+      description: State what belongs in the first complete version.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: State what is deliberately excluded, including host-app responsibilities.
+    validations:
+      required: false
+
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed public API or composition
+      description: Show the intended Dart API or widget composition when known.
+      render: dart
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, testable outcomes, including semantics and adaptive behavior.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: architecture
+    attributes:
+      label: Architecture check
+      options:
+        - label: This proposal follows existing decisions and package boundaries, or I opened an Architecture decision issue for the deviation.
+          required: true

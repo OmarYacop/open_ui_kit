@@ -1,0 +1,70 @@
+name: Architecture decision
+description: Propose a decision that is expensive to reverse or changes an established boundary.
+title: "[adr] "
+labels:
+  - "status:needs-decision"
+  - "area:governance"
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Decision needed
+      description: State the question as one sentence a reviewer can answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Explain what forces this decision now and link related issues or documentation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      placeholder: |
+        1. Option A — trade-offs
+        2. Option B — trade-offs
+    validations:
+      required: true
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: State the preferred option and why it fits Open UI Kit.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: areas
+    attributes:
+      label: Affected areas
+      multiple: true
+      options:
+        - foundation and tokens
+        - components
+        - patterns and navigation
+        - accessibility
+        - localization and RTL
+        - motion and effects
+        - documentation and examples
+        - CI and testing
+        - packaging and release
+        - governance
+        - other (describe below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ADR merged under doc/decisions/
+        - [ ] Affected implementation or guidance updated
+    validations:
+      required: true

@@ -6,6 +6,11 @@ from Material/Cupertino styling.
 
 Created and maintained by [Omar Yacop](https://github.com/OmarYacop).
 
+Contributors should read [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[development workflow](doc/development_workflow.md). The repository uses structured issues,
+native GitHub stacked pull requests for dependent changes, one CI gate, and tag-gated pub.dev
+publishing.
+
 ## Installation
 
 ```bash

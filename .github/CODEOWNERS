@@ -1,1 +1,14 @@
 * @OmarYacop
+
+# Public API and package behavior.
+/lib/ @OmarYacop
+/pubspec.yaml @OmarYacop
+/CHANGELOG.md @OmarYacop
+
+# Tests, release automation, and repository governance require explicit review.
+/test/ @OmarYacop
+/.github/ @OmarYacop
+/scripts/ @OmarYacop
+/SECURITY.md @OmarYacop
+/AGENTS.md @OmarYacop
+/doc/decisions/ @OmarYacop
