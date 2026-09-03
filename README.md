@@ -6,6 +6,18 @@ from Material/Cupertino styling.
 
 Created and maintained by [Omar Yacop](https://github.com/OmarYacop).
 
+## See Open UI Kit in action
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/overview-dark.png">
+  <img src="doc/assets/showcase/overview-light.png" alt="Open UI Kit release workspace showing forms, buttons, alerts, avatars, a date picker, badges, a data table, and pagination" width="1440">
+</picture>
+
+This release workspace is built from the package's public widgets. It shows the
+same token-driven composition in light and dark appearances; all release data
+is illustrative. Run the interactive version from [`example/lib/showcase.dart`](example/lib/showcase.dart)
+or browse the component choices in the [AI usage guide](doc/ai_usage_guide.md).
+
 Contributors should read [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [development workflow](doc/development_workflow.md). The repository uses structured issues,
 native GitHub stacked pull requests for dependent changes, one CI gate, and tag-gated pub.dev
