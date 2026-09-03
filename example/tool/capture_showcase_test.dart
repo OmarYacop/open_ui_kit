@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:contour_example/component_previews.dart';
 import 'package:contour_example/showcase.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
-const _captureSize = Size(1440, 1120);
+const _overviewCaptureSize = Size(1440, 1120);
 const _fontFamily = 'OpenUiKitShowcaseSans';
 
 void main() {
@@ -25,29 +26,43 @@ void main() {
   });
 
   testWidgets('capture README showcase images', (tester) async {
-    await binding.setSurfaceSize(_captureSize);
     addTearDown(() => binding.setSurfaceSize(null));
     final output = Directory('../doc/assets/showcase')
       ..createSync(recursive: true);
 
-    await _capture(
-      tester,
-      mode: UiThemeMode.light,
-      path: '${output.path}/overview-light.png',
-    );
-    await _capture(
-      tester,
-      mode: UiThemeMode.dark,
-      path: '${output.path}/overview-dark.png',
-    );
+    for (final mode in UiThemeMode.values.where(
+      (mode) => mode != UiThemeMode.system,
+    )) {
+      final appearance = mode == UiThemeMode.dark ? 'dark' : 'light';
+      await _capture(
+        tester,
+        mode: mode,
+        size: _overviewCaptureSize,
+        home: const OpenUiKitShowcase(),
+        path: '${output.path}/overview-$appearance.png',
+      );
+
+      for (final kind in ComponentPreviewKind.values) {
+        await _capture(
+          tester,
+          mode: mode,
+          size: _previewSize(kind),
+          home: OpenUiKitComponentPreview(kind: kind),
+          path: '${output.path}/${kind.name}-$appearance.png',
+        );
+      }
+    }
   });
 }
 
 Future<void> _capture(
   WidgetTester tester, {
   required UiThemeMode mode,
+  required Size size,
+  required Widget home,
   required String path,
 }) async {
+  await tester.binding.setSurfaceSize(size);
   final boundaryKey = GlobalKey();
   final typography = _showcaseTypography(UiTypographyTokens.standard);
   await tester.pumpWidget(
@@ -63,7 +78,7 @@ Future<void> _capture(
           data: MediaQuery.of(context).copyWith(disableAnimations: true),
           child: child ?? const SizedBox.shrink(),
         ),
-        home: const OpenUiKitShowcase(),
+        home: home,
       ),
     ),
   );
@@ -83,6 +98,16 @@ Future<void> _capture(
     await File(path).writeAsBytes(bytes.buffer.asUint8List(), flush: true);
   });
 }
+
+Size _previewSize(ComponentPreviewKind kind) => switch (kind) {
+  ComponentPreviewKind.actions => const Size(900, 340),
+  ComponentPreviewKind.forms => const Size(900, 450),
+  ComponentPreviewKind.dataDisplay => const Size(900, 420),
+  ComponentPreviewKind.chat => const Size(900, 580),
+  ComponentPreviewKind.feedback => const Size(980, 400),
+  ComponentPreviewKind.navigation => const Size(900, 388),
+  ComponentPreviewKind.pickers => const Size(980, 560),
+};
 
 UiTypographyTokens _showcaseTypography(UiTypographyTokens source) {
   TextStyle family(TextStyle style) => style.copyWith(fontFamily: _fontFamily);

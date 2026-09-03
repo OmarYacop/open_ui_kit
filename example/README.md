@@ -34,5 +34,7 @@ modify their baselines.
 flutter test tool/capture_showcase_test.dart
 ```
 
-Review both generated files in `../doc/assets/showcase/` before committing
-them. Do not regenerate them for unrelated code changes.
+The command writes light and dark overview images plus focused component-family
+previews for actions, forms, data display, chat, feedback, navigation, and
+pickers. Review every affected file in `../doc/assets/showcase/` before
+committing it. Do not regenerate these images for unrelated code changes.
