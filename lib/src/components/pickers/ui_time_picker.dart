@@ -31,8 +31,8 @@ import 'ui_picker_models.dart';
 /// intermediate values during a fling, unchanged from before.
 @Deprecated(
   'Use UiTimeGridPicker for inline picker surfaces or UiTimePickerField for '
-  'form fields. The wheel picker will remain available through the next minor '
-  'release for migration.',
+  'form fields. '
+  'Scheduled for removal in 1.0.0.',
 )
 class UiTimePicker extends StatefulWidget {
   const UiTimePicker({

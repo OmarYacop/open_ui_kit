@@ -749,7 +749,7 @@ class UiRefreshIndicator extends StatelessWidget {
     required this.details,
     @Deprecated(
       'UiRefreshIndicator is glyph-only. Use a custom '
-      'UiRefreshIndicatorBuilder for labelled surfaces.',
+      'UiRefreshIndicatorBuilder for labelled surfaces. Scheduled for removal in 1.0.0.',
     )
     this.showLabel = false,
   });
@@ -795,7 +795,7 @@ class UiRefreshIndicator extends StatelessWidget {
 
   @Deprecated(
     'UiRefreshIndicator is glyph-only. Use a custom '
-    'UiRefreshIndicatorBuilder for labelled surfaces.',
+    'UiRefreshIndicatorBuilder for labelled surfaces. Scheduled for removal in 1.0.0.',
   )
   final bool showLabel;
 

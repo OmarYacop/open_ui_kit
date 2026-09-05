@@ -82,7 +82,7 @@ class UiStackedOverlaySurface extends StatelessWidget {
     @Deprecated(
       'UiStackedOverlaySurface now derives scale directly from the single '
       'depth timeline; this flag no longer has an effect and will be '
-      'removed.',
+      'removed. Scheduled for removal in 1.0.0.',
     )
     this.implicitScaleAnimation = true,
     this.repaintBoundary = true,

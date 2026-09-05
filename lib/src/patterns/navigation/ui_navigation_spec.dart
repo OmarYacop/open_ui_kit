@@ -27,7 +27,8 @@ enum UiNavigationSurface {
   /// Compatibility alias for the former iOS backdrop blur treatment.
   ///
   /// This now renders the same inexpensive gradient as [edgeFade].
-  @Deprecated('Use UiNavigationSurface.edgeFade.')
+  @Deprecated(
+      'Use UiNavigationSurface.edgeFade. Scheduled for removal in 1.0.0.')
   blurred,
 
   /// Fully transparent; lets the page content paint through.
@@ -116,7 +117,7 @@ class UiNavigationSpec {
   /// resolves to [UiNavigationSurface.blurred] or
   /// [UiNavigationSurface.edgeFade].
   @Deprecated(
-      'Live navigation blur was replaced by UiNavigationSurface.edgeFade.')
+      'Live navigation blur was replaced by UiNavigationSurface.edgeFade. Scheduled for removal in 1.0.0.')
   final double blurSigma;
 
   /// Whether to paint a bottom divider under the bar once content scrolls

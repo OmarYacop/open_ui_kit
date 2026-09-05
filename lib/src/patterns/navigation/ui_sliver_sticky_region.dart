@@ -15,7 +15,8 @@ enum UiStickyRegionSurface {
   edgeFade,
 
   /// Compatibility alias for the former backdrop-blurred treatment.
-  @Deprecated('Use UiStickyRegionSurface.edgeFade.')
+  @Deprecated(
+      'Use UiStickyRegionSurface.edgeFade. Scheduled for removal in 1.0.0.')
   glass,
 
   /// Opaque page-background surface.

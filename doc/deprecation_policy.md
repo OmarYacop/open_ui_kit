@@ -33,3 +33,11 @@ and keep a test that imports the legacy path until its scheduled removal.
 | --- | --- | --- |
 | `1.0.0` | `UiIntent` and `UiIntentPalette` through `components/forms.dart` or `button.dart` | Import them from `foundation.dart` or `open_ui_kit.dart` |
 
+| `1.0.0` | `components/schedule.dart` | `components/calendar.dart` |
+| `1.0.0` | `UiTimePicker` | `UiTimeGridPicker` / `UiTimePickerField` |
+| `1.0.0` | `UiNavigationSurface.blurred` | `UiNavigationSurface.edgeFade` |
+| `1.0.0` | `UiStickyRegionSurface.glass` | `UiStickyRegionSurface.edgeFade` |
+| `1.0.0` | `UiNavigationSpec.blurSigma` | `UiNavigationSurface.edgeFade` |
+| `1.0.0` | `UiOpenContainer.backdropBlurSigma` | `backdrop` with `UiContainerBackdropSpec` |
+| `1.0.0` | `UiStackedOverlaySurface.implicitScaleAnimation` | Omit the ignored flag; scale follows the depth timeline |
+| `1.0.0` | `UiRefreshIndicator.showLabel` | Custom `UiRefreshIndicatorBuilder` |

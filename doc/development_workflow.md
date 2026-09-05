@@ -7,8 +7,8 @@ goldens and pub.dev publication.
 ## Clean local setup
 
 Install Flutter stable, Git, and GitHub CLI. The package currently supports the SDK floors in
-`pubspec.yaml`; CI uses Flutter stable so new changes remain compatible with the supported public
-contract rather than a locally selected beta SDK.
+`pubspec.yaml`; CI checks the pinned minimum Flutter 3.47.0 / Dart 3.13.0 and current stable
+so new changes remain compatible with the supported public contract (ADR 0001).
 
 Prepare a checkout and validate the tools:
 

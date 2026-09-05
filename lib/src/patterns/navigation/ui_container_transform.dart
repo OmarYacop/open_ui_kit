@@ -474,7 +474,8 @@ class UiOpenContainer extends StatefulWidget {
   /// [UiContainerTransformStyle.iosZoom].
   ///
   /// Prefer [backdrop], which provides adaptive tint and no-effect fallbacks.
-  @Deprecated('Use backdrop with UiContainerBackdropSpec instead.')
+  @Deprecated(
+      'Use backdrop with UiContainerBackdropSpec instead. Scheduled for removal in 1.0.0.')
   final double? backdropBlurSigma;
 
   final UiMotionSpec? motion;

@@ -28,7 +28,10 @@ class UiColorTokens {
     required this.warning,
     required this.focusRing,
     required this.overlay,
-  });
+    Color? successForeground,
+    Color? warningForeground,
+  })  : successForeground = successForeground ?? success,
+        warningForeground = warningForeground ?? warning;
 
   final Color background;
   final Color surface;
@@ -48,6 +51,11 @@ class UiColorTokens {
   final Color onDanger;
   final Color success;
   final Color warning;
+
+  /// Text on success/warning tinted surfaces, independently themeable from
+  /// decorative accents. Omitted values preserve custom-theme compatibility.
+  final Color successForeground;
+  final Color warningForeground;
   final Color focusRing;
   final Color overlay;
 
@@ -86,6 +94,8 @@ class UiColorTokens {
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
     success: Color(0xFF16A34A),
+    successForeground: Color(0xFF166534),
+    warningForeground: Color(0xFF92400E),
     warning: Color(0xFFD97706),
     focusRing: Color(0xFFA1A1A1),
     overlay: Color(0x99000000),
@@ -133,6 +143,8 @@ class UiColorTokens {
     Color? onDanger,
     Color? success,
     Color? warning,
+    Color? successForeground,
+    Color? warningForeground,
     Color? focusRing,
     Color? overlay,
   }) {
@@ -155,6 +167,8 @@ class UiColorTokens {
       onDanger: onDanger ?? this.onDanger,
       success: success ?? this.success,
       warning: warning ?? this.warning,
+      successForeground: successForeground ?? this.successForeground,
+      warningForeground: warningForeground ?? this.warningForeground,
       focusRing: focusRing ?? this.focusRing,
       overlay: overlay ?? this.overlay,
     );
@@ -180,6 +194,10 @@ class UiColorTokens {
       onDanger: Color.lerp(a.onDanger, b.onDanger, t)!,
       success: Color.lerp(a.success, b.success, t)!,
       warning: Color.lerp(a.warning, b.warning, t)!,
+      successForeground:
+          Color.lerp(a.successForeground, b.successForeground, t)!,
+      warningForeground:
+          Color.lerp(a.warningForeground, b.warningForeground, t)!,
       focusRing: Color.lerp(a.focusRing, b.focusRing, t)!,
       overlay: Color.lerp(a.overlay, b.overlay, t)!,
     );
