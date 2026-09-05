@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -33,6 +34,8 @@ class UiTooltip extends StatefulWidget {
 class _UiTooltipState extends State<UiTooltip> {
   OverlayEntry? _entry;
   Timer? _dismissTimer;
+  bool _focused = false;
+  bool _hovered = false;
 
   @override
   void dispose() {
@@ -42,6 +45,7 @@ class _UiTooltipState extends State<UiTooltip> {
   }
 
   void _show() {
+    _dismissTimer?.cancel();
     if (_entry != null || widget.message.trim().isEmpty) return;
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
@@ -68,6 +72,7 @@ class _UiTooltipState extends State<UiTooltip> {
   }
 
   void _hideSoon() {
+    if (_focused || _hovered) return;
     _dismissTimer?.cancel();
     _dismissTimer = Timer(widget.dismissDelay, _hide);
   }
@@ -76,6 +81,7 @@ class _UiTooltipState extends State<UiTooltip> {
     _dismissTimer?.cancel();
     _dismissTimer = null;
     _entry?.remove();
+    _entry?.dispose();
     _entry = null;
   }
 
@@ -85,8 +91,14 @@ class _UiTooltipState extends State<UiTooltip> {
 
     if (widget.showOnHover) {
       content = MouseRegion(
-        onEnter: (_) => _show(),
-        onExit: (_) => _hideSoon(),
+        onEnter: (_) {
+          _hovered = true;
+          _show();
+        },
+        onExit: (_) {
+          _hovered = false;
+          _hideSoon();
+        },
         child: content,
       );
     }
@@ -101,7 +113,31 @@ class _UiTooltipState extends State<UiTooltip> {
       );
     }
 
-    return content;
+    return Semantics(
+      tooltip: widget.message,
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onFocusChange: (focused) {
+          _focused = focused;
+          if (focused) {
+            _show();
+          } else {
+            _hideSoon();
+          }
+        },
+        onKeyEvent: (_, event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.escape &&
+              _entry != null) {
+            _hide();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: content,
+      ),
+    );
   }
 }
 

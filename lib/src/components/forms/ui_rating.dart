@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../foundation/primitives/ui_pressable.dart';
+import '../../foundation/primitives/ui_focus_ring.dart';
+import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
@@ -99,6 +101,7 @@ class UiRating extends StatefulWidget {
 }
 
 class _UiRatingState extends State<UiRating> {
+  bool _focused = false;
   bool get _interactive =>
       widget.enabled && !widget.readOnly && widget.onChanged != null;
 
@@ -133,7 +136,7 @@ class _UiRatingState extends State<UiRating> {
     final formatted = widget.value == widget.value.roundToDouble()
         ? widget.value.toStringAsFixed(0)
         : widget.value.toStringAsFixed(1);
-    return 'Rating: $formatted out of ${widget.count} stars';
+    return UiLocalizations.of(context).ratingLabel(formatted, widget.count);
   }
 
   @override
@@ -176,6 +179,7 @@ class _UiRatingState extends State<UiRating> {
         autofocus: widget.autofocus,
         canRequestFocus: _interactive,
         onKeyEvent: _handleKey,
+        onFocusChange: (value) => setState(() => _focused = value),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -188,7 +192,12 @@ class _UiRatingState extends State<UiRating> {
               ),
               SizedBox(height: tokens.spacing.x2),
             ],
-            Row(mainAxisSize: MainAxisSize.min, children: stars),
+            UiFocusRing(
+              visible: _focused,
+              child: ExcludeFocus(
+                child: Row(mainAxisSize: MainAxisSize.min, children: stars),
+              ),
+            ),
             if (hasError) ...[
               SizedBox(height: tokens.spacing.x1),
               UiText(
@@ -213,11 +222,8 @@ class _UiRatingState extends State<UiRating> {
 
 /// One icon slot within [UiRating].
 ///
-/// Renders as a single [UiPressable] tap target when whole-value taps are
-/// enough. With [allowHalfRating] the icon is split into left/right halves,
-/// each its own zero-minimum-size [UiPressable] layered over the shared
-/// icon visual so the combined hit area still matches the icon's box.
-class _RatingStar extends StatelessWidget {
+/// Each slot has one 48-pixel target; half values follow the reading direction.
+class _RatingStar extends StatefulWidget {
   const _RatingStar({
     required this.index,
     required this.value,
@@ -240,68 +246,51 @@ class _RatingStar extends StatelessWidget {
   final Color emptyColor;
   final ValueChanged<double> onSelect;
 
-  double get _fill => (value - index).clamp(0.0, 1.0);
+  @override
+  State<_RatingStar> createState() => _RatingStarState();
+}
+
+class _RatingStarState extends State<_RatingStar> {
+  double? _pointerX;
 
   @override
   Widget build(BuildContext context) {
-    final tapSize = size < 40 ? 40.0 : size;
+    final tapSize = widget.size < 48 ? 48.0 : widget.size;
     final iconWidget = _StarIcon(
-      icon: icon,
-      size: size,
-      fill: _fill,
-      allowHalf: allowHalfRating,
-      filledColor: filledColor,
-      emptyColor: emptyColor,
+      icon: widget.icon,
+      size: widget.size,
+      fill: (widget.value - widget.index).clamp(0.0, 1.0),
+      allowHalf: widget.allowHalfRating,
+      filledColor: widget.filledColor,
+      emptyColor: widget.emptyColor,
     );
-
-    if (!interactive) {
-      return SizedBox(
-        width: tapSize,
-        height: tapSize,
-        child: Center(child: iconWidget),
-      );
-    }
-
-    if (!allowHalfRating) {
-      return UiPressable(
-        enabled: interactive,
-        onPressed: () => onSelect((index + 1).toDouble()),
-        minTapSize: tapSize,
-        excludeFromSemantics: true,
-        builder: (context, state, _) => Center(child: iconWidget),
-      );
-    }
-
     return SizedBox(
       width: tapSize,
       height: tapSize,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          iconWidget,
-          Row(
-            children: [
-              Expanded(
-                child: UiPressable(
-                  enabled: interactive,
-                  onPressed: () => onSelect(index + 0.5),
-                  minTapSize: 0,
-                  excludeFromSemantics: true,
-                  builder: (context, state, _) => const SizedBox.expand(),
-                ),
-              ),
-              Expanded(
-                child: UiPressable(
-                  enabled: interactive,
-                  onPressed: () => onSelect((index + 1).toDouble()),
-                  minTapSize: 0,
-                  excludeFromSemantics: true,
-                  builder: (context, state, _) => const SizedBox.expand(),
-                ),
-              ),
-            ],
-          ),
-        ],
+      child: Listener(
+        onPointerDown: (event) => _pointerX = event.localPosition.dx,
+        onPointerCancel: (_) => _pointerX = null,
+        child: UiPressable(
+          enabled: widget.interactive,
+          minTapSize: tapSize,
+          excludeFromSemantics: true,
+          onPressed: widget.interactive
+              ? () {
+                  final x = _pointerX;
+                  _pointerX = null;
+                  final startHalf =
+                      x != null &&
+                      (Directionality.of(context) == TextDirection.rtl
+                          ? x > tapSize / 2
+                          : x < tapSize / 2);
+                  widget.onSelect(
+                    widget.index +
+                        (widget.allowHalfRating && startHalf ? .5 : 1),
+                  );
+                }
+              : null,
+          builder: (context, state, _) => Center(child: iconWidget),
+        ),
       ),
     );
   }
@@ -344,7 +333,7 @@ class _StarIcon extends StatelessWidget {
       children: [
         Icon(icon, size: size, color: emptyColor),
         ClipRect(
-          clipper: _FractionClipper(fill),
+          clipper: _FractionClipper(fill, Directionality.of(context)),
           child: Icon(icon, size: size, color: filledColor),
         ),
       ],
@@ -353,15 +342,21 @@ class _StarIcon extends StatelessWidget {
 }
 
 class _FractionClipper extends CustomClipper<Rect> {
-  const _FractionClipper(this.fraction);
+  const _FractionClipper(this.fraction, this.direction);
+
+  final TextDirection direction;
 
   final double fraction;
 
   @override
-  Rect getClip(Size size) =>
-      Rect.fromLTWH(0, 0, size.width * fraction, size.height);
+  Rect getClip(Size size) => Rect.fromLTWH(
+    direction == TextDirection.rtl ? size.width * (1 - fraction) : 0,
+    0,
+    size.width * fraction,
+    size.height,
+  );
 
   @override
   bool shouldReclip(covariant _FractionClipper oldClipper) =>
-      oldClipper.fraction != fraction;
+      oldClipper.fraction != fraction || oldClipper.direction != direction;
 }

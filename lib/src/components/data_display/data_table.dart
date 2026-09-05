@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -56,12 +57,13 @@ class UiDataTable extends StatelessWidget {
     this.loading = false,
     this.errorText,
     this.onRetry,
-    this.emptyText = 'No records yet.',
+    String? emptyText,
     this.lazyRowThreshold = 50,
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  }) : rowCount = null,
+  }) : _emptyText = emptyText,
+       rowCount = null,
        rowBuilder = null;
 
   const UiDataTable.lazy({
@@ -72,11 +74,12 @@ class UiDataTable extends StatelessWidget {
     this.loading = false,
     this.errorText,
     this.onRetry,
-    this.emptyText = 'No records yet.',
+    String? emptyText,
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  }) : rows = const [],
+  }) : _emptyText = emptyText,
+       rows = const [],
        lazyRowThreshold = 0;
 
   final List<UiDataColumn> columns;
@@ -86,7 +89,8 @@ class UiDataTable extends StatelessWidget {
   final bool loading;
   final String? errorText;
   final VoidCallback? onRetry;
-  final String emptyText;
+  final String? _emptyText;
+  String get emptyText => _emptyText ?? 'No records yet.';
   final int lazyRowThreshold;
   final double maxBodyHeight;
   final double rowExtent;
@@ -112,7 +116,10 @@ class UiDataTable extends StatelessWidget {
     if (loading) {
       body = Padding(
         padding: EdgeInsets.all(tokens.spacing.x4),
-        child: const UiText('Loading table…', variant: UiTextVariant.body),
+        child: UiText(
+          UiLocalizations.of(context).loadingTable,
+          variant: UiTextVariant.body,
+        ),
       );
     } else if (hasError) {
       body = Padding(
@@ -128,7 +135,7 @@ class UiDataTable extends StatelessWidget {
             if (onRetry != null) ...[
               SizedBox(height: tokens.spacing.x2),
               UiButton(
-                label: 'Retry',
+                label: UiLocalizations.of(context).retry,
                 intent: UiIntent.secondary,
                 onPressed: onRetry,
               ),
@@ -140,7 +147,7 @@ class UiDataTable extends StatelessWidget {
       body = Padding(
         padding: EdgeInsets.all(tokens.spacing.x4),
         child: UiText(
-          emptyText,
+          _emptyText ?? UiLocalizations.of(context).emptyTable,
           variant: UiTextVariant.body,
           tone: UiTextTone.muted,
         ),
@@ -195,9 +202,9 @@ class UiSliverDataTable extends StatelessWidget {
     this.loading = false,
     this.errorText,
     this.onRetry,
-    this.emptyText = 'No records yet.',
+    String? emptyText,
     this.rowExtent = 44,
-  });
+  }) : _emptyText = emptyText;
 
   final List<UiDataColumn> columns;
   final int rowCount;
@@ -205,7 +212,8 @@ class UiSliverDataTable extends StatelessWidget {
   final bool loading;
   final String? errorText;
   final VoidCallback? onRetry;
-  final String emptyText;
+  final String? _emptyText;
+  String get emptyText => _emptyText ?? 'No records yet.';
   final double rowExtent;
 
   @override
@@ -220,7 +228,7 @@ class UiSliverDataTable extends StatelessWidget {
           loading: loading,
           errorText: errorText,
           onRetry: onRetry,
-          emptyText: emptyText,
+          emptyText: _emptyText,
           rowExtent: rowExtent,
         ),
       );
