@@ -16,12 +16,10 @@ class UiClockController extends ChangeNotifier
     implements ValueListenable<DateTime> {
   UiClockController({
     UiNowProvider? nowProvider,
-    UiClockTickMode tickMode = UiClockTickMode.minute,
-    Duration? tickInterval,
+    this._tickMode = UiClockTickMode.minute,
+    this._tickInterval,
     DateTime? initialNow,
   }) : _nowProvider = nowProvider ?? DateTime.now,
-       _tickMode = tickMode,
-       _tickInterval = tickInterval,
        _now = initialNow ?? (nowProvider ?? DateTime.now)() {
     WidgetsBinding.instance.addObserver(this);
     _scheduleNext();

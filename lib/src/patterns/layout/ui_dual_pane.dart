@@ -14,7 +14,7 @@ import '../navigation/ui_page_route.dart';
 /// The controller intentionally owns only selection state. [UiDualPane] owns
 /// how that state is presented for each form factor.
 class UiDualPaneController<T> extends ChangeNotifier {
-  UiDualPaneController({T? selected}) : _selected = selected;
+  UiDualPaneController({this._selected});
 
   T? _selected;
 

@@ -1178,10 +1178,9 @@ class _UiRefreshSliver extends SingleChildRenderObjectWidget {
 class _RenderUiRefreshSliver extends RenderSliver
     with RenderObjectWithChildMixin<RenderBox> {
   _RenderUiRefreshSliver({
-    required double refreshIndicatorExtent,
-    required bool hasLayoutExtent,
-  }) : _refreshIndicatorExtent = refreshIndicatorExtent,
-       _hasLayoutExtent = hasLayoutExtent;
+    required this._refreshIndicatorExtent,
+    required this._hasLayoutExtent,
+  });
 
   double _refreshIndicatorExtent;
   double get refreshIndicatorLayoutExtent => _refreshIndicatorExtent;

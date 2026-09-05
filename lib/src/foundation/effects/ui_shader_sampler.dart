@@ -125,10 +125,9 @@ class UiShaderSampler extends SingleChildRenderObjectWidget {
 
 class _RenderUiShaderSampler extends RenderProxyBox {
   _RenderUiShaderSampler({
-    required UiShaderSamplerPainter painter,
-    required double devicePixelRatio,
-  }) : _painter = painter,
-       _devicePixelRatio = devicePixelRatio;
+    required this._painter,
+    required this._devicePixelRatio,
+  });
 
   UiShaderSamplerPainter _painter;
   set painter(UiShaderSamplerPainter value) {

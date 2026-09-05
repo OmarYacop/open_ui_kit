@@ -93,14 +93,11 @@ class _RenderUiMeasuredMorph extends RenderBox
         ContainerRenderObjectMixin<RenderBox, _MorphParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _MorphParentData> {
   _RenderUiMeasuredMorph({
-    required double progress,
-    required Alignment alignment,
-    required double switchPoint,
-    required Clip clipBehavior,
-  }) : _progress = progress,
-       _alignment = alignment,
-       _switchPoint = switchPoint,
-       _clipBehavior = clipBehavior;
+    required this._progress,
+    required this._alignment,
+    required this._switchPoint,
+    required this._clipBehavior,
+  });
 
   double _progress;
   Alignment _alignment;

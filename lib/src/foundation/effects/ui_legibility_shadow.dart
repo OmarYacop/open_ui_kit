@@ -58,14 +58,11 @@ class UiLegibilityShadow extends SingleChildRenderObjectWidget {
 
 class RenderUiLegibilityShadow extends RenderProxyBox {
   RenderUiLegibilityShadow({
-    required Color color,
-    required Offset offset,
-    required double blurSigma,
-    required double spreadRadius,
-  }) : _color = color,
-       _offset = offset,
-       _blurSigma = blurSigma,
-       _spreadRadius = spreadRadius;
+    required this._color,
+    required this._offset,
+    required this._blurSigma,
+    required this._spreadRadius,
+  });
 
   Color _color;
   Offset _offset;

@@ -71,9 +71,8 @@ class UiPlatformSnapshot {
 class UiPlatformCapabilities {
   UiPlatformCapabilities({
     MethodChannel? channel,
-    Duration cacheDuration = const Duration(milliseconds: 250),
-  }) : _channel = channel ?? const MethodChannel(channelName),
-       _cacheDuration = cacheDuration;
+    this._cacheDuration = const Duration(milliseconds: 250),
+  }) : _channel = channel ?? const MethodChannel(channelName);
 
   static const channelName = 'dev.open_ui_kit/platform_capabilities';
   static final shared = UiPlatformCapabilities();

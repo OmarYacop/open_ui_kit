@@ -283,7 +283,7 @@ class _ActivePageLayout extends SingleChildRenderObjectWidget {
 }
 
 class _RenderActivePageLayout extends RenderProxyBox {
-  _RenderActivePageLayout({required bool active}) : _active = active;
+  _RenderActivePageLayout({required this._active});
 
   bool _active;
 

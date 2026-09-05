@@ -315,14 +315,11 @@ class _RenderContourActionRelease extends RenderBox
         ContainerRenderObjectMixin<RenderBox, _ContourActionParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _ContourActionParentData> {
   _RenderContourActionRelease({
-    required double progress,
-    required double spacing,
-    required double activationThreshold,
-    required TextDirection textDirection,
-  }) : _progress = progress,
-       _spacing = spacing,
-       _activationThreshold = activationThreshold,
-       _textDirection = textDirection;
+    required this._progress,
+    required this._spacing,
+    required this._activationThreshold,
+    required this._textDirection,
+  });
 
   double _progress;
   double _spacing;
