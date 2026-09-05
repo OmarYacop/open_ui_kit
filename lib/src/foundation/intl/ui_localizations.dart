@@ -47,6 +47,8 @@ abstract class UiLocalizations {
   const UiLocalizations();
 
   // Concrete defaults keep existing custom localization subclasses compatible.
+  String get formErrors => 'Please check these fields';
+
   String get alertError => 'Error';
   String get alertWarning => 'Warning';
   String get alertSuccess => 'Success';
@@ -328,6 +330,9 @@ class UiLocalizationsEn extends UiLocalizations {
 /// RTL locale.
 class UiLocalizationsAr extends UiLocalizations {
   const UiLocalizationsAr();
+
+  @override
+  String get formErrors => 'يرجى مراجعة هذه الحقول';
 
   @override
   String get alertError => 'خطأ';
