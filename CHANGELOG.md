@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 - 2026-09-05
 
 ### Form capabilities
 - Add `UiMultiSelect<T>` with searchable lazy options, removable selections, keyboard controls, limits, disabled values, and localized announcements. Add a runnable form composition example.
