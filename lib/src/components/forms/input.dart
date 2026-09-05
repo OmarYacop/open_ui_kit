@@ -1,3 +1,5 @@
+import 'internal/ui_field_frame.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -333,119 +335,89 @@ class UiInputState extends State<UiInput>
       rendererIgnoresPointer: true,
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return UiFieldFrame(
+      label: widget.label,
+      helper: widget.helper,
+      errorText: hasError ? error : null,
+      enabled: !disabled,
       mainAxisAlignment: embedded
           ? MainAxisAlignment.center
           : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.label != null) ...[
-          UiText(
-            widget.label!,
-            variant: UiTextVariant.label,
-            tone: disabled ? UiTextTone.muted : UiTextTone.primary,
-          ),
-          SizedBox(height: tokens.spacing.x1),
-        ],
-        _buildTappable(
-          disabled: disabled,
-          child: UiFocusRing(
-            visible: !embedded && ringActive,
-            borderRadius: borderRadius,
-            color: ringColor,
-            width: 3,
-            offset: 3,
-            animate: true,
+      child: _buildTappable(
+        disabled: disabled,
+        child: UiFocusRing(
+          visible: !embedded && ringActive,
+          borderRadius: borderRadius,
+          color: ringColor,
+          width: 3,
+          offset: 3,
+          animate: true,
+          duration: focusTransition.duration,
+          curve: focusTransition.curve,
+          child: AnimatedContainer(
             duration: focusTransition.duration,
             curve: focusTransition.curve,
-            child: AnimatedContainer(
-              duration: focusTransition.duration,
-              curve: focusTransition.curve,
-              constraints: BoxConstraints(
-                minHeight:
-                    widget.minHeight ?? UiButtonMetrics.minHeight(widget.size),
-              ),
-              decoration: BoxDecoration(
-                color: embedded ? const Color(0x00000000) : bg,
-                border: embedded
-                    ? null
-                    : Border.all(color: borderColor, width: 1),
-                borderRadius: borderRadius,
-              ),
-              padding: padding,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (widget.leading != null) ...[
-                    IconTheme.merge(
-                      data: IconThemeData(color: c.textMuted, size: 16),
-                      child: widget.leading!,
-                    ),
-                    SizedBox(width: tokens.spacing.x2),
-                  ],
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        if (_controller.text.isEmpty && widget.hint != null)
-                          Positioned.fill(
-                            child: Directionality(
-                              textDirection:
-                                  widget.textDirection ??
-                                  Directionality.of(context),
-                              child: IgnorePointer(
-                                child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
-                                  child: UiText(
-                                    widget.hint!,
-                                    variant: UiTextVariant.body,
-                                    tone: UiTextTone.muted,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+            constraints: BoxConstraints(
+              minHeight:
+                  widget.minHeight ?? UiButtonMetrics.minHeight(widget.size),
+            ),
+            decoration: BoxDecoration(
+              color: embedded ? const Color(0x00000000) : bg,
+              border: embedded
+                  ? null
+                  : Border.all(color: borderColor, width: 1),
+              borderRadius: borderRadius,
+            ),
+            padding: padding,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (widget.leading != null) ...[
+                  IconTheme.merge(
+                    data: IconThemeData(color: c.textMuted, size: 16),
+                    child: widget.leading!,
+                  ),
+                  SizedBox(width: tokens.spacing.x2),
+                ],
+                Expanded(
+                  child: Stack(
+                    children: [
+                      if (_controller.text.isEmpty && widget.hint != null)
+                        Positioned.fill(
+                          child: Directionality(
+                            textDirection:
+                                widget.textDirection ??
+                                Directionality.of(context),
+                            child: IgnorePointer(
+                              child: Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: UiText(
+                                  widget.hint!,
+                                  variant: UiTextVariant.body,
+                                  tone: UiTextTone.muted,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ),
                           ),
-                        field,
-                      ],
-                    ),
+                        ),
+                      field,
+                    ],
                   ),
-                  if (widget.trailing != null) ...[
-                    SizedBox(width: tokens.spacing.x2),
-                    IconTheme.merge(
-                      data: IconThemeData(color: c.textMuted, size: 16),
-                      child: widget.trailing!,
-                    ),
-                  ],
+                ),
+                if (widget.trailing != null) ...[
+                  SizedBox(width: tokens.spacing.x2),
+                  IconTheme.merge(
+                    data: IconThemeData(color: c.textMuted, size: 16),
+                    child: widget.trailing!,
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
-        if (hasError) ...[
-          SizedBox(height: tokens.spacing.x1),
-          Semantics(
-            // Error text is published as a polite live region so screen
-            // readers announce validation changes when they flip from
-            // null → set without the user moving focus.
-            liveRegion: true,
-            label: 'Error: $error',
-            child: UiText(
-              error,
-              variant: UiTextVariant.caption,
-              tone: UiTextTone.danger,
-            ),
-          ),
-        ] else if (widget.helper != null) ...[
-          SizedBox(height: tokens.spacing.x1),
-          UiText(
-            widget.helper!,
-            variant: UiTextVariant.caption,
-            tone: UiTextTone.muted,
-          ),
-        ],
-      ],
+      ),
     );
   }
 
