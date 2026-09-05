@@ -38,6 +38,7 @@ class UiPageLayout extends StatelessWidget {
     this.breakpoints = UiBreakpoints.standard,
     this.filtersPaneWidth = 280,
     this.secondaryPaneWidth = 360,
+    this.minBodyWidth = 320,
     this.onRefresh,
     this.refreshController,
     this.refreshIndicatorBuilder,
@@ -87,6 +88,9 @@ class UiPageLayout extends StatelessWidget {
   final UiBreakpoints breakpoints;
   final double filtersPaneWidth;
   final double secondaryPaneWidth;
+
+  /// Minimum body width before optional panes move above/below the body.
+  final double minBodyWidth;
 
   /// Page-owned pull-to-refresh. See [UiPageScaffold.onRefresh].
   final Future<void> Function()? onRefresh;
@@ -168,8 +172,12 @@ class UiPageLayout extends StatelessWidget {
   Widget _buildBody(UiFormFactor formFactor) {
     if (filters == null && secondary == null) return body;
 
-    switch (formFactor) {
-      case UiFormFactor.phone:
+    return LayoutBuilder(builder: (context, constraints) {
+      final panesWidth = (filters == null ? 0 : filtersPaneWidth) +
+          (secondary == null ? 0 : secondaryPaneWidth);
+      final stacked = formFactor == UiFormFactor.phone ||
+          constraints.maxWidth < panesWidth + minBodyWidth;
+      if (stacked) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -178,19 +186,18 @@ class UiPageLayout extends StatelessWidget {
             if (secondary != null) secondary!,
           ],
         );
-      case UiFormFactor.tablet:
-      case UiFormFactor.desktop:
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (filters != null)
-              SizedBox(width: filtersPaneWidth, child: filters!),
-            Expanded(child: body),
-            if (secondary != null)
-              SizedBox(width: secondaryPaneWidth, child: secondary!),
-          ],
-        );
-    }
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (filters != null)
+            SizedBox(width: filtersPaneWidth, child: filters!),
+          Expanded(child: body),
+          if (secondary != null)
+            SizedBox(width: secondaryPaneWidth, child: secondary!),
+        ],
+      );
+    });
   }
 }
 

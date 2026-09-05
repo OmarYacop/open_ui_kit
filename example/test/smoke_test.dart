@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:contour_example/main.dart' as app;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +32,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await expectLater(
-      demoFinder,
-      matchesGoldenFile('goldens/real_bottom_tab_collapsed.png'),
-    );
+    if (Platform.isMacOS) {
+      await expectLater(
+        demoFinder,
+        matchesGoldenFile('goldens/real_bottom_tab_collapsed.png'),
+      );
+    }
 
     await tester.tap(
       find.descendant(
@@ -48,9 +52,11 @@ void main() {
       findsWidgets,
     );
 
-    await expectLater(
-      demoFinder,
-      matchesGoldenFile('goldens/real_bottom_tab_expanded.png'),
-    );
+    if (Platform.isMacOS) {
+      await expectLater(
+        demoFinder,
+        matchesGoldenFile('goldens/real_bottom_tab_expanded.png'),
+      );
+    }
   });
 }

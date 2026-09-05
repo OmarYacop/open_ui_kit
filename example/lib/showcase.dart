@@ -94,7 +94,6 @@ class _OpenUiKitShowcaseState extends State<OpenUiKitShowcase> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _ShowcaseHeader(
-                        compact: !wide,
                         installCommandCopied: _installCommandCopied,
                         onCopyInstallCommand: _copyInstallCommand,
                         appearanceLabel: widget.appearanceLabel,
@@ -168,7 +167,6 @@ class _OpenUiKitShowcaseState extends State<OpenUiKitShowcase> {
 
 class _ShowcaseHeader extends StatelessWidget {
   const _ShowcaseHeader({
-    required this.compact,
     required this.installCommandCopied,
     required this.onCopyInstallCommand,
     this.appearanceLabel,
@@ -176,7 +174,6 @@ class _ShowcaseHeader extends StatelessWidget {
     this.onAppearancePressed,
   });
 
-  final bool compact;
   final bool installCommandCopied;
   final VoidCallback onCopyInstallCommand;
   final String? appearanceLabel;
@@ -251,44 +248,16 @@ class _ShowcaseHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (compact) ...[
-          title,
-          SizedBox(height: tokens.spacing.x4),
-          const UiText(
-            'Composable Flutter primitives with neutral defaults, adaptive '
-            'behavior, and motion that belongs to the system.',
-            variant: UiTextVariant.bodyLg,
-            tone: UiTextTone.muted,
-          ),
-          SizedBox(height: tokens.spacing.x4),
-          actions,
-        ] else ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    title,
-                    SizedBox(height: tokens.spacing.x3),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 700),
-                      child: const UiText(
-                        'Composable Flutter primitives with neutral defaults, '
-                        'adaptive behavior, and motion that belongs to the system.',
-                        variant: UiTextVariant.bodyLg,
-                        tone: UiTextTone.muted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: tokens.spacing.x6),
-              actions,
-            ],
-          ),
-        ],
+        title,
+        SizedBox(height: tokens.spacing.x4),
+        const UiText(
+          'Composable Flutter primitives with neutral defaults, adaptive '
+          'behavior, and motion that belongs to the system.',
+          variant: UiTextVariant.bodyLg,
+          tone: UiTextTone.muted,
+        ),
+        SizedBox(height: tokens.spacing.x4),
+        actions,
       ],
     );
   }
@@ -439,6 +408,7 @@ class _SchedulePanel extends StatelessWidget {
             child: UiDatePicker(
               value: selectedDate,
               visibleMonth: DateTime(2026, 9),
+              today: DateTime(2026, 9, 5),
               onChanged: onDateChanged,
               showBorder: false,
               chromePadding: EdgeInsets.zero,
@@ -475,10 +445,11 @@ class _SchedulePanel extends StatelessWidget {
                         variant: UiTextVariant.caption,
                         tone: UiTextTone.muted,
                       ),
+                      SizedBox(height: 8),
+                      UiBadge(label: 'Scheduled', intent: UiIntent.secondary),
                     ],
                   ),
                 ),
-                const UiBadge(label: 'Scheduled', intent: UiIntent.secondary),
               ],
             ),
           ),
