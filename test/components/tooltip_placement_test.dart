@@ -4,6 +4,51 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 void main() {
+  testWidgets('tooltip respects overlay insets removed below the overlay', (
+    tester,
+  ) async {
+    final focus = FocusNode();
+    await tester.pumpWidget(
+      UiApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(padding: const EdgeInsets.only(top: 100)),
+          child: child!,
+        ),
+        home: Builder(
+          builder: (context) => MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 120),
+                child: UiTooltip(
+                  message: 'Safe help',
+                  side: UiTooltipSide.top,
+                  child: UiButton(
+                    label: 'Help',
+                    focusNode: focus,
+                    onPressed: () {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    focus.requestFocus();
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.text('Safe help')).dy,
+      greaterThanOrEqualTo(108),
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    focus.dispose();
+  });
+
   testWidgets('long tooltip fits a narrow overlay and Escape dismisses', (
     tester,
   ) async {

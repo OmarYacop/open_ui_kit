@@ -43,7 +43,8 @@ class UiAnchoredSurface extends StatelessWidget {
         );
         final viewport = Offset.zero & info.overlaySize;
         if (!anchor.overlaps(viewport)) return const SizedBox.shrink();
-        final media = MediaQuery.maybeOf(context);
+        // Trigger subtrees may remove safe padding; bounds belong to the overlay.
+        final media = MediaQuery.maybeOf(Overlay.of(context).context);
         final padding = media?.padding ?? EdgeInsets.zero;
         final keyboard = media?.viewInsets.bottom ?? 0;
         final left = math.min(info.overlaySize.width, padding.left + margin);
