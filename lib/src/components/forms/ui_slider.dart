@@ -1,9 +1,10 @@
+import 'internal/ui_field_frame.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
-import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Intent fired by arrow keys to nudge a [UiSlider] up or down by one step.
@@ -229,170 +230,147 @@ class _UiSliderState extends State<UiSlider> {
     final increasedValue = _formatValue(_resolve(widget.value + _step));
     final decreasedValue = _formatValue(_resolve(widget.value - _step));
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return UiFieldFrame(
+      label: widget.label,
+      helper: widget.helper,
+      errorText: widget.errorText,
+      enabled: !disabled,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (widget.label != null) ...[
-          UiText(
-            widget.label!,
-            variant: UiTextVariant.label,
-            tone: disabled ? UiTextTone.muted : UiTextTone.primary,
-          ),
-          SizedBox(height: tokens.spacing.x1),
-        ],
-        Semantics(
-          slider: true,
-          enabled: _interactive,
-          label:
-              widget.semanticLabel ??
-              widget.label ??
-              UiLocalizations.of(context).slider,
-          value: semanticValue,
-          increasedValue: increasedValue,
-          decreasedValue: decreasedValue,
-          onIncrease: _interactive ? () => _handleAdjust(1) : null,
-          onDecrease: _interactive ? () => _handleAdjust(-1) : null,
-          child: Shortcuts(
-            shortcuts: <ShortcutActivator, Intent>{
-              SingleActivator(LogicalKeyboardKey.arrowRight):
-                  _AdjustSliderIntent(_rtl ? -1 : 1),
-              SingleActivator(LogicalKeyboardKey.arrowLeft):
-                  _AdjustSliderIntent(_rtl ? 1 : -1),
-              SingleActivator(LogicalKeyboardKey.arrowUp): _AdjustSliderIntent(
-                1,
+      child: Semantics(
+        slider: true,
+        enabled: _interactive,
+        label:
+            widget.semanticLabel ??
+            widget.label ??
+            UiLocalizations.of(context).slider,
+        value: semanticValue,
+        increasedValue: increasedValue,
+        decreasedValue: decreasedValue,
+        onIncrease: _interactive ? () => _handleAdjust(1) : null,
+        onDecrease: _interactive ? () => _handleAdjust(-1) : null,
+        child: Shortcuts(
+          shortcuts: <ShortcutActivator, Intent>{
+            SingleActivator(LogicalKeyboardKey.arrowRight): _AdjustSliderIntent(
+              _rtl ? -1 : 1,
+            ),
+            SingleActivator(LogicalKeyboardKey.arrowLeft): _AdjustSliderIntent(
+              _rtl ? 1 : -1,
+            ),
+            SingleActivator(LogicalKeyboardKey.arrowUp): _AdjustSliderIntent(1),
+            SingleActivator(LogicalKeyboardKey.arrowDown): _AdjustSliderIntent(
+              -1,
+            ),
+          },
+          child: Actions(
+            actions: <Type, Action<Intent>>{
+              _AdjustSliderIntent: CallbackAction<_AdjustSliderIntent>(
+                onInvoke: (intent) {
+                  _handleAdjust(intent.direction);
+                  return null;
+                },
               ),
-              SingleActivator(LogicalKeyboardKey.arrowDown):
-                  _AdjustSliderIntent(-1),
             },
-            child: Actions(
-              actions: <Type, Action<Intent>>{
-                _AdjustSliderIntent: CallbackAction<_AdjustSliderIntent>(
-                  onInvoke: (intent) {
-                    _handleAdjust(intent.direction);
-                    return null;
-                  },
-                ),
-              },
-              child: Focus(
-                focusNode: _focusNode,
-                autofocus: widget.autofocus,
-                canRequestFocus: _interactive,
-                onFocusChange: _setFocused,
-                child: MouseRegion(
-                  cursor: disabled
-                      ? SystemMouseCursors.basic
-                      : SystemMouseCursors.click,
-                  onEnter: (_) => _setHovered(true),
-                  onExit: (_) => _setHovered(false),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth;
-                      final thumbLeft = width <= _thumbSize
-                          ? 0.0
-                          : (_rtl ? 1 - fraction : fraction) *
-                                (width - _thumbSize);
+            child: Focus(
+              focusNode: _focusNode,
+              autofocus: widget.autofocus,
+              canRequestFocus: _interactive,
+              onFocusChange: _setFocused,
+              child: MouseRegion(
+                cursor: disabled
+                    ? SystemMouseCursors.basic
+                    : SystemMouseCursors.click,
+                onEnter: (_) => _setHovered(true),
+                onExit: (_) => _setHovered(false),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final thumbLeft = width <= _thumbSize
+                        ? 0.0
+                        : (_rtl ? 1 - fraction : fraction) *
+                              (width - _thumbSize);
 
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTapUp: disabled
-                            ? null
-                            : (d) => _handleTapUp(d, width),
-                        onHorizontalDragStart: disabled
-                            ? null
-                            : (d) => _handleDragStart(d, width),
-                        onHorizontalDragUpdate: disabled
-                            ? null
-                            : (d) => _handleDragUpdate(d, width),
-                        onHorizontalDragEnd: disabled ? null : _handleDragEnd,
-                        onHorizontalDragCancel: _finishDrag,
-                        excludeFromSemantics: true,
-                        child: SizedBox(
-                          height: 44,
-                          width: double.infinity,
-                          child: Stack(
-                            alignment: AlignmentDirectional.centerStart,
-                            clipBehavior: Clip.none,
-                            children: [
-                              // Base track.
-                              Container(
-                                height: _trackHeight,
-                                decoration: BoxDecoration(
-                                  color: trackColor,
-                                  borderRadius: tokens.radius.pillAll,
-                                ),
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapUp: disabled ? null : (d) => _handleTapUp(d, width),
+                      onHorizontalDragStart: disabled
+                          ? null
+                          : (d) => _handleDragStart(d, width),
+                      onHorizontalDragUpdate: disabled
+                          ? null
+                          : (d) => _handleDragUpdate(d, width),
+                      onHorizontalDragEnd: disabled ? null : _handleDragEnd,
+                      onHorizontalDragCancel: _finishDrag,
+                      excludeFromSemantics: true,
+                      child: SizedBox(
+                        height: 44,
+                        width: double.infinity,
+                        child: Stack(
+                          alignment: AlignmentDirectional.centerStart,
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Base track.
+                            Container(
+                              height: _trackHeight,
+                              decoration: BoxDecoration(
+                                color: trackColor,
+                                borderRadius: tokens.radius.pillAll,
                               ),
-                              // Filled portion up to the thumb.
-                              Container(
-                                height: _trackHeight,
-                                width:
-                                    fraction *
-                                        (width - _thumbSize).clamp(
-                                          0,
-                                          double.infinity,
-                                        ) +
-                                    _thumbSize / 2,
-                                decoration: BoxDecoration(
-                                  color: fillColor,
-                                  borderRadius: tokens.radius.pillAll,
-                                ),
+                            ),
+                            // Filled portion up to the thumb.
+                            Container(
+                              height: _trackHeight,
+                              width:
+                                  fraction *
+                                      (width - _thumbSize).clamp(
+                                        0,
+                                        double.infinity,
+                                      ) +
+                                  _thumbSize / 2,
+                              decoration: BoxDecoration(
+                                color: fillColor,
+                                borderRadius: tokens.radius.pillAll,
                               ),
-                              AnimatedPositioned(
-                                duration: _dragging
-                                    ? Duration.zero
-                                    : tokens.motion.fast,
-                                curve: tokens.motion.standardCurve,
-                                left: thumbLeft,
-                                child: UiFocusRing(
-                                  visible: _focused && !hasError,
-                                  borderRadius: tokens.radius.pillAll,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: c.surface,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: thumbBorderColor,
-                                        width: 2,
-                                      ),
-                                      boxShadow:
-                                          (_hovered || _dragging) && !disabled
-                                          ? tokens.shadows.sm
-                                          : null,
+                            ),
+                            AnimatedPositioned(
+                              duration: _dragging
+                                  ? Duration.zero
+                                  : tokens.motion.fast,
+                              curve: tokens.motion.standardCurve,
+                              left: thumbLeft,
+                              child: UiFocusRing(
+                                visible: _focused && !hasError,
+                                borderRadius: tokens.radius.pillAll,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: c.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: thumbBorderColor,
+                                      width: 2,
                                     ),
-                                    child: SizedBox(
-                                      width: _thumbSize,
-                                      height: _thumbSize,
-                                    ),
+                                    boxShadow:
+                                        (_hovered || _dragging) && !disabled
+                                        ? tokens.shadows.sm
+                                        : null,
+                                  ),
+                                  child: SizedBox(
+                                    width: _thumbSize,
+                                    height: _thumbSize,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
         ),
-        if (hasError) ...[
-          SizedBox(height: tokens.spacing.x1),
-          UiText(
-            widget.errorText!,
-            variant: UiTextVariant.caption,
-            tone: UiTextTone.danger,
-          ),
-        ] else if (widget.helper != null) ...[
-          SizedBox(height: tokens.spacing.x1),
-          UiText(
-            widget.helper!,
-            variant: UiTextVariant.caption,
-            tone: UiTextTone.muted,
-          ),
-        ],
-      ],
+      ),
     );
   }
 }

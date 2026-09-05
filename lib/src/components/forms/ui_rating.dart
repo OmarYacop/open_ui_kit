@@ -1,3 +1,5 @@
+import 'internal/ui_field_frame.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -5,7 +7,6 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/intl/ui_localizations.dart';
-import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Star (or configurable-icon) rating input.
@@ -143,7 +144,6 @@ class _UiRatingState extends State<UiRating> {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
     final icon = widget.icon ?? LucideIcons.star;
 
     final filledColor = widget.enabled ? c.warning : c.mutedForeground;
@@ -180,40 +180,19 @@ class _UiRatingState extends State<UiRating> {
         canRequestFocus: _interactive,
         onKeyEvent: _handleKey,
         onFocusChange: (value) => setState(() => _focused = value),
-        child: Column(
+        child: UiFieldFrame(
+          label: widget.label,
+          helper: widget.helper,
+          errorText: widget.errorText,
+          enabled: _interactive,
+          labelSpacing: tokens.spacing.x2,
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.label != null) ...[
-              UiText(
-                widget.label!,
-                variant: UiTextVariant.label,
-                tone: _interactive ? UiTextTone.primary : UiTextTone.muted,
-              ),
-              SizedBox(height: tokens.spacing.x2),
-            ],
-            UiFocusRing(
-              visible: _focused,
-              child: ExcludeFocus(
-                child: Row(mainAxisSize: MainAxisSize.min, children: stars),
-              ),
+          child: UiFocusRing(
+            visible: _focused,
+            child: ExcludeFocus(
+              child: Row(mainAxisSize: MainAxisSize.min, children: stars),
             ),
-            if (hasError) ...[
-              SizedBox(height: tokens.spacing.x1),
-              UiText(
-                widget.errorText!,
-                variant: UiTextVariant.caption,
-                tone: UiTextTone.danger,
-              ),
-            ] else if (widget.helper != null) ...[
-              SizedBox(height: tokens.spacing.x1),
-              UiText(
-                widget.helper!,
-                variant: UiTextVariant.caption,
-                tone: UiTextTone.muted,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
