@@ -100,8 +100,8 @@ when accessibility text grows. Their normal-size compact heights are unchanged;
 parents must allow their height to grow at larger text sizes. Insets apply to the
 text slot, so trailing controls do not receive extra padding. Multiline inputs
 keep their existing padding, and embedded inputs leave spacing to their containing
-surface (for example, an LMS search accessory or chat composer).
+surface (for example, a search accessory or chat composer).
 
 This is separate from touch-target sizing. Compact input visuals do not certify
-44-point iOS or 48-dp Android hit regions. Changes to shared touch sizes, page
-gutters, or radii need review in LMS before adoption.
+44-point iOS or 48-dp Android hit regions. The containing layout must provide
+appropriate, non-overlapping touch targets.
