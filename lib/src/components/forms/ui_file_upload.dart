@@ -105,8 +105,8 @@ class UiFileUpload extends StatelessWidget {
           hint: loading
               ? 'loading'
               : !_interactive
-                  ? 'disabled'
-                  : null,
+              ? 'disabled'
+              : null,
           onTap: _interactive ? onTap : null,
           child: UiPressable(
             enabled: _interactive,
@@ -119,13 +119,13 @@ class UiFileUpload extends StatelessWidget {
               final borderColor = hasError
                   ? c.destructive
                   : state.focused
-                      ? c.ring
-                      : c.input;
+                  ? c.ring
+                  : c.input;
               final background = !enabled || loading
                   ? c.muted
                   : _hasFile
-                      ? c.surface
-                      : c.muted;
+                  ? c.surface
+                  : c.muted;
 
               final body = Padding(
                 padding: EdgeInsets.all(tokens.spacing.x4),
@@ -265,8 +265,9 @@ class _SelectedFile extends StatelessWidget {
             minTapSize: 32,
             semanticsLabel: 'Remove $fileName',
             builder: (context, state, _) {
-              final iconColor =
-                  state.hovered || state.pressed ? c.foreground : c.textMuted;
+              final iconColor = state.hovered || state.pressed
+                  ? c.foreground
+                  : c.textMuted;
               return Icon(LucideIcons.x, size: 16, color: iconColor);
             },
           ),
@@ -299,8 +300,10 @@ class _DashedBorderBox extends StatelessWidget {
       // Painted in the foreground: the child below fills the box edge to
       // edge with an opaque background, so a background painter would be
       // fully hidden by it.
-      foregroundPainter:
-          _DashedRRectPainter(color: color, radius: borderRadius),
+      foregroundPainter: _DashedRRectPainter(
+        color: color,
+        radius: borderRadius,
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.all(borderRadius),
         child: DecoratedBox(

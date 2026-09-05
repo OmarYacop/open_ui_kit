@@ -3,10 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
-  return UiApp(
-    home: Center(child: child),
-    debugShowCheckedModeBanner: false,
-  );
+  return UiApp(home: Center(child: child), debugShowCheckedModeBanner: false);
 }
 
 void main() {
@@ -14,9 +11,7 @@ void main() {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
-        child: UiNowBuilder(
-          builder: _FallbackClockText.new,
-        ),
+        child: UiNowBuilder(builder: _FallbackClockText.new),
       ),
     );
 

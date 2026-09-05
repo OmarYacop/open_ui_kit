@@ -18,8 +18,9 @@ void main() {
       expect(notifications, 1);
     });
 
-    testWidgets('UiSelector rebuilds when selected slice changes',
-        (tester) async {
+    testWidgets('UiSelector rebuilds when selected slice changes', (
+      tester,
+    ) async {
       final store = UiStore<_CounterState>(
         const _CounterState(count: 0, label: 'initial'),
       );
@@ -57,10 +58,7 @@ void main() {
 
   group('UiCollectionPatch', () {
     test('replaces, removes, and upserts by id', () {
-      const items = [
-        _Item(id: 'a', label: 'A'),
-        _Item(id: 'b', label: 'B'),
-      ];
+      const items = [_Item(id: 'a', label: 'A'), _Item(id: 'b', label: 'B')];
 
       final replaced = UiCollectionPatch.replaceWhere<_Item>(
         items,
@@ -121,10 +119,7 @@ void main() {
       final value = await controller.run(() async => 42);
 
       expect(value, 42);
-      expect(statuses, [
-        UiMutationStatus.pending,
-        UiMutationStatus.success,
-      ]);
+      expect(statuses, [UiMutationStatus.pending, UiMutationStatus.success]);
       expect(controller.state.isSuccess, isTrue);
     });
 

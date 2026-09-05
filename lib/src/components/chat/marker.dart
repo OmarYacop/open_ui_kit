@@ -77,10 +77,8 @@ class UiMarker extends StatelessWidget {
         onPressed: onPressed,
         semanticsLabel: semanticLabel ?? label,
         minTapSize: 44,
-        builder: (_, state, child) => Opacity(
-          opacity: state.pressed ? .7 : 1,
-          child: child!,
-        ),
+        builder: (_, state, child) =>
+            Opacity(opacity: state.pressed ? .7 : 1, child: child!),
         child: result,
       );
     }

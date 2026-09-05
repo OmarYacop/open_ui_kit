@@ -33,10 +33,7 @@ void main() {
         return Column(
           children: [
             Text('detail-$args'),
-            UiButton(
-              label: 'Back',
-              onPressed: () => scope.controller.pop(),
-            ),
+            UiButton(label: 'Back', onPressed: () => scope.controller.pop()),
           ],
         );
       },
@@ -49,8 +46,9 @@ void main() {
     );
   }
 
-  testWidgets('host renders initial route then reacts to push/pop',
-      (tester) async {
+  testWidgets('host renders initial route then reacts to push/pop', (
+    tester,
+  ) async {
     final controller = UiNavigationController(
       routes: [homeRoute(detail), detail],
     );

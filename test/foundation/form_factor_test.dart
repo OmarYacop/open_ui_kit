@@ -5,10 +5,7 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 Widget _host(Widget child, {required Size size}) {
   return MediaQuery(
     data: MediaQueryData(size: size),
-    child: Directionality(
-      textDirection: TextDirection.ltr,
-      child: child,
-    ),
+    child: Directionality(textDirection: TextDirection.ltr, child: child),
   );
 }
 
@@ -57,13 +54,13 @@ void main() {
   group('UiAdaptive', () {
     testWidgets('mode: dispatches to the matching builder', (tester) async {
       Widget shell(Size size) => _host(
-            UiAdaptive.mode(
-              phone: (_) => const Text('phone-build'),
-              tablet: (_) => const Text('tablet-build'),
-              desktop: (_) => const Text('desktop-build'),
-            ),
-            size: size,
-          );
+        UiAdaptive.mode(
+          phone: (_) => const Text('phone-build'),
+          tablet: (_) => const Text('tablet-build'),
+          desktop: (_) => const Text('desktop-build'),
+        ),
+        size: size,
+      );
 
       await tester.pumpWidget(shell(const Size(400, 800)));
       expect(find.text('phone-build'), findsOneWidget);
@@ -76,32 +73,32 @@ void main() {
     });
 
     testWidgets(
-        'mode: missing builders fall back to the next smallest provided',
-        (tester) async {
-      // No tablet or desktop builders — desktop width should still
-      // render the phone build.
-      await tester.pumpWidget(
-        _host(
-          UiAdaptive.mode(
-            phone: (_) => const Text('only-phone'),
+      'mode: missing builders fall back to the next smallest provided',
+      (tester) async {
+        // No tablet or desktop builders — desktop width should still
+        // render the phone build.
+        await tester.pumpWidget(
+          _host(
+            UiAdaptive.mode(phone: (_) => const Text('only-phone')),
+            size: const Size(1200, 800),
           ),
-          size: const Size(1200, 800),
-        ),
-      );
-      expect(find.text('only-phone'), findsOneWidget);
-    });
+        );
+        expect(find.text('only-phone'), findsOneWidget);
+      },
+    );
 
-    testWidgets('variant: feeds the correct value into the builder',
-        (tester) async {
+    testWidgets('variant: feeds the correct value into the builder', (
+      tester,
+    ) async {
       Widget shell(Size size) => _host(
-            UiAdaptive.variant<double>(
-              phone: 8,
-              tablet: 16,
-              desktop: 32,
-              builder: (_, v) => Text('p:$v'),
-            ),
-            size: size,
-          );
+        UiAdaptive.variant<double>(
+          phone: 8,
+          tablet: 16,
+          desktop: 32,
+          builder: (_, v) => Text('p:$v'),
+        ),
+        size: size,
+      );
       await tester.pumpWidget(shell(const Size(400, 800)));
       expect(find.text('p:8.0'), findsOneWidget);
       await tester.pumpWidget(shell(const Size(720, 800)));
@@ -110,8 +107,7 @@ void main() {
       expect(find.text('p:32.0'), findsOneWidget);
     });
 
-    testWidgets(
-        'visible: drops the child from the tree when false for the '
+    testWidgets('visible: drops the child from the tree when false for the '
         'current form factor', (tester) async {
       await tester.pumpWidget(
         _host(

@@ -182,10 +182,8 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
   }
 
   void _open() {
-    final overlay = UiLayeredOverlay.maybeOf(
-          context,
-          UiOverlayLayer.floating,
-        ) ??
+    final overlay =
+        UiLayeredOverlay.maybeOf(context, UiOverlayLayer.floating) ??
         Overlay.maybeOf(context);
     if (overlay == null) return;
     final items = _flatItems();
@@ -223,23 +221,26 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
     final itemGap = tokens.spacing.x1;
     final bodyHeight =
         textScaler.scale(bodyStyle.fontSize ?? 14) * (bodyStyle.height ?? 1) +
-            tokens.spacing.x3;
-    final captionHeight = textScaler.scale(captionStyle.fontSize ?? 12) *
+        tokens.spacing.x3;
+    final captionHeight =
+        textScaler.scale(captionStyle.fontSize ?? 12) *
             (captionStyle.height ?? 1) +
         tokens.spacing.x3;
 
     double nodeHeight(UiMenuNode node) => switch (node) {
-          UiMenuItem() || UiMenuSubmenu() => bodyHeight,
-          UiMenuSeparator() => 1 + tokens.spacing.x2,
-          UiMenuGroup() => (node.label == null ? 0 : captionHeight) +
-              node.items.length * bodyHeight +
-              math.max(0, node.items.length - 1) * itemGap,
-        };
+      UiMenuItem() || UiMenuSubmenu() => bodyHeight,
+      UiMenuSeparator() => 1 + tokens.spacing.x2,
+      UiMenuGroup() =>
+        (node.label == null ? 0 : captionHeight) +
+            node.items.length * bodyHeight +
+            math.max(0, node.items.length - 1) * itemGap,
+    };
 
     // Match shadcn's p-1 content inset. Unlike the previous fixed 360px
     // ceiling, the desired height accounts for every row inside groups and
     // lets a menu use all of the safe viewport when it is available.
-    final estimated = widget.items.fold<double>(
+    final estimated =
+        widget.items.fold<double>(
           surfaceInset * 2,
           (height, node) => height + nodeHeight(node),
         ) +
@@ -309,23 +310,24 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
     }
 
     double nodeWidth(UiMenuNode node) => switch (node) {
-          UiMenuItem() => itemWidth(node),
-          UiMenuSubmenu() => rowPadding +
-              textWidth(node.label, bodyStyle) +
-              (node.leading == null ? 0 : 16 + tokens.spacing.x2) +
-              tokens.spacing.x3 +
-              16,
-          UiMenuSeparator() => 0,
-          UiMenuGroup() => math.max(
-              node.label == null
-                  ? 0
-                  : rowPadding + textWidth(node.label!, captionStyle),
-              node.items.fold<double>(
-                0,
-                (width, item) => math.max(width, itemWidth(item)),
-              ),
-            ),
-        };
+      UiMenuItem() => itemWidth(node),
+      UiMenuSubmenu() =>
+        rowPadding +
+            textWidth(node.label, bodyStyle) +
+            (node.leading == null ? 0 : 16 + tokens.spacing.x2) +
+            tokens.spacing.x3 +
+            16,
+      UiMenuSeparator() => 0,
+      UiMenuGroup() => math.max(
+        node.label == null
+            ? 0
+            : rowPadding + textWidth(node.label!, captionStyle),
+        node.items.fold<double>(
+          0,
+          (width, item) => math.max(width, itemWidth(item)),
+        ),
+      ),
+    };
 
     final contentWidth = widget.items.fold<double>(
       0,
@@ -552,23 +554,25 @@ class _UiDropdownMenuState extends State<UiDropdownMenu> {
                       maxWidth: _menuWidth,
                       maxHeight: _menuMaxHeight,
                     ),
-                    child: Builder(builder: (context) {
-                      final children = <Widget>[];
-                      for (final node in widget.items) {
-                        if (children.isNotEmpty) {
-                          children.add(SizedBox(height: tokens.spacing.x1));
+                    child: Builder(
+                      builder: (context) {
+                        final children = <Widget>[];
+                        for (final node in widget.items) {
+                          if (children.isNotEmpty) {
+                            children.add(SizedBox(height: tokens.spacing.x1));
+                          }
+                          children.add(buildNode(node));
                         }
-                        children.add(buildNode(node));
-                      }
-                      final content = Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: children,
-                      );
-                      return _contentFits
-                          ? content
-                          : SingleChildScrollView(child: content);
-                    }),
+                        final content = Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: children,
+                        );
+                        return _contentFits
+                            ? content
+                            : SingleChildScrollView(child: content);
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -686,11 +690,7 @@ class _MenuRow extends StatelessWidget {
                   ),
                 ),
                 if (item.loading)
-                  UiSpinner(
-                    size: 14,
-                    strokeWidth: 2.8,
-                    color: fg,
-                  )
+                  UiSpinner(size: 14, strokeWidth: 2.8, color: fg)
                 else if (item.shortcut != null) ...[
                   SizedBox(width: tokens.spacing.x3),
                   UiText(
@@ -733,8 +733,9 @@ class _SubmenuRowState extends State<_SubmenuRow> {
     final nestedItems = widget.submenu.items.whereType<UiMenuItem>().toList();
 
     return UiPressable(
-      onPressed:
-          widget.submenu.enabled ? () => setState(() => _open = !_open) : null,
+      onPressed: widget.submenu.enabled
+          ? () => setState(() => _open = !_open)
+          : null,
       minTapSize: 0,
       builder: (context, state, _) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -802,10 +803,7 @@ class _SubmenuRowState extends State<_SubmenuRow> {
 }
 
 class _ScaleFade extends StatefulWidget {
-  const _ScaleFade({
-    required this.child,
-    this.origin = Alignment.topLeft,
-  });
+  const _ScaleFade({required this.child, this.origin = Alignment.topLeft});
   final Widget child;
 
   /// Anchor point for the scale transform. When the menu opens below

@@ -36,7 +36,7 @@ import 'ui_motion_spec.dart';
 /// ```
 class UiContourPresenceController<T> extends ChangeNotifier {
   UiContourPresenceController({required TickerProvider vsync})
-      : controller = UiContourController(vsync: vsync) {
+    : controller = UiContourController(vsync: vsync) {
     controller.addListener(_handleControllerChange);
   }
 

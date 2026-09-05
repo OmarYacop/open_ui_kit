@@ -50,9 +50,7 @@ void main() {
     expect(spacingBuilds, 2);
 
     tokens.value = tokens.value.copyWith(
-      colors: tokens.value.colors.copyWith(
-        primary: const Color(0xFF123456),
-      ),
+      colors: tokens.value.colors.copyWith(primary: const Color(0xFF123456)),
     );
     await tester.pump();
 

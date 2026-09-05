@@ -88,19 +88,13 @@ class _UiLayeredOverlayScope extends InheritedWidget {
 
 /// Access to the nearest page-level semantic overlay layers.
 abstract final class UiLayeredOverlay {
-  static OverlayState? maybeOf(
-    BuildContext context,
-    UiOverlayLayer layer,
-  ) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<_UiLayeredOverlayScope>();
+  static OverlayState? maybeOf(BuildContext context, UiOverlayLayer layer) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_UiLayeredOverlayScope>();
     return scope?.keys[layer]?.currentState;
   }
 
-  static OverlayState of(
-    BuildContext context,
-    UiOverlayLayer layer,
-  ) {
+  static OverlayState of(BuildContext context, UiOverlayLayer layer) {
     final overlay = maybeOf(context, layer);
     assert(overlay != null, 'No UiLayeredOverlayHost found in context.');
     return overlay!;

@@ -208,8 +208,8 @@ class UiButton extends StatelessWidget {
 
     final decoration = intent == UiIntent.link
         ? (state.hovered || state.pressed
-            ? TextDecoration.underline
-            : TextDecoration.none)
+              ? TextDecoration.underline
+              : TextDecoration.none)
         : null;
 
     final children = <Widget>[

@@ -53,9 +53,9 @@ class UiInput extends StatefulWidget {
     this.minHeight,
     this.textDirection,
   }) : assert(
-          controller == null || initialValue == null,
-          'Provide controller OR initialValue, not both.',
-        );
+         controller == null || initialValue == null,
+         'Provide controller OR initialValue, not both.',
+       );
 
   final TextEditingController? controller;
   final String? initialValue;
@@ -123,8 +123,9 @@ class UiInputState extends State<UiInput>
 
   TextEditingController get _controller =>
       widget.controller ??
-      (_ownController ??=
-          TextEditingController(text: widget.initialValue ?? ''));
+      (_ownController ??= TextEditingController(
+        text: widget.initialValue ?? '',
+      ));
 
   FocusNode get _focusNode =>
       widget.focusNode ?? (_ownFocusNode ??= FocusNode());
@@ -136,8 +137,9 @@ class UiInputState extends State<UiInput>
   @override
   void initState() {
     super.initState();
-    _selectionGestureBuilder =
-        TextSelectionGestureDetectorBuilder(delegate: this);
+    _selectionGestureBuilder = TextSelectionGestureDetectorBuilder(
+      delegate: this,
+    );
     _focusNode.addListener(_handleFocusChange);
     _controller.addListener(_handleTextChange);
     _lastEmpty = _controller.text.isEmpty;
@@ -266,8 +268,8 @@ class UiInputState extends State<UiInput>
     final borderColor = hasError
         ? c.destructive
         : ringActive
-            ? c.ring
-            : c.input;
+        ? c.ring
+        : c.input;
     final borderRadius = widget.borderRadius ?? tokens.radius.mdAll;
     final focusTransition = UiMotionSpec.resolveCustom(
       context,
@@ -297,7 +299,8 @@ class UiInputState extends State<UiInput>
       cursorColor: c.primary,
       backgroundCursorColor: c.input,
       selectionColor: c.primary.withValues(alpha: 0.18),
-      keyboardType: widget.keyboardType ??
+      keyboardType:
+          widget.keyboardType ??
           (widget.maxLines == 1 ? TextInputType.text : TextInputType.multiline),
       textInputAction: widget.textInputAction,
       obscureText: widget.obscureText,
@@ -321,10 +324,8 @@ class UiInputState extends State<UiInput>
       onSelectionChanged: _handleSelectionChanged,
       contextMenuBuilder: (_, editableTextState) =>
           SystemContextMenu.isSupportedByField(editableTextState)
-              ? SystemContextMenu.editableText(
-                  editableTextState: editableTextState,
-                )
-              : _UiTextSelectionMenu(editableTextState: editableTextState),
+          ? SystemContextMenu.editableText(editableTextState: editableTextState)
+          : _UiTextSelectionMenu(editableTextState: editableTextState),
       // Gesture handling is owned by the surrounding
       // TextSelectionGestureDetectorBuilder. Leaving this false lets
       // RenderEditable consume its basic gestures too, which prevents the
@@ -334,8 +335,9 @@ class UiInputState extends State<UiInput>
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment:
-          embedded ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment: embedded
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.label != null) ...[
@@ -368,10 +370,7 @@ class UiInputState extends State<UiInput>
                 color: embedded ? const Color(0x00000000) : bg,
                 border: embedded
                     ? null
-                    : Border.all(
-                        color: borderColor,
-                        width: 1,
-                      ),
+                    : Border.all(color: borderColor, width: 1),
                 borderRadius: borderRadius,
               ),
               padding: padding,
@@ -391,7 +390,8 @@ class UiInputState extends State<UiInput>
                         if (_controller.text.isEmpty && widget.hint != null)
                           Positioned.fill(
                             child: Directionality(
-                              textDirection: widget.textDirection ??
+                              textDirection:
+                                  widget.textDirection ??
                                   Directionality.of(context),
                               child: IgnorePointer(
                                 child: Align(
@@ -472,7 +472,8 @@ class _UiTextSelectionMenu extends StatelessWidget {
     return CustomSingleChildLayout(
       delegate: TextSelectionToolbarLayoutDelegate(
         anchorAbove: editableTextState.contextMenuAnchors.primaryAnchor,
-        anchorBelow: editableTextState.contextMenuAnchors.secondaryAnchor ??
+        anchorBelow:
+            editableTextState.contextMenuAnchors.secondaryAnchor ??
             editableTextState.contextMenuAnchors.primaryAnchor,
         fitsAbove: true,
       ),

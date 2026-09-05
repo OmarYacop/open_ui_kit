@@ -22,9 +22,7 @@ Widget _reducedMotionHost(Widget child) {
 Widget _brightnessHost(Widget child, Brightness brightness) {
   return MaterialApp(
     builder: (context, appChild) => MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(platformBrightness: brightness),
+      data: MediaQuery.of(context).copyWith(platformBrightness: brightness),
       child: appChild ?? const SizedBox.shrink(),
     ),
     home: UiTheme(
@@ -48,9 +46,7 @@ void main() {
 
     testWidgets('paints locally at the requested size', (tester) async {
       await tester.pumpWidget(
-        _host(
-          const UiWavatar(seed: 'ada@example.com', size: 72),
-        ),
+        _host(const UiWavatar(seed: 'ada@example.com', size: 72)),
       );
 
       final avatarPaint = find.descendant(
@@ -62,8 +58,9 @@ void main() {
       expect(tester.getSize(avatarPaint), const Size.square(72));
     });
 
-    testWidgets('supports circular and rounded rectangle silhouettes',
-        (tester) async {
+    testWidgets('supports circular and rounded rectangle silhouettes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const Row(
@@ -84,17 +81,15 @@ void main() {
       expect(find.byType(ClipRRect), findsOneWidget);
     });
 
-    testWidgets('optional characteristics direct the generated recipe',
-        (tester) async {
+    testWidgets('optional characteristics direct the generated recipe', (
+      tester,
+    ) async {
       Future<CustomPainter> pumpAvatar(
         UiWavatarCharacteristics characteristics,
       ) async {
         await tester.pumpWidget(
           _host(
-            UiWavatar(
-              seed: 'same-contact',
-              characteristics: characteristics,
-            ),
+            UiWavatar(seed: 'same-contact', characteristics: characteristics),
           ),
         );
         final paint = tester.widget<CustomPaint>(
@@ -129,12 +124,7 @@ void main() {
         List<UiWavatarParticipant> participants,
       ) async {
         await tester.pumpWidget(
-          _host(
-            UiWavatar(
-              seed: 'same-team',
-              participants: participants,
-            ),
-          ),
+          _host(UiWavatar(seed: 'same-team', participants: participants)),
         );
         return tester
             .widget<CustomPaint>(
@@ -184,97 +174,83 @@ void main() {
             .painter!;
       }
 
-      final original = await painterFor(
-        const [
-          UiWavatarParticipant(seed: 'ada'),
-          UiWavatarParticipant(seed: 'assistant'),
-        ],
-      );
-      final changedSeed = await painterFor(
-        const [
-          UiWavatarParticipant(seed: 'grace'),
-          UiWavatarParticipant(seed: 'assistant'),
-        ],
-      );
-      final changedCharacteristics = await painterFor(
-        const [
-          UiWavatarParticipant(
-            seed: 'grace',
-            characteristics: UiWavatarCharacteristics(
-              ageGroup: UiWavatarAgeGroup.child,
-            ),
+      final original = await painterFor(const [
+        UiWavatarParticipant(seed: 'ada'),
+        UiWavatarParticipant(seed: 'assistant'),
+      ]);
+      final changedSeed = await painterFor(const [
+        UiWavatarParticipant(seed: 'grace'),
+        UiWavatarParticipant(seed: 'assistant'),
+      ]);
+      final changedCharacteristics = await painterFor(const [
+        UiWavatarParticipant(
+          seed: 'grace',
+          characteristics: UiWavatarCharacteristics(
+            ageGroup: UiWavatarAgeGroup.child,
           ),
-          UiWavatarParticipant(seed: 'assistant'),
-        ],
-      );
+        ),
+        UiWavatarParticipant(seed: 'assistant'),
+      ]);
 
       expect(changedSeed.shouldRepaint(original), isTrue);
-      expect(
-        changedCharacteristics.shouldRepaint(changedSeed),
-        isTrue,
-      );
+      expect(changedCharacteristics.shouldRepaint(changedSeed), isTrue);
     });
 
     testWidgets(
-        'adaptive colors respond to brightness while fixed colors do not',
-        (tester) async {
-      Future<CustomPainter> painterFor(
-        Brightness brightness,
-        UiWavatarThemeMode themeMode,
-      ) async {
-        await tester.pumpWidget(
-          _brightnessHost(
-            UiWavatar(seed: 'theme-contact', themeMode: themeMode),
-            brightness,
-          ),
+      'adaptive colors respond to brightness while fixed colors do not',
+      (tester) async {
+        Future<CustomPainter> painterFor(
+          Brightness brightness,
+          UiWavatarThemeMode themeMode,
+        ) async {
+          await tester.pumpWidget(
+            _brightnessHost(
+              UiWavatar(seed: 'theme-contact', themeMode: themeMode),
+              brightness,
+            ),
+          );
+          return tester
+              .widget<CustomPaint>(
+                find.descendant(
+                  of: find.byType(UiWavatar),
+                  matching: find.byType(CustomPaint),
+                ),
+              )
+              .painter!;
+        }
+
+        final adaptiveLight = await painterFor(
+          Brightness.light,
+          UiWavatarThemeMode.adaptive,
         );
-        return tester
-            .widget<CustomPaint>(
-              find.descendant(
-                of: find.byType(UiWavatar),
-                matching: find.byType(CustomPaint),
-              ),
-            )
-            .painter!;
-      }
+        final adaptiveDark = await painterFor(
+          Brightness.dark,
+          UiWavatarThemeMode.adaptive,
+        );
+        expect(adaptiveDark.shouldRepaint(adaptiveLight), isTrue);
 
-      final adaptiveLight = await painterFor(
-        Brightness.light,
-        UiWavatarThemeMode.adaptive,
-      );
-      final adaptiveDark = await painterFor(
-        Brightness.dark,
-        UiWavatarThemeMode.adaptive,
-      );
-      expect(adaptiveDark.shouldRepaint(adaptiveLight), isTrue);
-
-      final fixedLight = await painterFor(
-        Brightness.light,
-        UiWavatarThemeMode.fixed,
-      );
-      final fixedDark = await painterFor(
-        Brightness.dark,
-        UiWavatarThemeMode.fixed,
-      );
-      expect(fixedDark.shouldRepaint(fixedLight), isFalse);
-    });
+        final fixedLight = await painterFor(
+          Brightness.light,
+          UiWavatarThemeMode.fixed,
+        );
+        final fixedDark = await painterFor(
+          Brightness.dark,
+          UiWavatarThemeMode.fixed,
+        );
+        expect(fixedDark.shouldRepaint(fixedLight), isFalse);
+      },
+    );
 
     testWidgets('exposes an image semantic label', (tester) async {
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
         _host(
-          const UiWavatar(
-            seed: 'person-7',
-            semanticLabel: 'Profile avatar',
-          ),
+          const UiWavatar(seed: 'person-7', semanticLabel: 'Profile avatar'),
         ),
       );
 
-      expect(
-        find.bySemanticsLabel('Profile avatar'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Profile avatar'), findsOneWidget);
       semantics.dispose();
     });
   });
@@ -283,31 +259,22 @@ void main() {
     testWidgets('renders a generated avatar from a display name', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        _host(
-          const UiAvatar(name: 'Ada Lovelace'),
-        ),
-      );
+      await tester.pumpWidget(_host(const UiAvatar(name: 'Ada Lovelace')));
 
       expect(find.byType(UiWavatar), findsOneWidget);
     });
 
-    testWidgets('renders a generated fallback when no identity is provided',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          const UiAvatar(),
-        ),
-      );
+    testWidgets('renders a generated fallback when no identity is provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(const UiAvatar()));
 
       expect(find.byType(UiWavatar), findsOneWidget);
     });
 
     testWidgets('can render without a border', (tester) async {
       await tester.pumpWidget(
-        _host(
-          const UiAvatar(name: 'Ada Lovelace', showBorder: false),
-        ),
+        _host(const UiAvatar(name: 'Ada Lovelace', showBorder: false)),
       );
 
       final decorations = tester
@@ -318,14 +285,12 @@ void main() {
       expect(decorations.any((d) => d.border == null), isTrue);
     });
 
-    testWidgets('renders a custom image widget before fallback content',
-        (tester) async {
+    testWidgets('renders a custom image widget before fallback content', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
-          const UiAvatar(
-            name: 'Ada Lovelace',
-            image: Text('custom-avatar'),
-          ),
+          const UiAvatar(name: 'Ada Lovelace', image: Text('custom-avatar')),
         ),
       );
 
@@ -333,8 +298,9 @@ void main() {
       expect(find.text('AL'), findsNothing);
     });
 
-    testWidgets('avatar group renders visible avatars and overflow',
-        (tester) async {
+    testWidgets('avatar group renders visible avatars and overflow', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiAvatarGroup(
@@ -389,8 +355,9 @@ void main() {
       expect(find.byIcon(Icons.insert_drive_file_rounded), findsOneWidget);
     });
 
-    testWidgets('renders custom image widget before fallback content',
-        (tester) async {
+    testWidgets('renders custom image widget before fallback content', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiMediaPreview(
@@ -491,15 +458,12 @@ void main() {
       expect(tapped, 1);
     });
 
-    testWidgets('primary variant uses theme primary background',
-        (tester) async {
+    testWidgets('primary variant uses theme primary background', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
-          UiButton(
-            label: 'Go',
-            intent: UiIntent.primary,
-            onPressed: () {},
-          ),
+          UiButton(label: 'Go', intent: UiIntent.primary, onPressed: () {}),
         ),
       );
       final deco = tester
@@ -507,41 +471,41 @@ void main() {
           .map((d) => d.decoration)
           .whereType<BoxDecoration>()
           .toList();
-      expect(
-        deco.any((d) => d.color == UiColorTokens.light.primary),
-        isTrue,
-      );
+      expect(deco.any((d) => d.color == UiColorTokens.light.primary), isTrue);
     });
 
     testWidgets(
-        'defaultIntent renders as primary (alias, PR-A semantic change)',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiButton(
-            label: 'Default',
-            // Explicit to document the intent — omitting it yields
-            // the same result since defaultIntent is the enum default.
-            intent: UiIntent.defaultIntent,
-            onPressed: () {},
+      'defaultIntent renders as primary (alias, PR-A semantic change)',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            UiButton(
+              label: 'Default',
+              // Explicit to document the intent — omitting it yields
+              // the same result since defaultIntent is the enum default.
+              intent: UiIntent.defaultIntent,
+              onPressed: () {},
+            ),
           ),
-        ),
-      );
-      final deco = tester
-          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-          .map((d) => d.decoration)
-          .whereType<BoxDecoration>()
-          .toList();
-      expect(
-        deco.any((d) => d.color == UiColorTokens.light.primary),
-        isTrue,
-        reason: 'UiIntent.defaultIntent must resolve to the primary palette '
-            'on UiButton.',
-      );
-    });
+        );
+        final deco = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .map((d) => d.decoration)
+            .whereType<BoxDecoration>()
+            .toList();
+        expect(
+          deco.any((d) => d.color == UiColorTokens.light.primary),
+          isTrue,
+          reason:
+              'UiIntent.defaultIntent must resolve to the primary palette '
+              'on UiButton.',
+        );
+      },
+    );
 
-    testWidgets('neutral variant preserves the calm outlined surface look',
-        (tester) async {
+    testWidgets('neutral variant preserves the calm outlined surface look', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiButton(
@@ -557,14 +521,8 @@ void main() {
           .whereType<BoxDecoration>()
           .toList();
       // Neutral must NOT paint primary, and must render a surface fill.
-      expect(
-        deco.any((d) => d.color == UiColorTokens.light.primary),
-        isFalse,
-      );
-      expect(
-        deco.any((d) => d.color == UiColorTokens.light.surface),
-        isTrue,
-      );
+      expect(deco.any((d) => d.color == UiColorTokens.light.primary), isFalse);
+      expect(deco.any((d) => d.color == UiColorTokens.light.surface), isTrue);
       expect(
         deco
             .where((d) => d.color == UiColorTokens.light.surface)
@@ -573,8 +531,9 @@ void main() {
       );
     });
 
-    testWidgets('applies optional button shadow to the button surface',
-        (tester) async {
+    testWidgets('applies optional button shadow to the button surface', (
+      tester,
+    ) async {
       const shadow = [
         BoxShadow(
           color: Color(0x66000000),
@@ -583,13 +542,7 @@ void main() {
         ),
       ];
       await tester.pumpWidget(
-        _host(
-          UiButton(
-            label: 'Shadow',
-            boxShadow: shadow,
-            onPressed: () {},
-          ),
-        ),
+        _host(UiButton(label: 'Shadow', boxShadow: shadow, onPressed: () {})),
       );
 
       final deco = tester
@@ -601,8 +554,9 @@ void main() {
       expect(deco.any((d) => d.boxShadow == shadow), isTrue);
     });
 
-    testWidgets('secondary pressed state keeps a single outlined surface',
-        (tester) async {
+    testWidgets('secondary pressed state keeps a single outlined surface', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiButton(
@@ -632,20 +586,15 @@ void main() {
           .toList();
 
       expect(matchingSurfaces.length, 1);
-      expect(
-        matchingSurfaces.single.border,
-        isNotNull,
-      );
-      expect(
-        matchingSurfaces.single.boxShadow,
-        isNull,
-      );
+      expect(matchingSurfaces.single.border, isNotNull);
+      expect(matchingSurfaces.single.boxShadow, isNull);
 
       await gesture.up();
     });
 
-    testWidgets('showBorder=false suppresses secondary button outline',
-        (tester) async {
+    testWidgets('showBorder=false suppresses secondary button outline', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiButton(
@@ -663,44 +612,30 @@ void main() {
           .whereType<BoxDecoration>()
           .toList();
 
-      expect(
-        deco.any((d) => d.color == UiColorTokens.light.secondary),
-        isTrue,
-      );
+      expect(deco.any((d) => d.color == UiColorTokens.light.secondary), isTrue);
       expect(deco.any((d) => d.border != null), isFalse);
     });
 
     testWidgets('disabled button rejects taps', (tester) async {
       var tapped = 0;
-      await tester.pumpWidget(
-        _host(
-          UiButton(
-            label: 'Off',
-            onPressed: null,
-          ),
-        ),
-      );
+      await tester.pumpWidget(_host(UiButton(label: 'Off', onPressed: null)));
       await tester.tap(find.text('Off'));
       expect(tapped, 0);
     });
 
-    testWidgets('loading state shows a spinner in place of label',
-        (tester) async {
+    testWidgets('loading state shows a spinner in place of label', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(
-          UiButton(
-            label: 'Save',
-            loading: true,
-            onPressed: () {},
-          ),
-        ),
+        _host(UiButton(label: 'Save', loading: true, onPressed: () {})),
       );
       expect(find.text('Save'), findsNothing);
       expect(find.byType(UiSpinner), findsOneWidget);
     });
 
-    testWidgets('lg is visibly larger than sm along the size scale',
-        (tester) async {
+    testWidgets('lg is visibly larger than sm along the size scale', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           Column(
@@ -720,8 +655,9 @@ void main() {
       expect(lgRect.height, greaterThan(smRect.height));
     });
 
-    testWidgets('ghost button shows pressed feedback via backdrop shift',
-        (tester) async {
+    testWidgets('ghost button shows pressed feedback via backdrop shift', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiButton(label: 'Ghost', intent: UiIntent.ghost, onPressed: () {}),
@@ -746,8 +682,9 @@ void main() {
       // Idle ghost = fully transparent background.
       expect(ghostDecoration()?.color?.a ?? 1, 0);
 
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Ghost')));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Ghost')),
+      );
       await tester.pump(const Duration(milliseconds: 240));
       // Once pressed the ghost paints a muted surface backdrop so the
       // tap is visible even though the idle background is transparent.
@@ -757,8 +694,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 240));
     });
 
-    testWidgets('keyboard enter activates button through shortcuts/actions',
-        (tester) async {
+    testWidgets('keyboard enter activates button through shortcuts/actions', (
+      tester,
+    ) async {
       var tapped = 0;
       final node = FocusNode();
       addTearDown(node.dispose);
@@ -856,10 +794,11 @@ void main() {
       );
 
       BoxDecoration? iconDecoration() {
-        for (final decoration in tester
-            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-            .map((d) => d.decoration)
-            .whereType<BoxDecoration>()) {
+        for (final decoration
+            in tester
+                .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+                .map((d) => d.decoration)
+                .whereType<BoxDecoration>()) {
           if (decoration.borderRadius == UiRadiusTokens.standard.mdAll) {
             return decoration;
           }
@@ -878,60 +817,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 240));
     });
 
-    testWidgets('pressing a small icon button grows the surface, not the icon',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiIconButton(
-            icon: const Icon(Icons.close_rounded),
-            semanticsLabel: 'Close',
-            size: UiSize.md, // visual size 36, below the grow threshold
-            onPressed: _noop,
-          ),
-        ),
-      );
-
-      final iconSizeBefore = tester.getSize(find.byIcon(Icons.close_rounded));
-
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byIcon(Icons.close_rounded)),
-      );
-      await tester.pump();
-
-      final transforms = tester
-          .widgetList<Transform>(find.byType(Transform))
-          .map((t) => t.transform.getMaxScaleOnAxis())
-          .toList();
-      // The outer (surface) transform grows past 1; content is
-      // counter-scaled back down, so the icon's own rendered size is
-      // unchanged even though a Transform > 1 exists somewhere above it.
-      expect(transforms.any((s) => s > 1.01), isTrue);
-      expect(
-        tester.getSize(find.byIcon(Icons.close_rounded)),
-        iconSizeBefore,
-      );
-
-      await gesture.up();
-      await tester.pump();
-    });
-
     testWidgets(
-        'every UiIconButton size sits at or below the grow threshold, so '
-        'all of them grow on press rather than shrink', (tester) async {
-      // 28 / 36 / 44 — lg lands exactly on kUiPressGrowThreshold, which is
-      // the point: UiIconButton is the "small circular button" case the
-      // threshold exists for, at every size it offers.
-      for (final size in UiSize.values) {
+      'pressing a small icon button grows the surface, not the icon',
+      (tester) async {
         await tester.pumpWidget(
           _host(
             UiIconButton(
               icon: const Icon(Icons.close_rounded),
               semanticsLabel: 'Close',
-              size: size,
+              size: UiSize.md, // visual size 36, below the grow threshold
               onPressed: _noop,
             ),
           ),
         );
+
+        final iconSizeBefore = tester.getSize(find.byIcon(Icons.close_rounded));
 
         final gesture = await tester.startGesture(
           tester.getCenter(find.byIcon(Icons.close_rounded)),
@@ -942,16 +842,59 @@ void main() {
             .widgetList<Transform>(find.byType(Transform))
             .map((t) => t.transform.getMaxScaleOnAxis())
             .toList();
+        // The outer (surface) transform grows past 1; content is
+        // counter-scaled back down, so the icon's own rendered size is
+        // unchanged even though a Transform > 1 exists somewhere above it.
+        expect(transforms.any((s) => s > 1.01), isTrue);
         expect(
-          transforms.any((s) => s > 1.01),
-          isTrue,
-          reason: '$size should grow its surface on press',
+          tester.getSize(find.byIcon(Icons.close_rounded)),
+          iconSizeBefore,
         );
 
         await gesture.up();
         await tester.pump();
-      }
-    });
+      },
+    );
+
+    testWidgets(
+      'every UiIconButton size sits at or below the grow threshold, so '
+      'all of them grow on press rather than shrink',
+      (tester) async {
+        // 28 / 36 / 44 — lg lands exactly on kUiPressGrowThreshold, which is
+        // the point: UiIconButton is the "small circular button" case the
+        // threshold exists for, at every size it offers.
+        for (final size in UiSize.values) {
+          await tester.pumpWidget(
+            _host(
+              UiIconButton(
+                icon: const Icon(Icons.close_rounded),
+                semanticsLabel: 'Close',
+                size: size,
+                onPressed: _noop,
+              ),
+            ),
+          );
+
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.byIcon(Icons.close_rounded)),
+          );
+          await tester.pump();
+
+          final transforms = tester
+              .widgetList<Transform>(find.byType(Transform))
+              .map((t) => t.transform.getMaxScaleOnAxis())
+              .toList();
+          expect(
+            transforms.any((s) => s > 1.01),
+            isTrue,
+            reason: '$size should grow its surface on press',
+          );
+
+          await gesture.up();
+          await tester.pump();
+        }
+      },
+    );
   });
 
   group('UiInput', () {
@@ -992,12 +935,7 @@ void main() {
 
     testWidgets('disabled input uses muted surface', (tester) async {
       await tester.pumpWidget(
-        _host(
-          const UiInput(
-            label: 'Name',
-            enabled: false,
-          ),
-        ),
+        _host(const UiInput(label: 'Name', enabled: false)),
       );
       final decorations = tester
           .widgetList<DecoratedBox>(find.byType(DecoratedBox))
@@ -1030,9 +968,7 @@ void main() {
   group('UiFilterChip', () {
     testWidgets('renders selected state with primary colors', (tester) async {
       await tester.pumpWidget(
-        _host(
-          const UiFilterChip(label: 'Completed', selected: true),
-        ),
+        _host(const UiFilterChip(label: 'Completed', selected: true)),
       );
 
       final decorations = tester
@@ -1106,9 +1042,7 @@ void main() {
     testWidgets('custom color renders a tinted status badge', (tester) async {
       const status = Color(0xFF118844);
       await tester.pumpWidget(
-        _host(
-          const UiBadge(label: 'Active', color: status),
-        ),
+        _host(const UiBadge(label: 'Active', color: status)),
       );
 
       final decorations = tester
@@ -1127,8 +1061,9 @@ void main() {
       );
     });
 
-    testWidgets('explicit background color overrides badge recipes',
-        (tester) async {
+    testWidgets('explicit background color overrides badge recipes', (
+      tester,
+    ) async {
       const bg = Color(0x33FFFFFF);
       await tester.pumpWidget(
         _host(
@@ -1152,9 +1087,7 @@ void main() {
       const radius = BorderRadius.all(Radius.circular(6));
 
       await tester.pumpWidget(
-        _host(
-          const UiBadge(label: 'File', borderRadius: radius),
-        ),
+        _host(const UiBadge(label: 'File', borderRadius: radius)),
       );
 
       final decorations = tester
@@ -1218,86 +1151,90 @@ void main() {
     });
 
     testWidgets(
-        'drag leaving the pill zone cancels and does not change selection',
-        (tester) async {
-      var selected = 0;
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 300,
-            child: StatefulBuilder(
-              builder: (ctx, setState) => UiTabs(
-                tabs: const [
-                  UiTab(label: 'One'),
-                  UiTab(label: 'Two'),
-                  UiTab(label: 'Three'),
-                ],
-                value: selected,
-                onChanged: (i) => setState(() => selected = i),
+      'drag leaving the pill zone cancels and does not change selection',
+      (tester) async {
+        var selected = 0;
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 300,
+              child: StatefulBuilder(
+                builder: (ctx, setState) => UiTabs(
+                  tabs: const [
+                    UiTab(label: 'One'),
+                    UiTab(label: 'Two'),
+                    UiTab(label: 'Three'),
+                  ],
+                  value: selected,
+                  onChanged: (i) => setState(() => selected = i),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final start = tester.getCenter(find.text('One'));
-      final gesture = await tester.startGesture(start);
-      // Jump far past the pill — pointer leaves the proposed pill zone and
-      // the drag must cancel. Further moves must be ignored.
-      await gesture.moveBy(const Offset(600, 0));
-      await tester.pump();
-      await gesture.moveBy(const Offset(-400, 0));
-      await tester.pump();
-      await gesture.up();
-      await tester.pumpAndSettle();
+        final start = tester.getCenter(find.text('One'));
+        final gesture = await tester.startGesture(start);
+        // Jump far past the pill — pointer leaves the proposed pill zone and
+        // the drag must cancel. Further moves must be ignored.
+        await gesture.moveBy(const Offset(600, 0));
+        await tester.pump();
+        await gesture.moveBy(const Offset(-400, 0));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      expect(selected, 0);
-    });
+        expect(selected, 0);
+      },
+    );
 
     testWidgets(
-        'drag leaving the pill and re-entering tab bar away from pill does '
-        'not change selection', (tester) async {
-      var selected = 0;
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 300,
-            child: StatefulBuilder(
-              builder: (ctx, setState) => UiTabs(
-                tabs: const [
-                  UiTab(label: 'One'),
-                  UiTab(label: 'Two'),
-                  UiTab(label: 'Three'),
-                ],
-                value: selected,
-                onChanged: (i) => setState(() => selected = i),
+      'drag leaving the pill and re-entering tab bar away from pill does '
+      'not change selection',
+      (tester) async {
+        var selected = 0;
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 300,
+              child: StatefulBuilder(
+                builder: (ctx, setState) => UiTabs(
+                  tabs: const [
+                    UiTab(label: 'One'),
+                    UiTab(label: 'Two'),
+                    UiTab(label: 'Three'),
+                  ],
+                  value: selected,
+                  onChanged: (i) => setState(() => selected = i),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final start = tester.getCenter(find.text('One'));
-      final gesture = await tester.startGesture(start);
-      // Escape horizontally far past the pill — tracking pauses.
-      await gesture.moveBy(const Offset(500, 0));
-      await tester.pump();
-      // Return only partway — pointer is still clear of the frozen pill so
-      // tracking stays paused. Vertical drift must not affect the state.
-      await gesture.moveBy(const Offset(-200, 0));
-      await tester.pump();
-      await gesture.moveBy(const Offset(0, -60));
-      await tester.pump();
-      await gesture.moveBy(const Offset(0, 60));
-      await tester.pump();
-      await gesture.up();
-      await tester.pumpAndSettle();
+        final start = tester.getCenter(find.text('One'));
+        final gesture = await tester.startGesture(start);
+        // Escape horizontally far past the pill — tracking pauses.
+        await gesture.moveBy(const Offset(500, 0));
+        await tester.pump();
+        // Return only partway — pointer is still clear of the frozen pill so
+        // tracking stays paused. Vertical drift must not affect the state.
+        await gesture.moveBy(const Offset(-200, 0));
+        await tester.pump();
+        await gesture.moveBy(const Offset(0, -60));
+        await tester.pump();
+        await gesture.moveBy(const Offset(0, 60));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      expect(selected, 0);
-    });
+        expect(selected, 0);
+      },
+    );
 
-    testWidgets('in-pill drag that tracks the pill still changes selection',
-        (tester) async {
+    testWidgets('in-pill drag that tracks the pill still changes selection', (
+      tester,
+    ) async {
       var selected = 0;
       await tester.pumpWidget(
         _host(
@@ -1331,63 +1268,67 @@ void main() {
     });
 
     testWidgets(
-        'horizontal escape freezes pill and confirms nearest on release',
-        (tester) async {
-      var selected = 0;
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 300,
-            child: StatefulBuilder(
-              builder: (ctx, setState) => UiTabs(
-                tabs: const [
-                  UiTab(label: 'One'),
-                  UiTab(label: 'Two'),
-                  UiTab(label: 'Three'),
-                ],
-                value: selected,
-                onChanged: (i) => setState(() => selected = i),
+      'horizontal escape freezes pill and confirms nearest on release',
+      (tester) async {
+        var selected = 0;
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 300,
+              child: StatefulBuilder(
+                builder: (ctx, setState) => UiTabs(
+                  tabs: const [
+                    UiTab(label: 'One'),
+                    UiTab(label: 'Two'),
+                    UiTab(label: 'Three'),
+                  ],
+                  value: selected,
+                  onChanged: (i) => setState(() => selected = i),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      double indicatorLeft() => (tester
-                  .widget<AnimatedPositioned>(
-                      find.byType(AnimatedPositioned).first)
-                  .left ??
-              0)
-          .toDouble();
+        double indicatorLeft() =>
+            (tester
+                        .widget<AnimatedPositioned>(
+                          find.byType(AnimatedPositioned).first,
+                        )
+                        .left ??
+                    0)
+                .toDouble();
 
-      final start = tester.getCenter(find.text('One'));
-      final gesture = await tester.startGesture(start);
-      for (var i = 0; i < 10; i++) {
-        await gesture.moveBy(const Offset(10, 0));
+        final start = tester.getCenter(find.text('One'));
+        final gesture = await tester.startGesture(start);
+        for (var i = 0; i < 10; i++) {
+          await gesture.moveBy(const Offset(10, 0));
+          await tester.pump();
+        }
+        final trackedLeft = indicatorLeft();
+        expect(trackedLeft, greaterThan(0));
+
+        // Jump far past the pill — pointer escapes horizontally, pill freezes.
+        await gesture.moveBy(const Offset(500, 0));
         await tester.pump();
-      }
-      final trackedLeft = indicatorLeft();
-      expect(trackedLeft, greaterThan(0));
+        final frozenLeft = indicatorLeft();
+        expect(frozenLeft, closeTo(trackedLeft, 0.5));
 
-      // Jump far past the pill — pointer escapes horizontally, pill freezes.
-      await gesture.moveBy(const Offset(500, 0));
-      await tester.pump();
-      final frozenLeft = indicatorLeft();
-      expect(frozenLeft, closeTo(trackedLeft, 0.5));
+        // More horizontal motion while paused must not move the pill.
+        await gesture.moveBy(const Offset(100, 0));
+        await tester.pump();
+        expect(indicatorLeft(), closeTo(frozenLeft, 0.5));
 
-      // More horizontal motion while paused must not move the pill.
-      await gesture.moveBy(const Offset(100, 0));
-      await tester.pump();
-      expect(indicatorLeft(), closeTo(frozenLeft, 0.5));
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(selected, greaterThan(0));
+      },
+    );
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-      expect(selected, greaterThan(0));
-    });
-
-    testWidgets('horizontal escape then catch-up resumes tracking',
-        (tester) async {
+    testWidgets('horizontal escape then catch-up resumes tracking', (
+      tester,
+    ) async {
       var selected = 0;
       await tester.pumpWidget(
         _host(
@@ -1430,8 +1371,9 @@ void main() {
       expect(selected, greaterThan(0));
     });
 
-    testWidgets('vertical drift while dragging does not pause tracking',
-        (tester) async {
+    testWidgets('vertical drift while dragging does not pause tracking', (
+      tester,
+    ) async {
       var selected = 0;
       await tester.pumpWidget(
         _host(
@@ -1472,8 +1414,9 @@ void main() {
       expect(selected, greaterThan(0));
     });
 
-    testWidgets('selected slot expands while inactive slots stay compact',
-        (tester) async {
+    testWidgets('selected slot expands while inactive slots stay compact', (
+      tester,
+    ) async {
       var selected = 0;
       await tester.pumpWidget(
         _host(
@@ -1496,9 +1439,9 @@ void main() {
       await tester.pumpAndSettle();
 
       List<double> slotWidths() => [
-            for (var i = 0; i < 3; i++)
-              tester.getSize(find.byKey(Key('ui_tabs_slot_$i'))).width,
-          ];
+        for (var i = 0; i < 3; i++)
+          tester.getSize(find.byKey(Key('ui_tabs_slot_$i'))).width,
+      ];
 
       var widths = slotWidths();
       expect(widths[0], greaterThan(widths[1]));
@@ -1512,8 +1455,9 @@ void main() {
       expect(widths[2], greaterThan(widths[1]));
     });
 
-    testWidgets('selected tab is capped at max width with long labels',
-        (tester) async {
+    testWidgets('selected tab is capped at max width with long labels', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SizedBox(
@@ -1542,8 +1486,9 @@ void main() {
       expect(widths[1], greaterThan(widths[2]));
     });
 
-    testWidgets('inactive tabs keep their natural width when space permits',
-        (tester) async {
+    testWidgets('inactive tabs keep their natural width when space permits', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SizedBox(
@@ -1573,8 +1518,9 @@ void main() {
       expect(widths[2], greaterThan(72.0));
     });
 
-    testWidgets('very narrow host does not overflow and remains tappable',
-        (tester) async {
+    testWidgets('very narrow host does not overflow and remains tappable', (
+      tester,
+    ) async {
       var selected = 0;
       await tester.pumpWidget(
         _host(
@@ -1603,8 +1549,9 @@ void main() {
       expect(selected, 1);
     });
 
-    testWidgets('adaptive layout uses intrinsic width on tablet-sized host',
-        (tester) async {
+    testWidgets('adaptive layout uses intrinsic width on tablet-sized host', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1024, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1626,25 +1573,23 @@ void main() {
         ),
       );
 
-      final intrinsicRect =
-          tester.getRect(find.byKey(const Key('ui_tabs_intrinsic_container')));
+      final intrinsicRect = tester.getRect(
+        find.byKey(const Key('ui_tabs_intrinsic_container')),
+      );
       expect(intrinsicRect.width, lessThan(900));
     });
   });
 
   group('UiCard', () {
     testWidgets('renders child', (tester) async {
-      await tester.pumpWidget(
-        _host(const UiCard(child: Text('content'))),
-      );
+      await tester.pumpWidget(_host(const UiCard(child: Text('content'))));
       expect(find.text('content'), findsOneWidget);
     });
 
-    testWidgets('uses roomier large-surface padding by default',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(const UiCard(child: Text('content'))),
-      );
+    testWidgets('uses roomier large-surface padding by default', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(const UiCard(child: Text('content'))));
 
       final paddings = tester
           .widgetList<Padding>(
@@ -1656,16 +1601,11 @@ void main() {
           .map((padding) => padding.padding)
           .toList();
 
-      expect(
-        paddings,
-        contains(const EdgeInsets.all(24)),
-      );
+      expect(paddings, contains(const EdgeInsets.all(24)));
     });
 
     testWidgets('uses the extra-large theme radius by default', (tester) async {
-      await tester.pumpWidget(
-        _host(const UiCard(child: Text('content'))),
-      );
+      await tester.pumpWidget(_host(const UiCard(child: Text('content'))));
 
       final decorations = tester
           .widgetList<DecoratedBox>(
@@ -1688,14 +1628,12 @@ void main() {
   });
 
   group('UiAlert', () {
-    testWidgets('uses padding that matches the large radius scale',
-        (tester) async {
+    testWidgets('uses padding that matches the large radius scale', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
-          const UiAlert(
-            title: 'Warning',
-            description: 'Proceed carefully.',
-          ),
+          const UiAlert(title: 'Warning', description: 'Proceed carefully.'),
         ),
       );
 
@@ -1717,11 +1655,10 @@ void main() {
   });
 
   group('UiToast', () {
-    testWidgets('uses padding that matches the large radius scale',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(const UiToast(message: 'Saved')),
-      );
+    testWidgets('uses padding that matches the large radius scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(const UiToast(message: 'Saved')));
 
       final paddings = tester
           .widgetList<Padding>(
@@ -1761,13 +1698,16 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(
-          tester.getRect(find.byType(UiToast)).width, lessThanOrEqualTo(260));
+        tester.getRect(find.byType(UiToast)).width,
+        lessThanOrEqualTo(260),
+      );
     });
   });
 
   group('UiSelect', () {
-    testWidgets('dropdown stays inside bottom and right viewport boundaries',
-        (tester) async {
+    testWidgets('dropdown stays inside bottom and right viewport boundaries', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(320, 320);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -1810,8 +1750,9 @@ void main() {
       expect(menuRect.bottom, lessThan(triggerRect.top));
     });
 
-    testWidgets('open dropdown does not block parent scroll gestures',
-        (tester) async {
+    testWidgets('open dropdown does not block parent scroll gestures', (
+      tester,
+    ) async {
       final scrollController = ScrollController();
       addTearDown(scrollController.dispose);
 
@@ -1860,8 +1801,9 @@ void main() {
       expect(menuTopAfter, lessThan(menuTopBefore));
     });
 
-    testWidgets('open dropdown closes when the trigger is tapped again',
-        (tester) async {
+    testWidgets('open dropdown closes when the trigger is tapped again', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -1920,9 +1862,7 @@ void main() {
         );
       }
 
-      await tester.pumpWidget(
-        host(shown: true),
-      );
+      await tester.pumpWidget(host(shown: true));
 
       await tester.tap(find.text('Pick one'));
       await tester.pump();
@@ -1934,8 +1874,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('selection closes the dropdown before notifying onChanged',
-        (tester) async {
+    testWidgets('selection closes the dropdown before notifying onChanged', (
+      tester,
+    ) async {
       var menuVisibleDuringChange = true;
 
       await tester.pumpWidget(
@@ -1973,8 +1914,9 @@ void main() {
       );
     });
 
-    testWidgets('dropdown highlights the selected row with a check',
-        (tester) async {
+    testWidgets('dropdown highlights the selected row with a check', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiSelect<int>(
@@ -2014,17 +1956,15 @@ void main() {
 
       final optionSurfaces = tester
           .widgetList<UiBox>(
-            find.ancestor(
-              of: find.text('One'),
-              matching: find.byType(UiBox),
-            ),
+            find.ancestor(of: find.text('One'), matching: find.byType(UiBox)),
           )
           .where((box) => box.padding != null);
       expect(optionSurfaces.first.borderRadius, UiRadiusTokens.standard.smAll);
     });
 
-    testWidgets('large dropdown lazily builds visible option rows',
-        (tester) async {
+    testWidgets('large dropdown lazily builds visible option rows', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiSelect<int>(
@@ -2045,8 +1985,9 @@ void main() {
       expect(find.text('Option 499'), findsNothing);
     });
 
-    testWidgets('combobox filters options and lazy-builds the menu',
-        (tester) async {
+    testWidgets('combobox filters options and lazy-builds the menu', (
+      tester,
+    ) async {
       var selected = -1;
       await tester.pumpWidget(
         _host(
@@ -2062,9 +2003,7 @@ void main() {
       );
 
       final closedHeight = tester
-          .getSize(
-            find.byKey(const ValueKey<String>('ui-combobox-trigger')),
-          )
+          .getSize(find.byKey(const ValueKey<String>('ui-combobox-trigger')))
           .height;
       expect(find.byType(EditableText), findsOneWidget);
       await tester.tap(
@@ -2072,14 +2011,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey<String>('ui-combobox-menu')),
-          findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('ui-combobox-menu')),
+        findsOneWidget,
+      );
       expect(find.byType(EditableText), findsOneWidget);
       expect(
         tester
-            .getSize(
-              find.byKey(const ValueKey<String>('ui-combobox-trigger')),
-            )
+            .getSize(find.byKey(const ValueKey<String>('ui-combobox-trigger')))
             .height,
         closedHeight,
       );
@@ -2095,7 +2034,9 @@ void main() {
 
       expect(selected, 499);
       expect(
-          find.byKey(const ValueKey<String>('ui-combobox-menu')), findsNothing);
+        find.byKey(const ValueKey<String>('ui-combobox-menu')),
+        findsNothing,
+      );
     });
 
     testWidgets('anchorSelected placement is honoured', (tester) async {
@@ -2168,9 +2109,8 @@ void main() {
                   value: 1,
                   label: 'Globex',
                   leading: const Text('🔷'),
-                  labelBuilder: (ctx, option, selected) => Text(
-                    'custom-${option.label}-${selected ? 'yes' : 'no'}',
-                  ),
+                  labelBuilder: (ctx, option, selected) =>
+                      Text('custom-${option.label}-${selected ? 'yes' : 'no'}'),
                 ),
               ],
               onChanged: (_) {},
@@ -2200,8 +2140,9 @@ void main() {
   });
 
   group('UiTabs animation', () {
-    testWidgets('animated pill indicator shifts when selection changes',
-        (tester) async {
+    testWidgets('animated pill indicator shifts when selection changes', (
+      tester,
+    ) async {
       var selected = 0;
       await tester.pumpWidget(
         _host(
@@ -2223,8 +2164,9 @@ void main() {
       );
 
       double indicatorLeft() {
-        final ap = tester
-            .widget<AnimatedPositioned>(find.byType(AnimatedPositioned).first);
+        final ap = tester.widget<AnimatedPositioned>(
+          find.byType(AnimatedPositioned).first,
+        );
         return ap.left ?? 0;
       }
 
@@ -2242,8 +2184,9 @@ void main() {
       UiToaster.maxVisible = 3;
     });
 
-    testWidgets('keeps maxVisible and replaces oldest when full',
-        (tester) async {
+    testWidgets('keeps maxVisible and replaces oldest when full', (
+      tester,
+    ) async {
       await tester.pumpWidget(_host(const SizedBox()));
 
       final ctx = tester.element(find.byType(Scaffold));
@@ -2269,8 +2212,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('manual dismiss leaves remaining visible toasts untouched',
-        (tester) async {
+    testWidgets('manual dismiss leaves remaining visible toasts untouched', (
+      tester,
+    ) async {
       await tester.pumpWidget(_host(const SizedBox()));
       final ctx = tester.element(find.byType(Scaffold));
 
@@ -2301,8 +2245,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('toast host grows vertically for wrapped body text',
-        (tester) async {
+    testWidgets('toast host grows vertically for wrapped body text', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -2313,7 +2258,8 @@ void main() {
       UiToaster.show(
         ctx,
         title: 'Cancel unavailable',
-        message: 'This action is not available yet. The message can wrap into '
+        message:
+            'This action is not available yet. The message can wrap into '
             'multiple lines without being squeezed by the toast lane.',
         duration: const Duration(days: 1),
       );
@@ -2327,8 +2273,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('toast text compacts under tight vertical constraints',
-        (tester) async {
+    testWidgets('toast text compacts under tight vertical constraints', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const SizedBox(
@@ -2350,15 +2297,15 @@ void main() {
       var taps = 0;
       await tester.pumpWidget(
         _host(
-          TextButton(
-            onPressed: () => taps++,
-            child: const Text('Interact'),
-          ),
+          TextButton(onPressed: () => taps++, child: const Text('Interact')),
         ),
       );
       final ctx = tester.element(find.byType(Scaffold));
-      UiToaster.show(ctx,
-          message: 'dismiss me', duration: const Duration(days: 1));
+      UiToaster.show(
+        ctx,
+        message: 'dismiss me',
+        duration: const Duration(days: 1),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -2391,8 +2338,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('default toast position is bottom start on large screens',
-        (tester) async {
+    testWidgets('default toast position is bottom start on large screens', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(900, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -2458,8 +2406,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('pointer callbacks after host removal do not set state',
-        (tester) async {
+    testWidgets('pointer callbacks after host removal do not set state', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -2467,8 +2416,11 @@ void main() {
 
       await tester.pumpWidget(_host(const SizedBox()));
       final ctx = tester.element(find.byType(Scaffold));
-      UiToaster.show(ctx,
-          message: 'leaving', duration: const Duration(days: 1));
+      UiToaster.show(
+        ctx,
+        message: 'leaving',
+        duration: const Duration(days: 1),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 450));
 
@@ -2493,8 +2445,11 @@ void main() {
 
       await tester.pumpWidget(_host(const SizedBox()));
       final ctx = tester.element(find.byType(Scaffold));
-      UiToaster.show(ctx,
-          message: 'swipe me', duration: const Duration(days: 1));
+      UiToaster.show(
+        ctx,
+        message: 'swipe me',
+        duration: const Duration(days: 1),
+      );
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 450));
@@ -2506,8 +2461,9 @@ void main() {
       expect(find.text('swipe me'), findsNothing);
     });
 
-    testWidgets('rapid stacked titled toasts do not overflow while entering',
-        (tester) async {
+    testWidgets('rapid stacked titled toasts do not overflow while entering', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -2555,23 +2511,27 @@ void main() {
     });
 
     testWidgets(
-        'toast stack transition resolves immediately with reduced motion',
-        (tester) async {
-      await tester.pumpWidget(_reducedMotionHost(const SizedBox()));
-      final ctx = tester.element(find.byType(Scaffold));
+      'toast stack transition resolves immediately with reduced motion',
+      (tester) async {
+        await tester.pumpWidget(_reducedMotionHost(const SizedBox()));
+        final ctx = tester.element(find.byType(Scaffold));
 
-      UiToaster.show(ctx,
-          message: 'reduced', duration: const Duration(seconds: 10));
-      await tester.pump();
+        UiToaster.show(
+          ctx,
+          message: 'reduced',
+          duration: const Duration(seconds: 10),
+        );
+        await tester.pump();
 
-      expect(find.text('reduced'), findsOneWidget);
-      final transformedContainer = tester
-          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
-          .firstWhere((container) => container.transform != null);
-      expect(transformedContainer.duration, Duration.zero);
-      UiToaster.dismissAll();
-      await tester.pump();
-    });
+        expect(find.text('reduced'), findsOneWidget);
+        final transformedContainer = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .firstWhere((container) => container.transform != null);
+        expect(transformedContainer.duration, Duration.zero);
+        UiToaster.dismissAll();
+        await tester.pump();
+      },
+    );
   });
 
   group('UiInput focus ring', () {
@@ -2583,98 +2543,99 @@ void main() {
     });
 
     testWidgets(
-        'focus uses a solid inner border and animated translucent outer ring',
-        (tester) async {
-      final node = FocusNode();
-      addTearDown(node.dispose);
-      await tester.pumpWidget(_host(UiInput(focusNode: node)));
+      'focus uses a solid inner border and animated translucent outer ring',
+      (tester) async {
+        final node = FocusNode();
+        addTearDown(node.dispose);
+        await tester.pumpWidget(_host(UiInput(focusNode: node)));
 
-      node.requestFocus();
-      await tester.pump();
-      await tester.pumpAndSettle();
+        node.requestFocus();
+        await tester.pump();
+        await tester.pumpAndSettle();
 
-      final inputContainer = tester
-          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
-          .firstWhere(
-            (container) =>
-                (container.decoration as BoxDecoration?)?.border != null,
-          );
-      final inputBorder =
-          (inputContainer.decoration! as BoxDecoration).border! as Border;
-      expect(inputBorder.top.color, UiColorTokens.light.focusRing);
-      expect(inputBorder.top.width, 1);
+        final inputContainer = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .firstWhere(
+              (container) =>
+                  (container.decoration as BoxDecoration?)?.border != null,
+            );
+        final inputBorder =
+            (inputContainer.decoration! as BoxDecoration).border! as Border;
+        expect(inputBorder.top.color, UiColorTokens.light.focusRing);
+        expect(inputBorder.top.width, 1);
 
-      final outlineFinder = find.byKey(
-        const ValueKey('ui-focus-ring-outline'),
-      );
-      final outline = tester.widget<AnimatedOpacity>(outlineFinder);
-      expect(outline.opacity, 1);
-      expect(outline.duration, const Duration(milliseconds: 150));
+        final outlineFinder = find.byKey(
+          const ValueKey('ui-focus-ring-outline'),
+        );
+        final outline = tester.widget<AnimatedOpacity>(outlineFinder);
+        expect(outline.opacity, 1);
+        expect(outline.duration, const Duration(milliseconds: 150));
 
-      final outlineDecoration = tester
-          .widgetList<DecoratedBox>(
-            find.descendant(
-              of: outlineFinder,
-              matching: find.byType(DecoratedBox),
-            ),
-          )
-          .map((box) => box.decoration)
-          .whereType<BoxDecoration>()
-          .single;
-      final outerBorder = outlineDecoration.border! as Border;
-      expect(outerBorder.top.width, 3);
-      expect(outerBorder.top.color.a, closeTo(.5, .01));
+        final outlineDecoration = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: outlineFinder,
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .single;
+        final outerBorder = outlineDecoration.border! as Border;
+        expect(outerBorder.top.width, 3);
+        expect(outerBorder.top.color.a, closeTo(.5, .01));
 
-      node.unfocus();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 1));
+        node.unfocus();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 1));
 
-      final exitingOutline = tester.widget<AnimatedOpacity>(outlineFinder);
-      expect(node.hasFocus, isFalse);
-      expect(exitingOutline.opacity, 0);
-      expect(
-        outlineFinder,
-        findsOneWidget,
-        reason: 'The outer ring stays mounted for its blur animation.',
-      );
-      await tester.pumpAndSettle();
-    });
+        final exitingOutline = tester.widget<AnimatedOpacity>(outlineFinder);
+        expect(node.hasFocus, isFalse);
+        expect(exitingOutline.opacity, 0);
+        expect(
+          outlineFinder,
+          findsOneWidget,
+          reason: 'The outer ring stays mounted for its blur animation.',
+        );
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('disabled input never shows the focus ring', (tester) async {
       final node = FocusNode();
       addTearDown(node.dispose);
-      await tester.pumpWidget(
-        _host(UiInput(enabled: false, focusNode: node)),
-      );
+      await tester.pumpWidget(_host(UiInput(enabled: false, focusNode: node)));
       node.requestFocus();
       await tester.pump();
       // No focus halo should appear around disabled inputs.
       expect(find.byType(UiFocusRing), findsWidgets);
       // The only visible ring is the one wrapping the field, and it
       // must be in its "invisible" state (child equals its input).
-      for (final w
-          in tester.widgetList<UiFocusRing>(find.byType(UiFocusRing))) {
+      for (final w in tester.widgetList<UiFocusRing>(
+        find.byType(UiFocusRing),
+      )) {
         expect(w.visible, isFalse);
       }
     });
 
-    testWidgets('readOnly input retains shadcn focus treatment',
-        (tester) async {
+    testWidgets('readOnly input retains shadcn focus treatment', (
+      tester,
+    ) async {
       final node = FocusNode();
       addTearDown(node.dispose);
-      await tester.pumpWidget(
-        _host(UiInput(readOnly: true, focusNode: node)),
-      );
+      await tester.pumpWidget(_host(UiInput(readOnly: true, focusNode: node)));
       node.requestFocus();
       await tester.pump();
-      for (final w
-          in tester.widgetList<UiFocusRing>(find.byType(UiFocusRing))) {
+      for (final w in tester.widgetList<UiFocusRing>(
+        find.byType(UiFocusRing),
+      )) {
         expect(w.visible, isTrue);
       }
     });
 
-    testWidgets('invalid focus uses destructive border and light-mode ring',
-        (tester) async {
+    testWidgets('invalid focus uses destructive border and light-mode ring', (
+      tester,
+    ) async {
       final node = FocusNode();
       addTearDown(node.dispose);
       await tester.pumpWidget(
@@ -2706,12 +2667,15 @@ void main() {
           .single;
       final outerBorder = outlineDecoration.border! as Border;
       expect(outerBorder.top.width, 3);
-      expect(outerBorder.top.color,
-          UiColorTokens.light.destructive.withValues(alpha: .2));
+      expect(
+        outerBorder.top.color,
+        UiColorTokens.light.destructive.withValues(alpha: .2),
+      );
     });
 
-    testWidgets('invalid focus uses the stronger dark-mode ring alpha',
-        (tester) async {
+    testWidgets('invalid focus uses the stronger dark-mode ring alpha', (
+      tester,
+    ) async {
       final node = FocusNode();
       addTearDown(node.dispose);
       await tester.pumpWidget(

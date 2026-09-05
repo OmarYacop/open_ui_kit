@@ -4,22 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
-Widget _host(Widget child) => MaterialApp(
-      home: Scaffold(body: child),
-    );
+Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
   group('UiInput', () {
-    testWidgets('embedded variant lets its parent own every visual surface',
-        (tester) async {
+    testWidgets('embedded variant lets its parent own every visual surface', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const Padding(
             padding: EdgeInsets.all(24),
-            child: UiInput(
-              hint: 'Search',
-              variant: UiInputVariant.embedded,
-            ),
+            child: UiInput(hint: 'Search', variant: UiInputVariant.embedded),
           ),
         ),
       );
@@ -46,8 +42,9 @@ void main() {
   });
 
   group('UiSheetScope', () {
-    testWidgets('open + programmatic dismiss resolves the future',
-        (tester) async {
+    testWidgets('open + programmatic dismiss resolves the future', (
+      tester,
+    ) async {
       await tester.pumpWidget(_host(const SizedBox()));
       final ctx = tester.element(find.byType(Scaffold));
 
@@ -85,8 +82,9 @@ void main() {
   });
 
   group('UiDropdownMenu', () {
-    testWidgets('activating an item fires onPressed + closes menu',
-        (tester) async {
+    testWidgets('activating an item fires onPressed + closes menu', (
+      tester,
+    ) async {
       var hit = 0;
       await tester.pumpWidget(
         _host(
@@ -143,8 +141,9 @@ void main() {
       expect(hit, 1);
     });
 
-    testWidgets('destructive item uses danger foreground color',
-        (tester) async {
+    testWidgets('destructive item uses danger foreground color', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiDropdownMenu(
@@ -200,8 +199,9 @@ void main() {
       expect(index, 1);
     });
 
-    testWidgets('selected dock pill can be dragged to another tab',
-        (tester) async {
+    testWidgets('selected dock pill can be dragged to another tab', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -236,8 +236,9 @@ void main() {
       expect(index, 2);
     });
 
-    testWidgets('drag outside the dock cancels and does not change selection',
-        (tester) async {
+    testWidgets('drag outside the dock cancels and does not change selection', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -295,8 +296,9 @@ void main() {
       expect(find.byKey(const Key('pb'), skipOffstage: false), findsOneWidget);
     });
 
-    testWidgets('preserveState only lays out the selected page',
-        (tester) async {
+    testWidgets('preserveState only lays out the selected page', (
+      tester,
+    ) async {
       var index = 0;
       var firstPageLayouts = 0;
       var secondPageLayouts = 0;
@@ -353,8 +355,9 @@ void main() {
       );
     });
 
-    testWidgets('floating scaffold adds body padding for the dock',
-        (tester) async {
+    testWidgets('floating scaffold adds body padding for the dock', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -391,8 +394,9 @@ void main() {
       );
 
       final bodyRect = tester.getRect(find.byKey(const Key('page-body')));
-      final dockRect =
-          tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
+      final dockRect = tester.getRect(
+        find.byKey(const Key('ui_bottom_tab_dock')),
+      );
       expect(bodyRect.height, 700);
       expect(bodyRect.bottom, greaterThan(dockRect.top));
       expect(find.text('bottom-padding:82.0'), findsOneWidget);
@@ -429,84 +433,87 @@ void main() {
         ),
       );
 
-      final dockRect =
-          tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
+      final dockRect = tester.getRect(
+        find.byKey(const Key('ui_bottom_tab_dock')),
+      );
       expect(dockRect.bottom, closeTo(810, 0.1));
     });
 
-    testWidgets('scaffold automatically overflows bottom tabs into More drawer',
-        (tester) async {
-      tester.view.physicalSize = const Size(390, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'scaffold automatically overflows bottom tabs into More drawer',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      var index = 0;
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (ctx, setState) => UiBottomTabScaffold(
-              items: const [
-                UiBottomTabItem(label: 'Home'),
-                UiBottomTabItem(label: 'Schedule'),
-                UiBottomTabItem(label: 'Chat'),
-                UiBottomTabItem(label: 'Library', badge: 7),
-                UiBottomTabItem(label: 'Account'),
-              ],
-              pages: const [
-                Center(child: Text('home-page')),
-                Center(child: Text('schedule-page')),
-                Center(child: Text('chat-page')),
-                Center(child: Text('library-page')),
-                Center(child: Text('account-page')),
-              ],
-              currentIndex: index,
-              onChanged: (i) => setState(() => index = i),
+        var index = 0;
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (ctx, setState) => UiBottomTabScaffold(
+                items: const [
+                  UiBottomTabItem(label: 'Home'),
+                  UiBottomTabItem(label: 'Schedule'),
+                  UiBottomTabItem(label: 'Chat'),
+                  UiBottomTabItem(label: 'Library', badge: 7),
+                  UiBottomTabItem(label: 'Account'),
+                ],
+                pages: const [
+                  Center(child: Text('home-page')),
+                  Center(child: Text('schedule-page')),
+                  Center(child: Text('chat-page')),
+                  Center(child: Text('library-page')),
+                  Center(child: Text('account-page')),
+                ],
+                currentIndex: index,
+                onChanged: (i) => setState(() => index = i),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Schedule'), findsOneWidget);
-      expect(find.text('Chat'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
-      expect(find.text('Library'), findsNothing);
-      expect(find.byKey(const Key('ui_bottom_tab_dock')), findsOneWidget);
-      expect(
-        find.byKey(const Key('ui_bottom_tab_detached_dock')),
-        findsNothing,
-      );
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.text('Schedule'), findsOneWidget);
+        expect(find.text('Chat'), findsOneWidget);
+        expect(find.text('More'), findsOneWidget);
+        expect(find.text('Library'), findsNothing);
+        expect(find.byKey(const Key('ui_bottom_tab_dock')), findsOneWidget);
+        expect(
+          find.byKey(const Key('ui_bottom_tab_detached_dock')),
+          findsNothing,
+        );
 
-      await tester.tap(find.text('More'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('More'));
+        await tester.pumpAndSettle();
 
-      final openBar = tester.widget<UiBottomTabBar>(
-        find.byType(UiBottomTabBar),
-      );
-      expect(openBar.currentIndex, 3);
-      final openWidths = [
-        for (var i = 0; i < 4; i++)
-          tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
-      ];
-      for (final width in openWidths.skip(1)) {
-        expect(width, closeTo(openWidths.first, 0.01));
-      }
+        final openBar = tester.widget<UiBottomTabBar>(
+          find.byType(UiBottomTabBar),
+        );
+        expect(openBar.currentIndex, 3);
+        final openWidths = [
+          for (var i = 0; i < 4; i++)
+            tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
+        ];
+        for (final width in openWidths.skip(1)) {
+          expect(width, closeTo(openWidths.first, 0.01));
+        }
 
-      expect(find.text('Library'), findsOneWidget);
-      expect(find.text('Account'), findsOneWidget);
-      expect(find.byType(UiNavigationCountBadge), findsOneWidget);
-      expect(find.text('7'), findsOneWidget);
+        expect(find.text('Library'), findsOneWidget);
+        expect(find.text('Account'), findsOneWidget);
+        expect(find.byType(UiNavigationCountBadge), findsOneWidget);
+        expect(find.text('7'), findsOneWidget);
 
-      await tester.tap(find.text('Account'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Account'));
+        await tester.pumpAndSettle();
 
-      expect(index, 4);
-      expect(find.text('account-page'), findsOneWidget);
-      final overflowSelectedBar = tester.widget<UiBottomTabBar>(
-        find.byType(UiBottomTabBar),
-      );
-      expect(overflowSelectedBar.currentIndex, 3);
-    });
+        expect(index, 4);
+        expect(find.text('account-page'), findsOneWidget);
+        final overflowSelectedBar = tester.widget<UiBottomTabBar>(
+          find.byType(UiBottomTabBar),
+        );
+        expect(overflowSelectedBar.currentIndex, 3);
+      },
+    );
 
     testWidgets('detached bottom tab grows with large text', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -517,9 +524,7 @@ void main() {
       await tester.pumpWidget(
         _host(
           MediaQuery(
-            data: const MediaQueryData(
-              textScaler: TextScaler.linear(1.6),
-            ),
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
             child: UiBottomTabBar(
               items: const [
                 UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
@@ -539,9 +544,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester
-            .getSize(
-              find.byKey(const Key('ui_bottom_tab_detached_dock')),
-            )
+            .getSize(find.byKey(const Key('ui_bottom_tab_detached_dock')))
             .height,
         tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).height,
       );
@@ -558,9 +561,7 @@ void main() {
       await tester.pumpWidget(
         _host(
           MediaQuery(
-            data: const MediaQueryData(
-              textScaler: TextScaler.linear(1.6),
-            ),
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
             child: UiBottomTabScaffold(
               items: const [
                 UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
@@ -570,12 +571,7 @@ void main() {
               ],
               currentIndex: 0,
               onChanged: (_) {},
-              pages: const [
-                SizedBox(),
-                SizedBox(),
-                SizedBox(),
-                SizedBox(),
-              ],
+              pages: const [SizedBox(), SizedBox(), SizedBox(), SizedBox()],
             ),
           ),
         ),
@@ -628,8 +624,9 @@ void main() {
       expect(find.text('Library'), findsOneWidget);
     });
 
-    testWidgets('scaffold can convert bottom tabs to a rail on wide screens',
-        (tester) async {
+    testWidgets('scaffold can convert bottom tabs to a rail on wide screens', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(900, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -684,10 +681,8 @@ void main() {
               onChanged: (_) {},
               convertToRailOnWideScreens: true,
               railBreakpoint: 600,
-              railBuilder: (context, config) => const SizedBox(
-                key: Key('rail'),
-                width: 96,
-              ),
+              railBuilder: (context, config) =>
+                  const SizedBox(key: Key('rail'), width: 96),
             ),
           ),
         );
@@ -700,8 +695,9 @@ void main() {
       }
     });
 
-    testWidgets('automatic bottom overflow is bypassed in rail mode',
-        (tester) async {
+    testWidgets('automatic bottom overflow is bypassed in rail mode', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(900, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -771,65 +767,72 @@ void main() {
       expect(firstLeft.dx, greaterThan(secondLeft.dx));
     });
 
-    testWidgets('adaptive layout switches to centered floating dock on tablet',
-        (tester) async {
-      tester.view.physicalSize = const Size(1024, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'adaptive layout switches to centered floating dock on tablet',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        _host(
-          UiBottomTabBar(
-            items: const [
-              UiBottomTabItem(label: 'Home'),
-              UiBottomTabItem(label: 'Chat'),
-              UiBottomTabItem(label: 'Me'),
-            ],
-            currentIndex: 0,
-            onChanged: (_) {},
-          ),
-        ),
-      );
-
-      expect(find.byKey(const Key('ui_bottom_tab_dock')), findsOneWidget);
-      final dockRect =
-          tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
-      expect(dockRect.width, lessThan(1024));
-    });
-
-    testWidgets('floating dock fills compact width but hugs content when wide',
-        (tester) async {
-      Widget hostForWidth(double width) {
-        return _host(
-          SizedBox(
-            width: width,
-            child: UiBottomTabBar(
+        await tester.pumpWidget(
+          _host(
+            UiBottomTabBar(
               items: const [
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat'),
                 UiBottomTabItem(label: 'Me'),
-                UiBottomTabItem(label: 'More'),
               ],
               currentIndex: 0,
               onChanged: (_) {},
             ),
           ),
         );
-      }
 
-      await tester.pumpWidget(hostForWidth(390));
-      var dockRect =
-          tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
-      expect(dockRect.width, 358);
+        expect(find.byKey(const Key('ui_bottom_tab_dock')), findsOneWidget);
+        final dockRect = tester.getRect(
+          find.byKey(const Key('ui_bottom_tab_dock')),
+        );
+        expect(dockRect.width, lessThan(1024));
+      },
+    );
 
-      await tester.pumpWidget(hostForWidth(900));
-      await tester.pumpAndSettle();
-      dockRect = tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
-      expect(dockRect.width, 300);
-    });
+    testWidgets(
+      'floating dock fills compact width but hugs content when wide',
+      (tester) async {
+        Widget hostForWidth(double width) {
+          return _host(
+            SizedBox(
+              width: width,
+              child: UiBottomTabBar(
+                items: const [
+                  UiBottomTabItem(label: 'Home'),
+                  UiBottomTabItem(label: 'Chat'),
+                  UiBottomTabItem(label: 'Me'),
+                  UiBottomTabItem(label: 'More'),
+                ],
+                currentIndex: 0,
+                onChanged: (_) {},
+              ),
+            ),
+          );
+        }
 
-    testWidgets('bottom tab accessory occupies a separate compact island',
-        (tester) async {
+        await tester.pumpWidget(hostForWidth(390));
+        var dockRect = tester.getRect(
+          find.byKey(const Key('ui_bottom_tab_dock')),
+        );
+        expect(dockRect.width, 358);
+
+        await tester.pumpWidget(hostForWidth(900));
+        await tester.pumpAndSettle();
+        dockRect = tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
+        expect(dockRect.width, 300);
+      },
+    );
+
+    testWidgets('bottom tab accessory occupies a separate compact island', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -844,17 +847,13 @@ void main() {
             ],
             currentIndex: 1,
             onChanged: (_) {},
-            accessory: const UiBottomTabAccessory(
-              child: Icon(Icons.search),
-            ),
+            accessory: const UiBottomTabAccessory(child: Icon(Icons.search)),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final dock = tester.getRect(
-        find.byKey(const Key('ui_bottom_tab_dock')),
-      );
+      final dock = tester.getRect(find.byKey(const Key('ui_bottom_tab_dock')));
       final accessory = tester.getRect(
         find.byKey(const Key('ui_bottom_tab_accessory')),
       );
@@ -863,30 +862,31 @@ void main() {
       expect(dock.right, lessThan(accessory.left));
     });
 
-    testWidgets('bottom tab accessory can shrink from dock height for search',
-        (tester) async {
+    testWidgets('bottom tab accessory can shrink from dock height for search', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
       Widget subject({required bool expanded}) => _host(
-            UiBottomTabBar(
-              items: const [
-                UiBottomTabItem(label: 'Home'),
-                UiBottomTabItem(label: 'Search'),
-              ],
-              currentIndex: 1,
-              onChanged: (_) {},
-              accessory: UiBottomTabAccessory(
-                expanded: expanded,
-                collapsedWidth: 67,
-                collapsedHeight: 67,
-                height: 56,
-                leadingItem: const UiBottomTabItem(label: 'Search'),
-                child: const Icon(Icons.search),
-              ),
-            ),
-          );
+        UiBottomTabBar(
+          items: const [
+            UiBottomTabItem(label: 'Home'),
+            UiBottomTabItem(label: 'Search'),
+          ],
+          currentIndex: 1,
+          onChanged: (_) {},
+          accessory: UiBottomTabAccessory(
+            expanded: expanded,
+            collapsedWidth: 67,
+            collapsedHeight: 67,
+            height: 56,
+            leadingItem: const UiBottomTabItem(label: 'Search'),
+            child: const Icon(Icons.search),
+          ),
+        ),
+      );
 
       await tester.pumpWidget(subject(expanded: false));
       expect(
@@ -903,126 +903,139 @@ void main() {
     });
 
     testWidgets(
-        'expanding the accessory while accessoryPresence is still animating in does not snap',
-        (tester) async {
-      // Regression: the dock/accessory morph used to force Duration.zero
-      // whenever accessoryPresence < 0.999, so requesting expand while the
-      // accessory was still fading in snapped the width instantly instead
-      // of animating — confirmed via a runtime probe (width jumped inside
-      // 1ms). It must now animate smoothly regardless of presence.
-      tester.view.physicalSize = const Size(390, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+      'expanding the accessory while accessoryPresence is still animating in does not snap',
+      (tester) async {
+        // Regression: the dock/accessory morph used to force Duration.zero
+        // whenever accessoryPresence < 0.999, so requesting expand while the
+        // accessory was still fading in snapped the width instantly instead
+        // of animating — confirmed via a runtime probe (width jumped inside
+        // 1ms). It must now animate smoothly regardless of presence.
+        tester.view.physicalSize = const Size(390, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      Widget subject({required bool expanded, required double presence}) =>
-          _host(
-            UiBottomTabBar(
-              items: const [
-                UiBottomTabItem(label: 'Home'),
-                UiBottomTabItem(label: 'Search'),
-              ],
-              currentIndex: 1,
-              onChanged: (_) {},
-              accessoryPresence: presence,
-              accessory: UiBottomTabAccessory(
-                expanded: expanded,
-                leadingItem: const UiBottomTabItem(label: 'Search'),
-                child: const Icon(Icons.search),
+        Widget subject({required bool expanded, required double presence}) =>
+            _host(
+              UiBottomTabBar(
+                items: const [
+                  UiBottomTabItem(label: 'Home'),
+                  UiBottomTabItem(label: 'Search'),
+                ],
+                currentIndex: 1,
+                onChanged: (_) {},
+                accessoryPresence: presence,
+                accessory: UiBottomTabAccessory(
+                  expanded: expanded,
+                  leadingItem: const UiBottomTabItem(label: 'Search'),
+                  child: const Icon(Icons.search),
+                ),
               ),
-            ),
-          );
+            );
 
-      // Presence mid-fade-in, accessory still collapsed.
-      await tester.pumpWidget(subject(expanded: false, presence: 0.4));
-      await tester.pump();
-      final before = tester
-          .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
-          .width;
+        // Presence mid-fade-in, accessory still collapsed.
+        await tester.pumpWidget(subject(expanded: false, presence: 0.4));
+        await tester.pump();
+        final before = tester
+            .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
+            .width;
 
-      // Request expand while presence is still only 0.4.
-      await tester.pumpWidget(subject(expanded: true, presence: 0.4));
-      await tester.pump();
-      final immediatelyAfter = tester
-          .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
-          .width;
-      // A snap would jump straight to (close to) the fully expanded width
-      // on the very next frame; an animation stays close to where it
-      // started and grows gradually.
-      expect(
-        immediatelyAfter,
-        lessThan(before + (400 - before) * 0.3),
-        reason: 'expand snapped instead of animating while presence < 1',
-      );
+        // Request expand while presence is still only 0.4.
+        await tester.pumpWidget(subject(expanded: true, presence: 0.4));
+        await tester.pump();
+        final immediatelyAfter = tester
+            .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
+            .width;
+        // A snap would jump straight to (close to) the fully expanded width
+        // on the very next frame; an animation stays close to where it
+        // started and grows gradually.
+        expect(
+          immediatelyAfter,
+          lessThan(before + (400 - before) * 0.3),
+          reason: 'expand snapped instead of animating while presence < 1',
+        );
 
-      await tester.pumpAndSettle(); // still at presence 0.4 externally
-      final settled = tester
-          .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
-          .width;
-      expect(settled, greaterThan(before));
-    });
+        await tester.pumpAndSettle(); // still at presence 0.4 externally
+        final settled = tester
+            .getRect(find.byKey(const Key('ui_bottom_tab_accessory')))
+            .width;
+        expect(settled, greaterThan(before));
+      },
+    );
 
     testWidgets(
-        'switching tabs whose accessories both exist but differ cross-dissolves '
-        'content instead of cutting instantly', (tester) async {
-      // Regression: UiContourPresenceController only animates existence
-      // (null <-> value); a direct value-to-value swap between two tabs
-      // that both have an accessory used to hard-cut the accessory's
-      // content on the very next frame. The abstract
-      // UiContourCrossfadeController layer (ui_contour_crossfade.dart) now
-      // owns this case, applied via _BottomTabBodyState in
-      // bottom_tab_scaffold.dart.
-      tester.view.physicalSize = const Size(390, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+      'switching tabs whose accessories both exist but differ cross-dissolves '
+      'content instead of cutting instantly',
+      (tester) async {
+        // Regression: UiContourPresenceController only animates existence
+        // (null <-> value); a direct value-to-value swap between two tabs
+        // that both have an accessory used to hard-cut the accessory's
+        // content on the very next frame. The abstract
+        // UiContourCrossfadeController layer (ui_contour_crossfade.dart) now
+        // owns this case, applied via _BottomTabBodyState in
+        // bottom_tab_scaffold.dart.
+        tester.view.physicalSize = const Size(390, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      const items = [
-        UiBottomTabItem(label: 'Home'),
-        UiBottomTabItem(label: 'Messages'),
-        UiBottomTabItem(label: 'Profile'),
-      ];
-      var currentIndex = 1;
+        const items = [
+          UiBottomTabItem(label: 'Home'),
+          UiBottomTabItem(label: 'Messages'),
+          UiBottomTabItem(label: 'Profile'),
+        ];
+        var currentIndex = 1;
 
-      UiBottomTabAccessory accessoryFor(int index) => UiBottomTabAccessory(
-            leadingItem: items[index],
-            child: Icon(
-              Icons.search,
-              key: ValueKey('accessory-content-$index'),
-            ),
-          );
+        UiBottomTabAccessory accessoryFor(int index) => UiBottomTabAccessory(
+          leadingItem: items[index],
+          child: Icon(Icons.search, key: ValueKey('accessory-content-$index')),
+        );
 
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) => UiBottomTabScaffold(
-              items: items,
-              currentIndex: currentIndex,
-              onChanged: (i) => setState(() => currentIndex = i),
-              pages: const [SizedBox(), SizedBox(), SizedBox()],
-              bottomAccessory: accessoryFor(currentIndex),
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, setState) => UiBottomTabScaffold(
+                items: items,
+                currentIndex: currentIndex,
+                onChanged: (i) => setState(() => currentIndex = i),
+                pages: const [SizedBox(), SizedBox(), SizedBox()],
+                bottomAccessory: accessoryFor(currentIndex),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('accessory-content-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('accessory-content-2')), findsNothing);
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('accessory-content-1')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('accessory-content-2')), findsNothing);
 
-      await tester.tap(find.text('Profile'));
-      await tester.pump();
+        await tester.tap(find.text('Profile'));
+        await tester.pump();
 
-      // Immediately after the switch both endpoints must be visible —
-      // that is the entire point of a cross-dissolve, as opposed to one
-      // instantly replacing the other.
-      expect(find.byKey(const ValueKey('accessory-content-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('accessory-content-2')), findsOneWidget);
+        // Immediately after the switch both endpoints must be visible —
+        // that is the entire point of a cross-dissolve, as opposed to one
+        // instantly replacing the other.
+        expect(
+          find.byKey(const ValueKey('accessory-content-1')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('accessory-content-2')),
+          findsOneWidget,
+        );
 
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('accessory-content-1')), findsNothing);
-      expect(find.byKey(const ValueKey('accessory-content-2')), findsOneWidget);
-    });
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('accessory-content-1')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('accessory-content-2')),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('expanded accessory replaces dock with selected tab island',
-        (tester) async {
+    testWidgets('expanded accessory replaces dock with selected tab island', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1062,8 +1075,9 @@ void main() {
       );
     });
 
-    testWidgets('expanded scaffold accessory stays above the keyboard',
-        (tester) async {
+    testWidgets('expanded scaffold accessory stays above the keyboard', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1107,15 +1121,16 @@ void main() {
       );
 
       expect(after.dy, closeTo(before.dy - 280, 0.1));
-      await tester.tapAt(tester.getCenter(
-        find.byKey(const Key('ui_bottom_tab_accessory')),
-      ));
+      await tester.tapAt(
+        tester.getCenter(find.byKey(const Key('ui_bottom_tab_accessory'))),
+      );
       await tester.pump();
       expect(underlyingTaps, 0);
     });
 
-    testWidgets('accessory can enter and leave expanded mode with semantics',
-        (tester) async {
+    testWidgets('accessory can enter and leave expanded mode with semantics', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1149,8 +1164,9 @@ void main() {
         ),
       );
 
-      final collapsedDockWidth =
-          tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).width;
+      final collapsedDockWidth = tester
+          .getSize(find.byKey(const Key('ui_bottom_tab_dock')))
+          .width;
       final collapsedAccessoryWidth = tester
           .getSize(find.byKey(const Key('ui_bottom_tab_accessory')))
           .width;
@@ -1159,8 +1175,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final morphingDockWidth =
-          tester.getSize(find.byKey(const Key('ui_bottom_tab_dock'))).width;
+      final morphingDockWidth = tester
+          .getSize(find.byKey(const Key('ui_bottom_tab_dock')))
+          .width;
       final morphingAccessoryWidth = tester
           .getSize(find.byKey(const Key('ui_bottom_tab_accessory')))
           .width;
@@ -1178,8 +1195,9 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('scaffold fades out before removing its accessory',
-        (tester) async {
+    testWidgets('scaffold fades out before removing its accessory', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1197,9 +1215,7 @@ void main() {
                 onChanged: (_) {},
                 pages: const [SizedBox.expand()],
                 bottomAccessory: visible
-                    ? const UiBottomTabAccessory(
-                        child: Icon(Icons.search),
-                      )
+                    ? const UiBottomTabAccessory(child: Icon(Icons.search))
                     : null,
               );
             },
@@ -1212,79 +1228,75 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 80));
 
-      expect(
-        find.byKey(const Key('ui_bottom_tab_accessory')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('ui_bottom_tab_accessory')), findsOneWidget);
       await tester.pumpAndSettle();
-      expect(
-        find.byKey(const Key('ui_bottom_tab_accessory')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_bottom_tab_accessory')), findsNothing);
     });
 
     testWidgets(
-        'accessory reduces automatic tab capacity and animates the removed tab',
-        (tester) async {
-      tester.view.physicalSize = const Size(420, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+      'accessory reduces automatic tab capacity and animates the removed tab',
+      (tester) async {
+        tester.view.physicalSize = const Size(420, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      var visible = false;
-      late StateSetter update;
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) {
-              update = setState;
-              return UiBottomTabScaffold(
-                items: const [
-                  UiBottomTabItem(label: 'First'),
-                  UiBottomTabItem(label: 'Second'),
-                  UiBottomTabItem(label: 'Third'),
-                  UiBottomTabItem(label: 'Fourth'),
-                  UiBottomTabItem(label: 'Fifth'),
-                ],
-                currentIndex: 0,
-                onChanged: (_) {},
-                pages: const [
-                  SizedBox.expand(),
-                  SizedBox.expand(),
-                  SizedBox.expand(),
-                  SizedBox.expand(),
-                  SizedBox.expand(),
-                ],
-                maxVisibleBottomItems: 5,
-                bottomAccessory: visible
-                    ? const UiBottomTabAccessory(child: Icon(Icons.search))
-                    : null,
-              );
-            },
+        var visible = false;
+        late StateSetter update;
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return UiBottomTabScaffold(
+                  items: const [
+                    UiBottomTabItem(label: 'First'),
+                    UiBottomTabItem(label: 'Second'),
+                    UiBottomTabItem(label: 'Third'),
+                    UiBottomTabItem(label: 'Fourth'),
+                    UiBottomTabItem(label: 'Fifth'),
+                  ],
+                  currentIndex: 0,
+                  onChanged: (_) {},
+                  pages: const [
+                    SizedBox.expand(),
+                    SizedBox.expand(),
+                    SizedBox.expand(),
+                    SizedBox.expand(),
+                    SizedBox.expand(),
+                  ],
+                  maxVisibleBottomItems: 5,
+                  bottomAccessory: visible
+                      ? const UiBottomTabAccessory(child: Icon(Icons.search))
+                      : null,
+                );
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Fifth'), findsOneWidget);
-      expect(find.text('More'), findsNothing);
+        expect(find.text('Fifth'), findsOneWidget);
+        expect(find.text('More'), findsNothing);
 
-      update(() => visible = true);
-      await tester.pump();
+        update(() => visible = true);
+        await tester.pump();
 
-      expect(find.text('Fifth'), findsOneWidget);
-      expect(find.text('More'), findsNothing);
+        expect(find.text('Fifth'), findsOneWidget);
+        expect(find.text('More'), findsNothing);
 
-      await tester.pump(const Duration(milliseconds: 80));
-      expect(find.text('Fifth'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 80));
+        expect(find.text('Fifth'), findsOneWidget);
+        expect(find.text('More'), findsOneWidget);
 
-      await tester.pumpAndSettle();
-      expect(find.text('Fifth'), findsNothing);
-      expect(find.text('More'), findsOneWidget);
-    });
+        await tester.pumpAndSettle();
+        expect(find.text('Fifth'), findsNothing);
+        expect(find.text('More'), findsOneWidget);
+      },
+    );
 
-    testWidgets('selected tab slot expands while inactive slots stay compact',
-        (tester) async {
+    testWidgets('selected tab slot expands while inactive slots stay compact', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -1308,9 +1320,9 @@ void main() {
       await tester.pumpAndSettle();
 
       List<double> slotWidths() => [
-            for (var i = 0; i < 4; i++)
-              tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
-          ];
+        for (var i = 0; i < 4; i++)
+          tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
+      ];
 
       var widths = slotWidths();
       expect(widths, hasLength(4));
@@ -1325,67 +1337,72 @@ void main() {
       expect(widths[2], greaterThan(widths[1]));
     });
 
-    testWidgets('selected slot obeys max cap and inactive slots obey min floor',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 900,
-            child: UiBottomTabBar(
-              items: const [
-                UiBottomTabItem(label: 'A'),
-                UiBottomTabItem(label: 'B'),
-                UiBottomTabItem(label: 'C'),
-              ],
-              currentIndex: 1,
-              onChanged: (_) {},
+    testWidgets(
+      'selected slot obeys max cap and inactive slots obey min floor',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 900,
+              child: UiBottomTabBar(
+                items: const [
+                  UiBottomTabItem(label: 'A'),
+                  UiBottomTabItem(label: 'B'),
+                  UiBottomTabItem(label: 'C'),
+                ],
+                currentIndex: 1,
+                onChanged: (_) {},
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final widths = [
-        for (var i = 0; i < 3; i++)
-          tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
-      ];
-      expect(widths[1], greaterThan(widths[0]));
-      expect(widths[1], greaterThan(widths[2]));
-      expect(widths[1], lessThanOrEqualTo(180.0 + 0.5));
-    });
+        final widths = [
+          for (var i = 0; i < 3; i++)
+            tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
+        ];
+        expect(widths[1], greaterThan(widths[0]));
+        expect(widths[1], greaterThan(widths[2]));
+        expect(widths[1], lessThanOrEqualTo(180.0 + 0.5));
+      },
+    );
 
-    testWidgets('inactive dock tabs keep their natural width when room allows',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 480,
-            child: UiBottomTabBar(
-              items: const [
-                UiBottomTabItem(label: 'Overview'),
-                UiBottomTabItem(label: 'Assignments'),
-                UiBottomTabItem(label: 'Notifications'),
-              ],
-              currentIndex: 0,
-              onChanged: (_) {},
+    testWidgets(
+      'inactive dock tabs keep their natural width when room allows',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 480,
+              child: UiBottomTabBar(
+                items: const [
+                  UiBottomTabItem(label: 'Overview'),
+                  UiBottomTabItem(label: 'Assignments'),
+                  UiBottomTabItem(label: 'Notifications'),
+                ],
+                currentIndex: 0,
+                onChanged: (_) {},
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final widths = [
-        for (var i = 0; i < 3; i++)
-          tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
-      ];
-      expect(widths[1], greaterThan(72.0));
-      expect(widths[2], greaterThan(72.0));
-      expect(widths[1], greaterThan(widths[0]));
-      expect(widths[2], greaterThan(widths[1]));
-    });
+        final widths = [
+          for (var i = 0; i < 3; i++)
+            tester.getSize(find.byKey(Key('ui_bottom_tab_slot_$i'))).width,
+        ];
+        expect(widths[1], greaterThan(72.0));
+        expect(widths[2], greaterThan(72.0));
+        expect(widths[1], greaterThan(widths[0]));
+        expect(widths[2], greaterThan(widths[1]));
+      },
+    );
 
-    testWidgets('very narrow width stays non-overflowing and tappable',
-        (tester) async {
+    testWidgets('very narrow width stays non-overflowing and tappable', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -1415,49 +1432,52 @@ void main() {
     });
 
     testWidgets(
-        'drag leaving the pill and re-entering tab bar away from pill does '
-        'not change selection', (tester) async {
-      var index = 0;
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 360,
-            child: StatefulBuilder(
-              builder: (ctx, setState) => UiBottomTabBar(
-                items: const [
-                  UiBottomTabItem(label: 'Home'),
-                  UiBottomTabItem(label: 'Chat'),
-                  UiBottomTabItem(label: 'Me'),
-                ],
-                currentIndex: index,
-                onChanged: (i) => setState(() => index = i),
+      'drag leaving the pill and re-entering tab bar away from pill does '
+      'not change selection',
+      (tester) async {
+        var index = 0;
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 360,
+              child: StatefulBuilder(
+                builder: (ctx, setState) => UiBottomTabBar(
+                  items: const [
+                    UiBottomTabItem(label: 'Home'),
+                    UiBottomTabItem(label: 'Chat'),
+                    UiBottomTabItem(label: 'Me'),
+                  ],
+                  currentIndex: index,
+                  onChanged: (i) => setState(() => index = i),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final start = tester.getCenter(find.text('Home'));
-      final gesture = await tester.startGesture(start);
-      // Horizontal escape — pause.
-      await gesture.moveBy(const Offset(500, 0));
-      await tester.pump();
-      // Return partway (still clear of frozen pill) plus vertical drift.
-      await gesture.moveBy(const Offset(-180, 0));
-      await tester.pump();
-      await gesture.moveBy(const Offset(0, -100));
-      await tester.pump();
-      await gesture.moveBy(const Offset(0, 100));
-      await tester.pump();
-      await gesture.up();
-      await tester.pumpAndSettle();
+        final start = tester.getCenter(find.text('Home'));
+        final gesture = await tester.startGesture(start);
+        // Horizontal escape — pause.
+        await gesture.moveBy(const Offset(500, 0));
+        await tester.pump();
+        // Return partway (still clear of frozen pill) plus vertical drift.
+        await gesture.moveBy(const Offset(-180, 0));
+        await tester.pump();
+        await gesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+        await gesture.moveBy(const Offset(0, 100));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      expect(index, 0);
-    });
+        expect(index, 0);
+      },
+    );
 
-    testWidgets('in-pill drag that tracks the pill still changes selection',
-        (tester) async {
+    testWidgets('in-pill drag that tracks the pill still changes selection', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -1491,8 +1511,9 @@ void main() {
       expect(index, greaterThan(0));
     });
 
-    testWidgets('horizontal escape freezes dock pill and confirms nearest',
-        (tester) async {
+    testWidgets('horizontal escape freezes dock pill and confirms nearest', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -1514,12 +1535,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      double indicatorLeft() => (tester
-                  .widget<AnimatedPositioned>(
-                      find.byType(AnimatedPositioned).first)
-                  .left ??
-              0)
-          .toDouble();
+      double indicatorLeft() =>
+          (tester
+                      .widget<AnimatedPositioned>(
+                        find.byType(AnimatedPositioned).first,
+                      )
+                      .left ??
+                  0)
+              .toDouble();
 
       final start = tester.getCenter(find.text('Home'));
       final gesture = await tester.startGesture(start);
@@ -1544,8 +1567,9 @@ void main() {
       expect(index, greaterThan(0));
     });
 
-    testWidgets('dock horizontal escape then catch-up resumes drag',
-        (tester) async {
+    testWidgets('dock horizontal escape then catch-up resumes drag', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -1585,8 +1609,9 @@ void main() {
       expect(index, greaterThan(0));
     });
 
-    testWidgets('dock drag ignores vertical drift and keeps tracking',
-        (tester) async {
+    testWidgets('dock drag ignores vertical drift and keeps tracking', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -1626,8 +1651,9 @@ void main() {
   });
 
   group('UiSidebar / UiResponsiveNavigationScaffold', () {
-    testWidgets('renders expanded items + responds to active state',
-        (tester) async {
+    testWidgets('renders expanded items + responds to active state', (
+      tester,
+    ) async {
       var taps = 0;
       await tester.pumpWidget(
         _host(
@@ -1643,10 +1669,7 @@ void main() {
                       onPressed: () => taps++,
                       active: true,
                     ),
-                    UiSidebarItem(
-                      label: 'Archive',
-                      onPressed: () => taps++,
-                    ),
+                    UiSidebarItem(label: 'Archive', onPressed: () => taps++),
                   ],
                 ),
               ],
@@ -1667,8 +1690,9 @@ void main() {
       expect(s.resolveFormFactor(1200), UiNavigationFormFactor.desktop);
     });
 
-    testWidgets('responsive scaffold shows phone chrome under the breakpoint',
-        (tester) async {
+    testWidgets('responsive scaffold shows phone chrome under the breakpoint', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1686,8 +1710,9 @@ void main() {
       expect(find.text('sidebar'), findsNothing);
     });
 
-    testWidgets('responsive scaffold shows desktop chrome above breakpoint',
-        (tester) async {
+    testWidgets('responsive scaffold shows desktop chrome above breakpoint', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1707,8 +1732,9 @@ void main() {
       expect(find.text('bar'), findsNothing);
     });
 
-    testWidgets('responsive scaffold overlays side chrome without a gutter',
-        (tester) async {
+    testWidgets('responsive scaffold overlays side chrome without a gutter', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1731,8 +1757,9 @@ void main() {
       expect(bodyLeft.dx, sidebarRight.dx);
     });
 
-    testWidgets('responsive scaffold mirrors side chrome in RTL',
-        (tester) async {
+    testWidgets('responsive scaffold mirrors side chrome in RTL', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1758,8 +1785,9 @@ void main() {
       expect(sidebarLeft.dx, bodyRight.dx);
     });
 
-    testWidgets('responsive scaffold can show tablet secondary + bottom bar',
-        (tester) async {
+    testWidgets('responsive scaffold can show tablet secondary + bottom bar', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -1769,8 +1797,10 @@ void main() {
           const UiResponsiveNavigationScaffold(
             sidebar: SizedBox(width: 80, child: Text('sidebar')),
             secondary: SizedBox(width: 80, child: Text('secondary-desktop')),
-            tabletSecondary:
-                SizedBox(width: 80, child: Text('secondary-tablet')),
+            tabletSecondary: SizedBox(
+              width: 80,
+              child: Text('secondary-tablet'),
+            ),
             bottomBar: SizedBox(height: 56, child: Text('tablet-bar')),
             showBottomBarOnTablet: true,
             showSecondaryOnTablet: true,

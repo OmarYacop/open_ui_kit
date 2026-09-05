@@ -46,11 +46,8 @@ class UiSharedMorph extends StatelessWidget {
     return Hero(
       tag: tag,
       transitionOnUserGestures: transitionOnUserGestures,
-      createRectTween: (begin, end) => _UiCurvedRectTween(
-        begin: begin,
-        end: end,
-        curve: curve,
-      ),
+      createRectTween: (begin, end) =>
+          _UiCurvedRectTween(begin: begin, end: end, curve: curve),
       flightShuttleBuilder: flightShuttleBuilder ?? _buildFlight,
       placeholderBuilder: placeholderBuilder,
       child: child,
@@ -73,9 +70,7 @@ class UiSharedMorph extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, _) {
-        final routeProgress = curve.transform(
-          animation.value.clamp(0.0, 1.0),
-        );
+        final routeProgress = curve.transform(animation.value.clamp(0.0, 1.0));
         final destinationOpacity = direction == HeroFlightDirection.push
             ? routeProgress
             : 1 - routeProgress;

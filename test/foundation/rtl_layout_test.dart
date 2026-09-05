@@ -19,18 +19,17 @@ Widget _host(Widget child, {TextDirection dir = TextDirection.ltr}) {
 
 void main() {
   group('RTL layout — PR-F sanity checks', () {
-    testWidgets(
-        'pagination loading caption sits on the reading-end of the '
+    testWidgets('pagination loading caption sits on the reading-end of the '
         'control row in both directions', (tester) async {
       Widget build(TextDirection dir) => _host(
-            UiPagination(
-              currentPage: 1,
-              totalPages: 5,
-              loading: true,
-              onPageChanged: (_) {},
-            ),
-            dir: dir,
-          );
+        UiPagination(
+          currentPage: 1,
+          totalPages: 5,
+          loading: true,
+          onPageChanged: (_) {},
+        ),
+        dir: dir,
+      );
 
       await tester.pumpWidget(build(TextDirection.ltr));
       await tester.pumpAndSettle();
@@ -49,7 +48,8 @@ void main() {
       expect(
         rtlLoadingX,
         lessThan(rtlFirstChipX),
-        reason: 'RTL: loading caption should sit left of the first chip '
+        reason:
+            'RTL: loading caption should sit left of the first chip '
             '(reading end is on the left)',
       );
     });

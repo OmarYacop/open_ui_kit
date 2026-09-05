@@ -92,9 +92,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const UiApp(
-        home: Center(child: UiRefreshIndicator.refreshing()),
-      ),
+      const UiApp(home: Center(child: UiRefreshIndicator.refreshing())),
     );
 
     final indicator = tester.widget<UiRefreshIndicator>(
@@ -110,12 +108,7 @@ void main() {
   ) async {
     final completer = Completer<void>();
     await tester.pumpWidget(
-      _host(
-        UiRefresher(
-          onRefresh: () => completer.future,
-          child: _list(),
-        ),
-      ),
+      _host(UiRefresher(onRefresh: () => completer.future, child: _list())),
     );
     await tester.pumpAndSettle();
 
@@ -197,9 +190,7 @@ void main() {
     await tester.pump();
 
     final layers = tester
-        .widgetList<UiLayeredOverlayPortal>(
-          find.byType(UiLayeredOverlayPortal),
-        )
+        .widgetList<UiLayeredOverlayPortal>(find.byType(UiLayeredOverlayPortal))
         .map((portal) => portal.layer);
     expect(layers, contains(UiOverlayLayer.navigationChrome));
 
@@ -207,12 +198,12 @@ void main() {
 
     expect(statuses, contains(UiRefreshStatus.refreshing));
     final feedbackPortal = tester
-        .widgetList<UiLayeredOverlayPortal>(
-          find.byType(UiLayeredOverlayPortal),
-        )
+        .widgetList<UiLayeredOverlayPortal>(find.byType(UiLayeredOverlayPortal))
         .singleWhere((portal) => portal.layer == UiOverlayLayer.systemFeedback);
-    expect(feedbackPortal.layer.index,
-        greaterThan(UiOverlayLayer.navigationChrome.index));
+    expect(
+      feedbackPortal.layer.index,
+      greaterThan(UiOverlayLayer.navigationChrome.index),
+    );
     expect(
       tester.getTopLeft(find.byKey(const Key('refresh_indicator_surface'))).dy,
       greaterThanOrEqualTo(47),
@@ -221,15 +212,11 @@ void main() {
   });
 
   group('UiRefresher', () {
-    testWidgets('disposes safely without prior pull interaction',
-        (tester) async {
+    testWidgets('disposes safely without prior pull interaction', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(
-          UiRefresher(
-            onRefresh: () async {},
-            child: _list(height: 20),
-          ),
-        ),
+        _host(UiRefresher(onRefresh: () async {}, child: _list(height: 20))),
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -237,8 +224,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('runs refresh and renders rich lifecycle feedback',
-        (tester) async {
+    testWidgets('runs refresh and renders rich lifecycle feedback', (
+      tester,
+    ) async {
       final completer = Completer<void>();
       final statuses = <UiRefreshStatus>[];
       var refreshCount = 0;
@@ -260,12 +248,13 @@ void main() {
 
       expect(refreshCount, 1);
       expect(
-          statuses,
-          containsAllInOrder([
-            UiRefreshStatus.dragging,
-            UiRefreshStatus.armed,
-            UiRefreshStatus.refreshing,
-          ]));
+        statuses,
+        containsAllInOrder([
+          UiRefreshStatus.dragging,
+          UiRefreshStatus.armed,
+          UiRefreshStatus.refreshing,
+        ]),
+      );
       expect(find.byType(UiRefreshIndicator), findsOneWidget);
       expect(find.text('Refreshing…'), findsNothing);
 
@@ -280,8 +269,9 @@ void main() {
       expect(statuses.last, UiRefreshStatus.idle);
     });
 
-    testWidgets('always-scrollable composition refreshes short content',
-        (tester) async {
+    testWidgets('always-scrollable composition refreshes short content', (
+      tester,
+    ) async {
       var refreshCount = 0;
       await tester.pumpWidget(
         _host(
@@ -298,8 +288,9 @@ void main() {
       expect(refreshCount, 1);
     });
 
-    testWidgets('dismisses without refreshing below the trigger distance',
-        (tester) async {
+    testWidgets('dismisses without refreshing below the trigger distance', (
+      tester,
+    ) async {
       var refreshCount = 0;
       final statuses = <UiRefreshStatus>[];
       await tester.pumpWidget(
@@ -320,8 +311,9 @@ void main() {
       expect(statuses.last, UiRefreshStatus.idle);
     });
 
-    testWidgets('controller coalesces concurrent refresh requests',
-        (tester) async {
+    testWidgets('controller coalesces concurrent refresh requests', (
+      tester,
+    ) async {
       final controller = UiRefresherController();
       final completer = Completer<void>();
       var refreshCount = 0;
@@ -359,8 +351,9 @@ void main() {
       expect(controller.status, UiRefreshStatus.idle);
     });
 
-    testWidgets('surfaces failures and rethrows them to controller callers',
-        (tester) async {
+    testWidgets('surfaces failures and rethrows them to controller callers', (
+      tester,
+    ) async {
       final controller = UiRefresherController();
       Object? reportedError;
 
@@ -392,8 +385,9 @@ void main() {
       expect(controller.status, UiRefreshStatus.idle);
     });
 
-    testWidgets('provides live progress to a custom indicator builder',
-        (tester) async {
+    testWidgets('provides live progress to a custom indicator builder', (
+      tester,
+    ) async {
       final completer = Completer<void>();
       final seen = <UiRefreshStatus>[];
 
@@ -421,8 +415,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('positions the overlay indicator below the top safe inset',
-        (tester) async {
+    testWidgets('positions the overlay indicator below the top safe inset', (
+      tester,
+    ) async {
       final controller = UiRefresherController();
       final completer = Completer<void>();
       final triggerDistances = <double>[];
@@ -436,11 +431,7 @@ void main() {
             onRefresh: () => completer.future,
             indicatorBuilder: (_, details) {
               triggerDistances.add(details.triggerDistance);
-              return const SizedBox(
-                key: indicatorKey,
-                width: 24,
-                height: 24,
-              );
+              return const SizedBox(key: indicatorKey, width: 24, height: 24);
             },
             child: _list(),
           ),
@@ -464,10 +455,7 @@ void main() {
       final completer = Completer<void>();
       await tester.pumpWidget(
         _host(
-          UiRefresher(
-            onRefresh: () => completer.future,
-            child: _list(),
-          ),
+          UiRefresher(onRefresh: () => completer.future, child: _list()),
           locale: const Locale('ar'),
         ),
       );
@@ -521,9 +509,11 @@ void main() {
       );
 
       await _pull(tester, scrollable: find.byType(CustomScrollView));
-      for (var frame = 0;
-          frame < 90 && !statuses.contains(UiRefreshStatus.refreshing);
-          frame++) {
+      for (
+        var frame = 0;
+        frame < 90 && !statuses.contains(UiRefreshStatus.refreshing);
+        frame++
+      ) {
         await tester.pump(const Duration(milliseconds: 16));
       }
 
@@ -536,8 +526,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('maps callback errors to failed indicator feedback',
-        (tester) async {
+    testWidgets('maps callback errors to failed indicator feedback', (
+      tester,
+    ) async {
       Object? reportedError;
       await tester.pumpWidget(
         _host(
@@ -563,8 +554,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('positions the sliver indicator below the top safe inset',
-        (tester) async {
+    testWidgets('positions the sliver indicator below the top safe inset', (
+      tester,
+    ) async {
       final completer = Completer<void>();
       final triggerDistances = <double>[];
       const indicatorKey = ValueKey('safe-sliver-refresher-indicator');
@@ -593,9 +585,11 @@ void main() {
       );
 
       await _pull(tester, scrollable: find.byType(CustomScrollView));
-      for (var frame = 0;
-          frame < 90 && find.byKey(indicatorKey).evaluate().isEmpty;
-          frame++) {
+      for (
+        var frame = 0;
+        frame < 90 && find.byKey(indicatorKey).evaluate().isEmpty;
+        frame++
+      ) {
         await tester.pump(const Duration(milliseconds: 16));
       }
 
@@ -608,18 +602,16 @@ void main() {
     });
   });
 
-  testWidgets('UiCollectionPage opts into refresher with one callback',
-      (tester) async {
+  testWidgets('UiCollectionPage opts into refresher with one callback', (
+    tester,
+  ) async {
     var refreshCount = 0;
     await tester.pumpWidget(
       _host(
         UiCollectionPage<String>(
           items: const ['one'],
           onRefresh: () async => refreshCount++,
-          itemBuilder: (_, item, __) => SizedBox(
-            height: 24,
-            child: Text(item),
-          ),
+          itemBuilder: (_, item, __) => SizedBox(height: 24, child: Text(item)),
         ),
       ),
     );

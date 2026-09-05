@@ -17,8 +17,8 @@ class UiMotionDuration {
   const UiMotionDuration.token(this.speed) : customDuration = null;
 
   const UiMotionDuration.custom(Duration duration)
-      : speed = null,
-        customDuration = duration;
+    : speed = null,
+      customDuration = duration;
 
   final UiMotionSpeed? speed;
   final Duration? customDuration;
@@ -171,10 +171,7 @@ class UiMotionSpec {
   ///
   /// This is useful for component sub-phases that need the same token-or-custom
   /// timing model as a full [UiMotionSpec].
-  static Duration resolveDuration(
-    UiMotionTokens tokens,
-    UiMotionSpeed speed,
-  ) {
+  static Duration resolveDuration(UiMotionTokens tokens, UiMotionSpeed speed) {
     return switch (speed) {
       UiMotionSpeed.instant => tokens.instant,
       UiMotionSpeed.faster => tokens.faster,

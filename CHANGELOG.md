@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Compatibility
+
+- Correct the supported SDK floor to the verified Flutter 3.47.0 / Dart 3.13.0
+  toolchain. CI checks this minimum and current stable. Earlier declared SDK
+  versions do not support APIs already used by the package. See ADR 0001.
+- Retain all compatibility APIs through 0.x, with removal scheduled for 1.0.0:
+  `UiTimePicker` → `UiTimeGridPicker` / `UiTimePickerField`;
+  `components/schedule.dart` → `components/calendar.dart`;
+  `UiNavigationSurface.blurred` and `UiNavigationSpec.blurSigma` → `edgeFade`;
+  `UiStickyRegionSurface.glass` → `edgeFade`;
+  `UiOpenContainer.backdropBlurSigma` → `backdrop` / `UiContainerBackdropSpec`;
+  `UiRefreshIndicator.showLabel` → a custom `UiRefreshIndicatorBuilder`;
+  omit the ignored `UiStackedOverlaySurface.implicitScaleAnimation` flag.
+
+### Added
+
+- Separate success/warning foreground color tokens for readable tinted surfaces.
+- Compatible English/Arabic localization hooks for alert, table, rating, slider,
+  and calendar text.
+
 ## 0.8.1 - 2026-09-05
 
 ### Added

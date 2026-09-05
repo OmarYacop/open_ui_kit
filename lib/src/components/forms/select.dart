@@ -257,10 +257,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     final rowHeight = _estimatedRowHeight();
     final target = math.max(0.0, idx * rowHeight - _menuMaxHeight / 2);
     _scrollController.jumpTo(
-      target.clamp(
-        0.0,
-        _scrollController.position.maxScrollExtent,
-      ),
+      target.clamp(0.0, _scrollController.position.maxScrollExtent),
     );
   }
 
@@ -337,13 +334,16 @@ class UiSelectState<T> extends State<UiSelect<T>> {
         final background = state.hovered || state.pressed
             ? c.accent
             : isSelected
-                ? c.accent.withValues(alpha: 0.68)
-                : const Color(0x00000000);
+            ? c.accent.withValues(alpha: 0.68)
+            : const Color(0x00000000);
 
         // Full row override wins: caller provides their own row from
         // scratch, the kit supplies nothing else.
-        final fullOverride =
-            widget.optionBuilder?.call(context, option, isSelected);
+        final fullOverride = widget.optionBuilder?.call(
+          context,
+          option,
+          isSelected,
+        );
 
         // Label slot: either a caller-provided builder, or the default
         // Text(option.label). Either way, weight updates based on
@@ -361,7 +361,8 @@ class UiSelectState<T> extends State<UiSelect<T>> {
                 overflow: TextOverflow.ellipsis,
               );
 
-        final content = fullOverride ??
+        final content =
+            fullOverride ??
             Row(
               children: [
                 if (option.leading != null) ...[
@@ -392,11 +393,7 @@ class UiSelectState<T> extends State<UiSelect<T>> {
                 ),
                 if (isSelected) ...[
                   SizedBox(width: tokens.spacing.x2),
-                  Icon(
-                    LucideIcons.check,
-                    size: 16,
-                    color: c.popoverForeground,
-                  ),
+                  Icon(LucideIcons.check, size: 16, color: c.popoverForeground),
                 ],
               ],
             );
@@ -472,8 +469,9 @@ class UiSelectState<T> extends State<UiSelect<T>> {
                         _minHeightFor(widget.size),
                         open ? _triggerHeight ?? 0 : 0,
                       ),
-                      minWidth:
-                          widget.shrinkWrap && open ? _triggerWidth ?? 0 : 0,
+                      minWidth: widget.shrinkWrap && open
+                          ? _triggerWidth ?? 0
+                          : 0,
                     ),
                     padding: _paddingFor(widget.size, tokens),
                     child: Row(
@@ -482,8 +480,9 @@ class UiSelectState<T> extends State<UiSelect<T>> {
                           : MainAxisSize.max,
                       children: [
                         Flexible(
-                          fit:
-                              widget.shrinkWrap ? FlexFit.loose : FlexFit.tight,
+                          fit: widget.shrinkWrap
+                              ? FlexFit.loose
+                              : FlexFit.tight,
                           child: widget.valueBuilder != null
                               ? widget.valueBuilder!(context, selected)
                               : UiText(
@@ -559,7 +558,8 @@ class UiSelectState<T> extends State<UiSelect<T>> {
     final tokens = UiThemeTokens.of(context);
     final rowHeight = math.max(40.0, tokens.spacing.x2 * 2 + 20);
     final separators = math.max(0, widget.options.length - 1);
-    final desiredHeight = tokens.spacing.x2 * 2 +
+    final desiredHeight =
+        tokens.spacing.x2 * 2 +
         widget.options.length * rowHeight +
         separators * tokens.spacing.x1;
     final maxAllowed = math.min(320.0, desiredHeight);
@@ -637,10 +637,7 @@ class _AnimatedMenuRevealState extends State<_AnimatedMenuReveal>
 
   @override
   Widget build(BuildContext context) {
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
+    final curved = CurvedAnimation(parent: _controller, curve: widget.curve);
     return UiSlideFadeTransition(
       animation: curved,
       beginOffset: Offset(0, widget.openAbove ? 4 : -4),
@@ -650,8 +647,9 @@ class _AnimatedMenuRevealState extends State<_AnimatedMenuReveal>
         animation: curved,
         beginScale: 0.98,
         fade: false,
-        alignment:
-            widget.openAbove ? Alignment.bottomCenter : Alignment.topCenter,
+        alignment: widget.openAbove
+            ? Alignment.bottomCenter
+            : Alignment.topCenter,
         child: widget.child,
       ),
     );

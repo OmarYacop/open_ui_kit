@@ -178,10 +178,7 @@ class _DialogHost extends StatelessWidget {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: UiFadeScaleTransition(
-              animation: curved,
-              child: child,
-            ),
+            child: UiFadeScaleTransition(animation: curved, child: child),
           ),
         ),
       ],
@@ -190,10 +187,7 @@ class _DialogHost extends StatelessWidget {
 }
 
 class _DialogBackdrop extends StatelessWidget {
-  const _DialogBackdrop({
-    required this.animation,
-    required this.color,
-  });
+  const _DialogBackdrop({required this.animation, required this.color});
 
   final Animation<double> animation;
   final Color color;
@@ -214,10 +208,7 @@ class _DialogBackdrop extends StatelessWidget {
     // can skip it entirely at opacity 0.
     return IgnorePointer(
       child: RepaintBoundary(
-        child: FadeTransition(
-          opacity: animation,
-          child: backdrop,
-        ),
+        child: FadeTransition(opacity: animation, child: backdrop),
       ),
     );
   }

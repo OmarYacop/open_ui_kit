@@ -40,10 +40,7 @@ class UiMessageScrollerController extends ChangeNotifier {
     await _state?._jumpToLatest(animated: animated);
   }
 
-  Future<bool> jumpToMessage(
-    String id, {
-    bool animated = true,
-  }) async {
+  Future<bool> jumpToMessage(String id, {bool animated = true}) async {
     return await _state?._jumpToMessage(id, animated: animated) ?? false;
   }
 
@@ -71,8 +68,9 @@ class UiMessageScrollerController extends ChangeNotifier {
   }) {
     final nextEdge = atLiveEdge ?? _isAtLiveEdge;
     final nextCount = unseenCount ?? _unseenCount;
-    final nextFirst =
-        clearFirstUnseen ? null : firstUnseenMessageId ?? _firstUnseenMessageId;
+    final nextFirst = clearFirstUnseen
+        ? null
+        : firstUnseenMessageId ?? _firstUnseenMessageId;
     if (nextEdge == _isAtLiveEdge &&
         nextCount == _unseenCount &&
         nextFirst == _firstUnseenMessageId) {
@@ -134,7 +132,8 @@ class UiMessageScroller extends StatefulWidget {
   final Widget Function(
     BuildContext context,
     UiMessageScrollerController controller,
-  )? scrollControlsBuilder;
+  )?
+  scrollControlsBuilder;
 
   @override
   State<UiMessageScroller> createState() => _UiMessageScrollerState();
@@ -194,29 +193,29 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     final oldIds = oldWidget.items.map((item) => item.id).toSet();
     final oldLastIndex = oldWidget.items.isEmpty
         ? -1
-        : widget.items.indexWhere(
-            (item) => item.id == oldWidget.items.last.id,
-          );
+        : widget.items.indexWhere((item) => item.id == oldWidget.items.last.id);
     // Only messages added after the old tail are arrivals. Treating every new
     // ID as an arrival makes pagination and restored history incorrectly show
     // an unread badge.
     final appendedItems = oldLastIndex < 0
         ? widget.items.where((item) => !oldIds.contains(item.id)).toList()
         : widget.items
-            .skip(oldLastIndex + 1)
-            .where((item) => !oldIds.contains(item.id))
-            .toList(growable: false);
+              .skip(oldLastIndex + 1)
+              .where((item) => !oldIds.contains(item.id))
+              .toList(growable: false);
     final appended = appendedItems.length;
     final appendedOutgoing = appendedItems.any((item) => item.isOutgoing);
-    final appendedIncoming =
-        appendedItems.where((item) => !item.isOutgoing).toList(growable: false);
+    final appendedIncoming = appendedItems
+        .where((item) => !item.isOutgoing)
+        .toList(growable: false);
     if (appendedOutgoing) _dismissUnreadMarker(notify: false);
     final oldFirstIndex = oldWidget.items.isEmpty
         ? -1
         : widget.items.indexWhere(
             (item) => item.id == oldWidget.items.first.id,
           );
-    final prepended = oldFirstIndex > 0 &&
+    final prepended =
+        oldFirstIndex > 0 &&
         widget.items
             .take(oldFirstIndex)
             .any((item) => !oldIds.contains(item.id));
@@ -240,7 +239,8 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
         _publicController._update(
           atLiveEdge: false,
           unseenCount: _publicController.unseenCount + appendedIncoming.length,
-          firstUnseenMessageId: _publicController.firstUnseenMessageId ??
+          firstUnseenMessageId:
+              _publicController.firstUnseenMessageId ??
               appendedIncoming.first.id,
         );
       }
@@ -269,7 +269,8 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
       ...widget.items.take(boundaryIndex),
       UiMessageScrollerItem(
         id: _unreadMarkerId,
-        child: widget.unreadMarkerBuilder?.call(context) ??
+        child:
+            widget.unreadMarkerBuilder?.call(context) ??
             UiUnreadMessagesMarker(label: widget.unreadMarkerLabel),
       ),
       ...widget.items.skip(boundaryIndex),
@@ -356,10 +357,7 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     );
   }
 
-  Future<bool> _jumpToMessage(
-    String id, {
-    bool animated = true,
-  }) async {
+  Future<bool> _jumpToMessage(String id, {bool animated = true}) async {
     final displayItems = _displayItems();
     final index = displayItems.indexWhere((item) => item.id == id);
     if (index < 0 || !_scrollController.hasClients) return false;
@@ -369,7 +367,7 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
       final averageExtent = widget.items.length <= 1
           ? position.viewportDimension
           : (position.maxScrollExtent + position.viewportDimension) /
-              widget.items.length;
+                widget.items.length;
       final mountedEntries = <(int, BuildContext)>[];
       for (var builtIndex = 0; builtIndex < displayItems.length; builtIndex++) {
         final builtContext = _keys[displayItems[builtIndex].id]?.currentContext;
@@ -394,9 +392,7 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
             : viewport.getOffsetToReveal(renderObject!, 0).offset;
         estimate = nearestOffset + (index - nearest.$1) * averageExtent;
       }
-      _scrollController.jumpTo(
-        estimate.clamp(0, position.maxScrollExtent),
-      );
+      _scrollController.jumpTo(estimate.clamp(0, position.maxScrollExtent));
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return false;
       targetContext = _keys[id]?.currentContext;
@@ -404,8 +400,9 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     if (targetContext == null || !targetContext.mounted) return false;
     await Scrollable.ensureVisible(
       targetContext,
-      duration:
-          animated ? UiThemeTokens.motionOf(context).standard : Duration.zero,
+      duration: animated
+          ? UiThemeTokens.motionOf(context).standard
+          : Duration.zero,
       curve: UiThemeTokens.motionOf(context).standardCurve,
       alignment: .5,
     );
@@ -434,40 +431,44 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     return AnimatedBuilder(
       animation: _publicController,
       builder: (context, _) {
-        return Stack(children: [
-          ListView.builder(
-            controller: _scrollController,
-            padding: widget.padding,
-            itemCount: displayItems.length,
-            itemBuilder: (context, index) {
-              final item = displayItems[index];
-              final key = _keys.putIfAbsent(item.id, GlobalKey.new);
-              return Padding(
-                key: key,
-                padding: EdgeInsets.only(
-                  bottom:
-                      index == displayItems.length - 1 ? 0 : widget.itemSpacing,
-                ),
-                child: item.child,
-              );
-            },
-          ),
-          PositionedDirectional(
-            end: tokens.spacing.x3,
-            bottom: tokens.spacing.x3,
-            child: widget.scrollControlsBuilder?.call(
-                  context,
-                  _publicController,
-                ) ??
-                UiMessageScrollControls(
-                  show: !_publicController.isAtLiveEdge,
-                  queuedMessageCount: _publicController.unseenCount,
-                  onScrollToBottom: _jumpToLatest,
-                  scrollToBottomLabel: widget.jumpToLatestLabel,
-                  queueLabelBuilder: widget.newMessagesLabelBuilder,
-                ),
-          ),
-        ]);
+        return Stack(
+          children: [
+            ListView.builder(
+              controller: _scrollController,
+              padding: widget.padding,
+              itemCount: displayItems.length,
+              itemBuilder: (context, index) {
+                final item = displayItems[index];
+                final key = _keys.putIfAbsent(item.id, GlobalKey.new);
+                return Padding(
+                  key: key,
+                  padding: EdgeInsets.only(
+                    bottom: index == displayItems.length - 1
+                        ? 0
+                        : widget.itemSpacing,
+                  ),
+                  child: item.child,
+                );
+              },
+            ),
+            PositionedDirectional(
+              end: tokens.spacing.x3,
+              bottom: tokens.spacing.x3,
+              child:
+                  widget.scrollControlsBuilder?.call(
+                    context,
+                    _publicController,
+                  ) ??
+                  UiMessageScrollControls(
+                    show: !_publicController.isAtLiveEdge,
+                    queuedMessageCount: _publicController.unseenCount,
+                    onScrollToBottom: _jumpToLatest,
+                    scrollToBottomLabel: widget.jumpToLatestLabel,
+                    queueLabelBuilder: widget.newMessagesLabelBuilder,
+                  ),
+            ),
+          ],
+        );
       },
     );
   }

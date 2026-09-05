@@ -7,23 +7,11 @@ class UiShadowTokens {
   const UiShadowTokens({
     this.none = const <BoxShadow>[],
     this.sm = const <BoxShadow>[
-      BoxShadow(
-        color: Color(0x0D000000),
-        blurRadius: 2,
-        offset: Offset(0, 1),
-      ),
+      BoxShadow(color: Color(0x0D000000), blurRadius: 2, offset: Offset(0, 1)),
     ],
     this.md = const <BoxShadow>[
-      BoxShadow(
-        color: Color(0x1A000000),
-        blurRadius: 6,
-        offset: Offset(0, 4),
-      ),
-      BoxShadow(
-        color: Color(0x0F000000),
-        blurRadius: 2,
-        offset: Offset(0, 2),
-      ),
+      BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4)),
+      BoxShadow(color: Color(0x0F000000), blurRadius: 2, offset: Offset(0, 2)),
     ],
     this.lg = const <BoxShadow>[
       BoxShadow(
@@ -31,11 +19,7 @@ class UiShadowTokens {
         blurRadius: 16,
         offset: Offset(0, 10),
       ),
-      BoxShadow(
-        color: Color(0x0F000000),
-        blurRadius: 6,
-        offset: Offset(0, 4),
-      ),
+      BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 4)),
     ],
   });
 

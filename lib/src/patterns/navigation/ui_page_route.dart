@@ -33,22 +33,22 @@ class UiPageRoute<T> extends PageRouteBuilder<T>
     super.reverseTransitionDuration = const Duration(milliseconds: 160),
     super.opaque,
   }) : super(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              builder(context),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final tokens = UiThemeTokens.of(context);
-            return UiNavigationTransition(
-              animation: CurvedAnimation(
-                parent: animation,
-                curve: tokens.motion.standardCurve,
-                reverseCurve: tokens.motion.standardCurve,
-              ),
-              style: transitionStyle,
-              reverse: animation.status == AnimationStatus.reverse,
-              child: child,
-            );
-          },
-        );
+         pageBuilder: (context, animation, secondaryAnimation) =>
+             builder(context),
+         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+           final tokens = UiThemeTokens.of(context);
+           return UiNavigationTransition(
+             animation: CurvedAnimation(
+               parent: animation,
+               curve: tokens.motion.standardCurve,
+               reverseCurve: tokens.motion.standardCurve,
+             ),
+             style: transitionStyle,
+             reverse: animation.status == AnimationStatus.reverse,
+             child: child,
+           );
+         },
+       );
 
   /// Whether this route may be dismissed via the iOS edge-swipe-back
   /// gesture. [UiCupertinoBackGestureMixin] only ever attaches it on iOS
@@ -125,7 +125,8 @@ extension UiPageNavigation on BuildContext {
         settings: settings,
         swipeBackEnabled:
             swipeBackEnabled ?? defaults?.swipeBackEnabled ?? true,
-        transitionStyle: transitionStyle ??
+        transitionStyle:
+            transitionStyle ??
             defaults?.transitionStyle ??
             UiNavigationTransitionStyle.softShift,
       ),

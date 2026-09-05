@@ -116,8 +116,12 @@ class _UiAppState extends State<UiApp> {
   Widget build(BuildContext context) {
     final light = widget.lightTokens ?? UiThemeTokens.light;
     final dark = widget.darkTokens ?? UiThemeTokens.dark;
-    final reducedMotion = MediaQuery.maybeDisableAnimationsOf(context) ??
-        WidgetsBinding.instance.platformDispatcher.accessibilityFeatures
+    final reducedMotion =
+        MediaQuery.maybeDisableAnimationsOf(context) ??
+        WidgetsBinding
+            .instance
+            .platformDispatcher
+            .accessibilityFeatures
             .disableAnimations;
     final routeDuration = widget.pageTransitionDuration.resolveFromTokens(
       light.motion,
@@ -213,11 +217,7 @@ class _UiAppState extends State<UiApp> {
 }
 
 class UiAppContext extends InheritedWidget {
-  const UiAppContext({
-    super.key,
-    required this.title,
-    required super.child,
-  });
+  const UiAppContext({super.key, required this.title, required super.child});
 
   final String title;
 

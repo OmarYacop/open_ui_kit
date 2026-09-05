@@ -57,9 +57,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('open')));
     await tester.pumpAndSettle();
 
-    final surface = find.byKey(
-      const ValueKey('ui_adaptive_floating_surface'),
-    );
+    final surface = find.byKey(const ValueKey('ui_adaptive_floating_surface'));
     expect(surface, findsOneWidget);
     expect(tester.getSize(surface).width, 520);
     expect(find.byType(UiSheet), findsNothing);

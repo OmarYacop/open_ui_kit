@@ -81,17 +81,18 @@ class UiIconButton extends StatelessWidget {
         final isTransparent = bg.a == 0;
         final effectiveBg = state.pressed
             ? (isTransparent
-                ? tokens.colors.accent.withValues(alpha: 0.60)
-                : _shift(bg, -0.03))
+                  ? tokens.colors.accent.withValues(alpha: 0.60)
+                  : _shift(bg, -0.03))
             : state.hovered
-                ? (isTransparent
-                    ? tokens.colors.accent.withValues(alpha: 0.35)
-                    : _shift(bg, -0.015))
-                : bg;
+            ? (isTransparent
+                  ? tokens.colors.accent.withValues(alpha: 0.35)
+                  : _shift(bg, -0.015))
+            : bg;
 
         final grows = visualSize <= kUiPressGrowThreshold;
-        final surfaceScale =
-            state.pressed ? (grows ? kUiPressGrowScale : 0.96) : 1.0;
+        final surfaceScale = state.pressed
+            ? (grows ? kUiPressGrowScale : 0.96)
+            : 1.0;
         // Growing the surface must not grow the icon with it — only the
         // background behind the thumb should read as "bigger", so the icon
         // is counter-scaled by the same factor in the opposite direction.

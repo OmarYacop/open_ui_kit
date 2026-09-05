@@ -42,9 +42,7 @@ void main() {
   testWidgets('typing indicator collapses when nobody is typing', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      _host(const UiTypingIndicator(users: [])),
-    );
+    await tester.pumpWidget(_host(const UiTypingIndicator(users: [])));
 
     expect(find.byType(UiAvatar), findsNothing);
     expect(find.byType(UiText), findsNothing);
@@ -54,11 +52,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _host(
-        const UiTypingIndicator(
-          users: [UiTypingUser(id: 1, name: 'Ada')],
-        ),
-      ),
+      _host(const UiTypingIndicator(users: [UiTypingUser(id: 1, name: 'Ada')])),
     );
     await tester.pump();
 
@@ -111,9 +105,7 @@ void main() {
     await tester.pumpWidget(
       _host(
         const Center(
-          child: UiTypingIndicator(
-            users: [UiTypingUser(id: 1, name: 'Ada')],
-          ),
+          child: UiTypingIndicator(users: [UiTypingUser(id: 1, name: 'Ada')]),
         ),
       ),
     );
@@ -164,9 +156,7 @@ void main() {
 
     expect(
       tester.getSemantics(find.byType(UiAttachment)),
-      matchesSemantics(
-        label: 'lesson.pdf, Could not upload, upload failed',
-      ),
+      matchesSemantics(label: 'lesson.pdf, Could not upload, upload failed'),
     );
     await tester.tap(find.text('Retry'));
     expect(actionPressed, isTrue);
@@ -251,38 +241,40 @@ void main() {
   });
 
   testWidgets(
-      'scroller holds position and reports arrivals away from live edge',
-      (tester) async {
-    final controller = UiMessageScrollerController();
-    final key = GlobalKey<_ScrollerHarnessState>();
-    await tester
-        .pumpWidget(_host(_ScrollerHarness(key: key, controller: controller)));
-    await tester.pumpAndSettle();
+    'scroller holds position and reports arrivals away from live edge',
+    (tester) async {
+      final controller = UiMessageScrollerController();
+      final key = GlobalKey<_ScrollerHarnessState>();
+      await tester.pumpWidget(
+        _host(_ScrollerHarness(key: key, controller: controller)),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(ListView), const Offset(0, 260));
-    await tester.pumpAndSettle();
-    expect(controller.isAtLiveEdge, isFalse);
+      await tester.drag(find.byType(ListView), const Offset(0, 260));
+      await tester.pumpAndSettle();
+      expect(controller.isAtLiveEdge, isFalse);
 
-    key.currentState!.append();
-    await tester.pump();
-    await tester.pump();
+      key.currentState!.append();
+      await tester.pump();
+      await tester.pump();
 
-    expect(controller.unseenCount, 1);
-    expect(controller.firstUnseenMessageId, '30');
-    expect(find.byType(UiMessageQueueBadge), findsOneWidget);
+      expect(controller.unseenCount, 1);
+      expect(controller.firstUnseenMessageId, '30');
+      expect(find.byType(UiMessageQueueBadge), findsOneWidget);
 
-    final jumpToQueued = controller.jumpToFirstUnseen();
-    await tester.pumpAndSettle();
-    expect(await jumpToQueued, isTrue);
-    expect(controller.isAtLiveEdge, isTrue);
-    expect(controller.unseenCount, 0);
+      final jumpToQueued = controller.jumpToFirstUnseen();
+      await tester.pumpAndSettle();
+      expect(await jumpToQueued, isTrue);
+      expect(controller.isAtLiveEdge, isTrue);
+      expect(controller.unseenCount, 0);
 
-    final jumpToLatest = controller.jumpToLatest();
-    await tester.pumpAndSettle();
-    await jumpToLatest;
-    expect(controller.isAtLiveEdge, isTrue);
-    expect(controller.unseenCount, 0);
-  });
+      final jumpToLatest = controller.jumpToLatest();
+      await tester.pumpAndSettle();
+      await jumpToLatest;
+      expect(controller.isAtLiveEdge, isTrue);
+      expect(controller.unseenCount, 0);
+    },
+  );
 
   testWidgets('scroller jumps to a variable-height offscreen message', (
     tester,
@@ -355,10 +347,7 @@ void main() {
     final controller = UiMessageScrollerController();
     await tester.pumpWidget(
       _host(
-        _ScrollerHarness(
-          controller: controller,
-          initialUnreadMessageId: '24',
-        ),
+        _ScrollerHarness(controller: controller, initialUnreadMessageId: '24'),
       ),
     );
     await tester.pumpAndSettle();
@@ -397,11 +386,7 @@ void main() {
     final key = GlobalKey<_ScrollerHarnessState>();
     await tester.pumpWidget(
       _host(
-        _ScrollerHarness(
-          key: key,
-          controller: controller,
-          autoFollow: false,
-        ),
+        _ScrollerHarness(key: key, controller: controller, autoFollow: false),
       ),
     );
     await tester.pumpAndSettle();
@@ -437,9 +422,7 @@ void main() {
     expect(find.byType(UiMessageReplyReturnButton), findsOneWidget);
     expect(find.byType(UiMessageScrollToBottomButton), findsOneWidget);
     expect(find.text('4'), findsOneWidget);
-    final replyRect = tester.getRect(
-      find.byType(UiMessageReplyReturnButton),
-    );
+    final replyRect = tester.getRect(find.byType(UiMessageReplyReturnButton));
     final latestRect = tester.getRect(
       find.byType(UiMessageScrollToBottomButton),
     );
@@ -500,9 +483,7 @@ void main() {
 
 Widget _host(Widget child) {
   return UiApp(
-    home: Scaffold(
-      body: SizedBox(width: 800, height: 600, child: child),
-    ),
+    home: Scaffold(body: SizedBox(width: 800, height: 600, child: child)),
   );
 }
 
@@ -527,9 +508,9 @@ class _ScrollerHarnessState extends State<_ScrollerHarness> {
   final Set<int> outgoing = {};
 
   void append({bool outgoing = false}) => setState(() {
-        if (outgoing) this.outgoing.add(count);
-        count++;
-      });
+    if (outgoing) this.outgoing.add(count);
+    count++;
+  });
 
   @override
   Widget build(BuildContext context) {

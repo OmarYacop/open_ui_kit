@@ -26,7 +26,7 @@ class UiNavigationBackHistoryItem {
 @immutable
 class UiNavigationBackPopTarget {
   const UiNavigationBackPopTarget(this.count)
-      : assert(count > 0, 'count must be greater than zero');
+    : assert(count > 0, 'count must be greater than zero');
 
   final int count;
 }
@@ -130,7 +130,8 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
     final surfaceInset = tokens.spacing.x2 / 1.5;
     final itemGap = tokens.spacing.x1;
 
-    final estimated = widget.history.fold<double>(
+    final estimated =
+        widget.history.fold<double>(
           surfaceInset * 2,
           (height, item) => height + _rowHeight(tokens, textScaler, item),
         ) +
@@ -174,7 +175,8 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
     var height = titleHeight + tokens.spacing.x3;
     if (item.subtitle != null) {
       final captionStyle = tokens.typography.caption;
-      height += textScaler.scale(captionStyle.fontSize ?? 12) *
+      height +=
+          textScaler.scale(captionStyle.fontSize ?? 12) *
           (captionStyle.height ?? 1);
     }
     return height;
@@ -217,10 +219,11 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
     final c = tokens.colors;
     final surfaceInset = tokens.spacing.x2 / 1.5;
     final direction = Directionality.of(this.context);
-    final origin = (_openAbove
-            ? AlignmentDirectional.bottomStart
-            : AlignmentDirectional.topStart)
-        .resolve(direction);
+    final origin =
+        (_openAbove
+                ? AlignmentDirectional.bottomStart
+                : AlignmentDirectional.topStart)
+            .resolve(direction);
 
     return Stack(
       children: [
@@ -303,8 +306,8 @@ class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
           final foreground = state.pressed
               ? c.textPrimary.withValues(alpha: 0.55)
               : state.hovered || state.focused
-                  ? c.textPrimary.withValues(alpha: 0.78)
-                  : c.textPrimary;
+              ? c.textPrimary.withValues(alpha: 0.78)
+              : c.textPrimary;
 
           return TweenAnimationBuilder<Color?>(
             tween: ColorTween(end: foreground),
@@ -424,9 +427,7 @@ class _HistoryMenuEntrance extends StatefulWidget {
 
 class _HistoryMenuEntranceState extends State<_HistoryMenuEntrance>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-  );
+  late final AnimationController _controller = AnimationController(vsync: this);
   bool _started = false;
 
   @override

@@ -15,18 +15,18 @@ class UiConstrained extends StatelessWidget {
     this.alignment = Alignment.center,
     this.widthFactor,
     this.heightFactor,
-  })  : assert(minWidth == null || minWidth >= 0),
-        assert(maxWidth == null || maxWidth >= 0),
-        assert(minHeight == null || minHeight >= 0),
-        assert(maxHeight == null || maxHeight >= 0),
-        assert(
-          minWidth == null || maxWidth == null || minWidth <= maxWidth,
-          'minWidth must be less than or equal to maxWidth.',
-        ),
-        assert(
-          minHeight == null || maxHeight == null || minHeight <= maxHeight,
-          'minHeight must be less than or equal to maxHeight.',
-        );
+  }) : assert(minWidth == null || minWidth >= 0),
+       assert(maxWidth == null || maxWidth >= 0),
+       assert(minHeight == null || minHeight >= 0),
+       assert(maxHeight == null || maxHeight >= 0),
+       assert(
+         minWidth == null || maxWidth == null || minWidth <= maxWidth,
+         'minWidth must be less than or equal to maxWidth.',
+       ),
+       assert(
+         minHeight == null || maxHeight == null || minHeight <= maxHeight,
+         'minHeight must be less than or equal to maxHeight.',
+       );
 
   final Widget child;
   final double? minWidth;

@@ -71,14 +71,14 @@ class _UiMaterialTextSelectionControls extends TextSelectionControls
     // depending on the handle type.
     return switch (type) {
       TextSelectionHandleType.left => Transform.rotate(
-          angle: math.pi / 2,
-          child: handle,
-        ),
+        angle: math.pi / 2,
+        child: handle,
+      ),
       TextSelectionHandleType.right => handle,
       TextSelectionHandleType.collapsed => Transform.rotate(
-          angle: math.pi / 4,
-          child: handle,
-        ),
+        angle: math.pi / 4,
+        child: handle,
+      ),
     };
   }
 
@@ -254,8 +254,7 @@ class _UiDesktopTextSelectionControls extends TextSelectionControls
     TextSelectionHandleType type,
     double textLineHeight, [
     VoidCallback? onTap,
-  ]) =>
-      const SizedBox.shrink();
+  ]) => const SizedBox.shrink();
 
   @override
   Offset getHandleAnchor(TextSelectionHandleType type, double textLineHeight) =>

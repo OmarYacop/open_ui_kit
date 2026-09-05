@@ -75,10 +75,10 @@ class UiMotionTokens {
 
   static UiMotionTokens lerp(UiMotionTokens a, UiMotionTokens b, double t) {
     Duration l(Duration x, Duration y) => Duration(
-          microseconds:
-              (x.inMicroseconds + (y.inMicroseconds - x.inMicroseconds) * t)
-                  .round(),
-        );
+      microseconds:
+          (x.inMicroseconds + (y.inMicroseconds - x.inMicroseconds) * t)
+              .round(),
+    );
     return UiMotionTokens(
       instant: l(a.instant, b.instant),
       faster: l(a.faster, b.faster),

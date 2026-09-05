@@ -187,21 +187,21 @@ class _TooltipLayoutDelegate extends SingleChildLayoutDelegate {
   Offset getPositionForChild(Size size, Size childSize) {
     final preferred = switch (side) {
       UiTooltipSide.top => Offset(
-          anchor.center.dx - childSize.width / 2,
-          anchor.top - childSize.height - gap,
-        ),
+        anchor.center.dx - childSize.width / 2,
+        anchor.top - childSize.height - gap,
+      ),
       UiTooltipSide.bottom => Offset(
-          anchor.center.dx - childSize.width / 2,
-          anchor.bottom + gap,
-        ),
+        anchor.center.dx - childSize.width / 2,
+        anchor.bottom + gap,
+      ),
       UiTooltipSide.left => Offset(
-          anchor.left - childSize.width - gap,
-          anchor.center.dy - childSize.height / 2,
-        ),
+        anchor.left - childSize.width - gap,
+        anchor.center.dy - childSize.height / 2,
+      ),
       UiTooltipSide.right => Offset(
-          anchor.right + gap,
-          anchor.center.dy - childSize.height / 2,
-        ),
+        anchor.right + gap,
+        anchor.center.dy - childSize.height / 2,
+      ),
     };
 
     return Offset(

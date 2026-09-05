@@ -15,7 +15,9 @@ enum UiStickyRegionSurface {
   edgeFade,
 
   /// Compatibility alias for the former backdrop-blurred treatment.
-  @Deprecated('Use UiStickyRegionSurface.edgeFade.')
+  @Deprecated(
+    'Use UiStickyRegionSurface.edgeFade. Scheduled for removal in 1.0.0.',
+  )
   glass,
 
   /// Opaque page-background surface.
@@ -49,10 +51,10 @@ class UiSliverStickyRegion extends StatelessWidget {
     this.pinned = true,
     this.floating = false,
     this.useSafeArea = true,
-  })  : assert(extent > 0),
-        assert(blurSigma >= 0),
-        assert(fadeExtent >= 0),
-        assert(fadeMaxOpacity >= 0 && fadeMaxOpacity <= 1);
+  }) : assert(extent > 0),
+       assert(blurSigma >= 0),
+       assert(fadeExtent >= 0),
+       assert(fadeMaxOpacity >= 0 && fadeMaxOpacity <= 1);
 
   /// Height of the control surface, excluding [fadeExtent].
   final double extent;
@@ -131,37 +133,35 @@ class _UiStickyRegionDelegate extends SliverPersistentHeaderDelegate {
     final hasRail = UiNavigationChromeScope.hasPersistentRailOf(context);
     final resolvedSurface = surface == UiStickyRegionSurface.adaptive
         ? hasRail
-            ? UiStickyRegionSurface.solid
-            : UiStickyRegionSurface.glass
+              ? UiStickyRegionSurface.solid
+              : UiStickyRegionSurface.glass
         : surface;
     final activated = overlapsContent || shrinkOffset > 0;
     final surfaceColor = switch (resolvedSurface) {
       UiStickyRegionSurface.adaptive => colors.background,
       UiStickyRegionSurface.edgeFade => colors.surface.withValues(
-          alpha: activated
-              ? tokens.brightness == Brightness.dark
+        alpha: activated
+            ? tokens.brightness == Brightness.dark
                   ? 0.94
                   : 0.92
-              : 0.82,
-        ),
+            : 0.82,
+      ),
       UiStickyRegionSurface.glass => colors.surface.withValues(
-          alpha: activated
-              ? tokens.brightness == Brightness.dark
+        alpha: activated
+            ? tokens.brightness == Brightness.dark
                   ? 0.78
                   : 0.72
-              : 0.14,
-        ),
+            : 0.14,
+      ),
       UiStickyRegionSurface.solid => colors.background,
       UiStickyRegionSurface.transparent => const Color(0x00000000),
     };
     final transitionColor = switch (resolvedSurface) {
       UiStickyRegionSurface.edgeFade ||
-      UiStickyRegionSurface.glass =>
-        colors.surface,
+      UiStickyRegionSurface.glass => colors.surface,
       UiStickyRegionSurface.adaptive ||
       UiStickyRegionSurface.solid ||
-      UiStickyRegionSurface.transparent =>
-        colors.background,
+      UiStickyRegionSurface.transparent => colors.background,
     };
     final separatorColor = showSeparator && activated
         ? colors.border

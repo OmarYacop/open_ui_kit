@@ -34,8 +34,8 @@ class UiScrollEdgeFade extends StatelessWidget {
     this.showTop = true,
     this.showBottom = true,
     this.paintOverChild = true,
-  })  : assert(extent >= 0),
-        assert(maxOpacity >= 0 && maxOpacity <= 1);
+  }) : assert(extent >= 0),
+       assert(maxOpacity >= 0 && maxOpacity <= 1);
 
   final Widget child;
   final Color backgroundColor;
@@ -58,8 +58,9 @@ class UiScrollEdgeFade extends StatelessWidget {
     final appleFadeColor = brightness == Brightness.dark
         ? const Color(0xFF000000)
         : const Color(0xFFFFFFFF);
-    final appleEdgeOpacity =
-        maxOpacity > _appleMaxTintOpacity ? _appleMaxTintOpacity : maxOpacity;
+    final appleEdgeOpacity = maxOpacity > _appleMaxTintOpacity
+        ? _appleMaxTintOpacity
+        : maxOpacity;
     final topEdgeColor = isApplePlatform
         ? appleFadeColor.withValues(alpha: appleEdgeOpacity)
         : backgroundColor.withValues(alpha: maxOpacity);
@@ -76,10 +77,12 @@ class UiScrollEdgeFade extends StatelessWidget {
     final view = View.of(context);
     final leftSafeBleed = view.padding.left / view.devicePixelRatio;
     final rightSafeBleed = view.padding.right / view.devicePixelRatio;
-    final startBleed =
-        direction == TextDirection.ltr ? leftSafeBleed : rightSafeBleed;
-    final endBleed =
-        direction == TextDirection.ltr ? rightSafeBleed : leftSafeBleed;
+    final startBleed = direction == TextDirection.ltr
+        ? leftSafeBleed
+        : rightSafeBleed;
+    final endBleed = direction == TextDirection.ltr
+        ? rightSafeBleed
+        : leftSafeBleed;
 
     final fades = <Widget>[
       if (showTop)

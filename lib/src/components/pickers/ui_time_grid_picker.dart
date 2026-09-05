@@ -51,9 +51,9 @@ class UiTimeGridPicker extends StatelessWidget {
     this.chromePadding,
     this.boxShadow,
   }) : assert(
-          minuteStep > 0 && 60 % minuteStep == 0,
-          'minuteStep must divide 60',
-        );
+         minuteStep > 0 && 60 % minuteStep == 0,
+         'minuteStep must divide 60',
+       );
 
   final UiTimeValue? value;
   final ValueChanged<UiTimeValue>? onChanged;
@@ -276,8 +276,9 @@ class UiTimeGridPicker extends StatelessWidget {
     final nextHour = format == UiTimePickerClockFormat.h24
         ? hour
         : _toTwentyFourHour(hour, period);
-    onChanged
-        ?.call(UiTimeValue(hour: nextHour, minute: _effectiveValue.minute));
+    onChanged?.call(
+      UiTimeValue(hour: nextHour, minute: _effectiveValue.minute),
+    );
   }
 
   void _pickMinute(int minute) {
@@ -338,9 +339,9 @@ class UiTimePickerField extends StatefulWidget {
     this.semanticsPrefix,
     this.dismissOnTapOutside = true,
   }) : assert(
-          minuteStep > 0 && 60 % minuteStep == 0,
-          'minuteStep must divide 60',
-        );
+         minuteStep > 0 && 60 % minuteStep == 0,
+         'minuteStep must divide 60',
+       );
 
   final UiTimeValue? value;
   final ValueChanged<UiTimeValue>? onChanged;
@@ -497,14 +498,14 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
     final displayValue = selected == null
         ? widget.hint
         : widget.format == UiTimePickerClockFormat.h12
-            ? selected.formatted12()
-            : selected.formatted24();
+        ? selected.formatted12()
+        : selected.formatted24();
     final helperText = _hasError ? widget.errorText : widget.helper;
     final borderColor = _hasError
         ? c.destructive
         : _entry != null
-            ? c.ring
-            : c.input;
+        ? c.ring
+        : c.input;
     final bg = _interactive ? c.surface : c.muted;
     final fg = _interactive ? c.foreground : c.mutedForeground;
     final valueTone = selected == null ? UiTextTone.muted : UiTextTone.primary;
@@ -579,10 +580,7 @@ class _UiTimePickerFieldState extends State<UiTimePickerField> {
 }
 
 class _TimePickerColumn extends StatelessWidget {
-  const _TimePickerColumn({
-    required this.label,
-    required this.child,
-  });
+  const _TimePickerColumn({required this.label, required this.child});
 
   final String label;
   final Widget child;
@@ -620,10 +618,7 @@ class _ScrollableOptionList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 224),
-      child: SingleChildScrollView(
-        primary: false,
-        child: child,
-      ),
+      child: SingleChildScrollView(primary: false, child: child),
     );
   }
 }
@@ -660,13 +655,13 @@ class _TimePickerOption extends StatelessWidget {
           final bg = active
               ? c.primary
               : state.hovered || state.pressed
-                  ? c.accent
-                  : const Color(0x00000000);
+              ? c.accent
+              : const Color(0x00000000);
           final fg = disabled
               ? c.mutedForeground
               : active
-                  ? c.primaryForeground
-                  : c.foreground;
+              ? c.primaryForeground
+              : c.foreground;
 
           return Semantics(
             button: true,

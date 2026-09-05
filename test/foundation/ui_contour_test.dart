@@ -15,7 +15,9 @@ void main() {
       expect(end, 0);
       expect(mid, greaterThan(0));
       expect(
-          mid, lessThanOrEqualTo(physics.maxStretch + physics.maxCompression));
+        mid,
+        lessThanOrEqualTo(physics.maxStretch + physics.maxCompression),
+      );
     });
 
     test('none physics applies no deformation and no overshoot', () {
@@ -75,44 +77,44 @@ void main() {
     });
 
     testWidgets(
-        'open/close reach settled endpoints without resetting mid-flight', (
-      tester,
-    ) async {
-      final controller = UiContourController(
-        vsync: vsync,
-        physics: UiContourPhysics.chrome,
-      );
-      addTearDown(controller.dispose);
+      'open/close reach settled endpoints without resetting mid-flight',
+      (tester) async {
+        final controller = UiContourController(
+          vsync: vsync,
+          physics: UiContourPhysics.chrome,
+        );
+        addTearDown(controller.dispose);
 
-      late BuildContext ctx;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              ctx = context;
-              return const SizedBox();
-            },
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(controller.phase, UiContourPhase.collapsed);
-      expect(controller.value, 0);
+        expect(controller.phase, UiContourPhase.collapsed);
+        expect(controller.value, 0);
 
-      controller.open(ctx);
-      expect(controller.phase, UiContourPhase.opening);
-      await tester.pumpAndSettle();
-      expect(controller.phase, UiContourPhase.expanded);
-      expect(controller.value, 1);
-      expect(controller.isSettled, isTrue);
+        controller.open(ctx);
+        expect(controller.phase, UiContourPhase.opening);
+        await tester.pumpAndSettle();
+        expect(controller.phase, UiContourPhase.expanded);
+        expect(controller.value, 1);
+        expect(controller.isSettled, isTrue);
 
-      controller.close(ctx);
-      expect(controller.phase, UiContourPhase.closing);
-      await tester.pumpAndSettle();
-      expect(controller.phase, UiContourPhase.collapsed);
-      expect(controller.value, 0);
-      expect(controller.isSettled, isTrue);
-    });
+        controller.close(ctx);
+        expect(controller.phase, UiContourPhase.closing);
+        await tester.pumpAndSettle();
+        expect(controller.phase, UiContourPhase.collapsed);
+        expect(controller.value, 0);
+        expect(controller.isSettled, isTrue);
+      },
+    );
 
     testWidgets(
       'regression: geometry does not reach near-full value within the first '
@@ -154,58 +156,57 @@ void main() {
     );
 
     testWidgets(
-        'reversal mid-flight continues from the current value, not from an endpoint',
-        (
-      tester,
-    ) async {
-      final controller = UiContourController(
-        vsync: vsync,
-        physics: UiContourPhysics.chrome,
-      );
-      addTearDown(controller.dispose);
+      'reversal mid-flight continues from the current value, not from an endpoint',
+      (tester) async {
+        final controller = UiContourController(
+          vsync: vsync,
+          physics: UiContourPhysics.chrome,
+        );
+        addTearDown(controller.dispose);
 
-      late BuildContext ctx;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              ctx = context;
-              return const SizedBox();
-            },
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      controller.open(ctx,
-          duration: const UiMotionDuration.custom(
-            Duration(milliseconds: 200),
-          ));
-      // The tick that starts a ticker establishes its baseline (elapsed 0);
-      // a zero-duration warm-up pump consumes that baseline tick so the
-      // following timed pump reports real elapsed progress.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      final midValue = controller.value;
-      expect(midValue, greaterThan(0));
-      expect(midValue, lessThan(1));
+        controller.open(
+          ctx,
+          duration: const UiMotionDuration.custom(Duration(milliseconds: 200)),
+        );
+        // The tick that starts a ticker establishes its baseline (elapsed 0);
+        // a zero-duration warm-up pump consumes that baseline tick so the
+        // following timed pump reports real elapsed progress.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final midValue = controller.value;
+        expect(midValue, greaterThan(0));
+        expect(midValue, lessThan(1));
 
-      controller.close(ctx,
-          duration: const UiMotionDuration.custom(
-            Duration(milliseconds: 200),
-          ));
-      expect(controller.phase, UiContourPhase.reversing);
-      // One frame later the value must have moved from midValue, not
-      // jumped back to 1 (no reset-then-reverse).
-      await tester.pump();
-      expect(controller.value, lessThanOrEqualTo(midValue + 0.001));
+        controller.close(
+          ctx,
+          duration: const UiMotionDuration.custom(Duration(milliseconds: 200)),
+        );
+        expect(controller.phase, UiContourPhase.reversing);
+        // One frame later the value must have moved from midValue, not
+        // jumped back to 1 (no reset-then-reverse).
+        await tester.pump();
+        expect(controller.value, lessThanOrEqualTo(midValue + 0.001));
 
-      await tester.pump(const Duration(milliseconds: 30));
-      expect(controller.value, lessThan(midValue));
+        await tester.pump(const Duration(milliseconds: 30));
+        expect(controller.value, lessThan(midValue));
 
-      await tester.pumpAndSettle();
-      expect(controller.phase, UiContourPhase.collapsed);
-      expect(controller.value, 0);
-    });
+        await tester.pumpAndSettle();
+        expect(controller.phase, UiContourPhase.collapsed);
+        expect(controller.value, 0);
+      },
+    );
 
     testWidgets('rapid re-trigger does not corrupt state', (tester) async {
       final controller = UiContourController(
@@ -238,69 +239,69 @@ void main() {
     });
 
     testWidgets(
-        'markSourceUnavailable jumps to collapsed without stale geometry', (
-      tester,
-    ) async {
-      final controller = UiContourController(
-        vsync: vsync,
-        physics: UiContourPhysics.control,
-      );
-      addTearDown(controller.dispose);
+      'markSourceUnavailable jumps to collapsed without stale geometry',
+      (tester) async {
+        final controller = UiContourController(
+          vsync: vsync,
+          physics: UiContourPhysics.control,
+        );
+        addTearDown(controller.dispose);
 
-      late BuildContext ctx;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              ctx = context;
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
-
-      controller.open(ctx);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 40));
-      expect(controller.value, greaterThan(0));
-
-      controller.markSourceUnavailable();
-      expect(controller.value, 0);
-      expect(controller.phase, UiContourPhase.sourceUnavailable);
-    });
-
-    testWidgets(
-        'reduced motion settles immediately without waiting for elapsed time', (
-      tester,
-    ) async {
-      late BuildContext ctx;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(disableAnimations: true),
-            child: Builder(
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
               builder: (context) {
                 ctx = context;
                 return const SizedBox();
               },
             ),
           ),
-        ),
-      );
+        );
 
-      final controller = UiContourController(
-        vsync: vsync,
-        physics: UiContourPhysics.resolve(ctx, UiContourPhysics.control),
-      );
-      addTearDown(controller.dispose);
+        controller.open(ctx);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 40));
+        expect(controller.value, greaterThan(0));
 
-      controller.open(ctx);
-      // A single pump (no elapsed duration) must be enough because reduced
-      // motion collapses duration to zero.
-      await tester.pump();
-      expect(controller.value, 1);
-      expect(controller.phase, UiContourPhase.expanded);
-    });
+        controller.markSourceUnavailable();
+        expect(controller.value, 0);
+        expect(controller.phase, UiContourPhase.sourceUnavailable);
+      },
+    );
+
+    testWidgets(
+      'reduced motion settles immediately without waiting for elapsed time',
+      (tester) async {
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(disableAnimations: true),
+              child: Builder(
+                builder: (context) {
+                  ctx = context;
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        final controller = UiContourController(
+          vsync: vsync,
+          physics: UiContourPhysics.resolve(ctx, UiContourPhysics.control),
+        );
+        addTearDown(controller.dispose);
+
+        controller.open(ctx);
+        // A single pump (no elapsed duration) must be enough because reduced
+        // motion collapses duration to zero.
+        await tester.pump();
+        expect(controller.value, 1);
+        expect(controller.phase, UiContourPhase.expanded);
+      },
+    );
 
     test('dispose is safe to call twice and use-after-dispose asserts', () {
       final controller = UiContourController(

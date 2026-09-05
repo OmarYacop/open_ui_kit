@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
@@ -132,16 +133,19 @@ class UiSliverNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPersistentRail = adaptToPersistentRail &&
+    final hasPersistentRail =
+        adaptToPersistentRail &&
         UiNavigationChromeScope.hasPersistentRailOf(context);
     final formFactor = uiFormFactorOf(context);
     final isDesktop = formFactor == UiFormFactor.desktop;
-    final usesNativeTabletNavigation = hasPersistentRail &&
+    final usesNativeTabletNavigation =
+        hasPersistentRail &&
         switch (defaultTargetPlatform) {
           TargetPlatform.iOS || TargetPlatform.android => true,
           _ => false,
         };
-    final useQuietPageHeader = spec.largeTitle &&
+    final useQuietPageHeader =
+        spec.largeTitle &&
         spec.back == null &&
         isDesktop &&
         !usesNativeTabletNavigation;
@@ -164,11 +168,13 @@ class UiSliverNavigationBar extends StatelessWidget {
     // single row, with no large-title reveal on overscroll.
     final useLarge = effectiveSpec.largeTitle && effectiveSpec.back == null;
     final attachedBottomHeight = bottom == null ? 0.0 : bottomHeight;
-    final maxH = (useLarge ? expandedHeight : collapsedHeight) +
+    final maxH =
+        (useLarge ? expandedHeight : collapsedHeight) +
         topInset +
         attachedBottomHeight;
     final minH = collapsedHeight + topInset + attachedBottomHeight;
-    final effectiveTitleLegibilityShadow = showTitleLegibilityShadow ??
+    final effectiveTitleLegibilityShadow =
+        showTitleLegibilityShadow ??
         switch (defaultTargetPlatform) {
           TargetPlatform.iOS || TargetPlatform.macOS => false,
           _ => true,
@@ -200,8 +206,9 @@ class _RailPageHeader extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     final safeTopInset = MediaQuery.paddingOf(context).top;
     final bodyTopInset = UiPageBodyInsets.topOf(context);
-    final fadeClearance =
-        bodyTopInset > safeTopInset ? bodyTopInset - safeTopInset : 0.0;
+    final fadeClearance = bodyTopInset > safeTopInset
+        ? bodyTopInset - safeTopInset
+        : 0.0;
 
     return SafeArea(
       bottom: false,
@@ -210,11 +217,13 @@ class _RailPageHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compactPane = constraints.maxWidth < 520;
-          final baseTopPadding =
-              compactPane ? tokens.spacing.x4 : tokens.spacing.x6;
+          final baseTopPadding = compactPane
+              ? tokens.spacing.x4
+              : tokens.spacing.x6;
           final animateTypography = !MediaQuery.disableAnimationsOf(context);
-          final responsiveDuration =
-              animateTypography ? tokens.motion.standard : Duration.zero;
+          final responsiveDuration = animateTypography
+              ? tokens.motion.standard
+              : Duration.zero;
 
           return AnimatedPadding(
             duration: responsiveDuration,
@@ -240,10 +249,11 @@ class _RailPageHeader extends StatelessWidget {
                       AnimatedDefaultTextStyle(
                         duration: responsiveDuration,
                         curve: tokens.motion.standardCurve,
-                        style: (compactPane
-                                ? tokens.typography.heading
-                                : tokens.typography.displayMd)
-                            .copyWith(color: tokens.colors.textPrimary),
+                        style:
+                            (compactPane
+                                    ? tokens.typography.heading
+                                    : tokens.typography.displayMd)
+                                .copyWith(color: tokens.colors.textPrimary),
                         child: Text(
                           spec.title,
                           maxLines: 2,
@@ -326,11 +336,13 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
       surface: resolvedSurface,
       overlapsContent: overlapsContent,
     );
-    final showEdgeFade = (resolvedSurface == UiNavigationSurface.edgeFade ||
+    final showEdgeFade =
+        (resolvedSurface == UiNavigationSurface.edgeFade ||
             resolvedSurface == UiNavigationSurface.blurred) &&
         spec.blurSigma > 0;
-    final dividerOpacity =
-        spec.showDivider ? (overlapsContent ? 1.0 : _dividerOpacity(t)) : 0.0;
+    final dividerOpacity = spec.showDivider
+        ? (overlapsContent ? 1.0 : _dividerOpacity(t))
+        : 0.0;
     final useHero = spec.largeTitle && spec.back == null;
     Widget content = Stack(
       fit: StackFit.expand,
@@ -421,12 +433,10 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
     final overlaySample = switch (resolvedSurface) {
       UiNavigationSurface.transparent ||
       UiNavigationSurface.edgeFade ||
-      UiNavigationSurface.blurred =>
-        c.background,
+      UiNavigationSurface.blurred => c.background,
       UiNavigationSurface.adaptive ||
       UiNavigationSurface.solid ||
-      UiNavigationSurface.pageBackground =>
-        surfaceColor.withValues(alpha: 1),
+      UiNavigationSurface.pageBackground => surfaceColor.withValues(alpha: 1),
     };
     return UiLayeredOverlayPortal(
       layer: UiOverlayLayer.navigationChrome,
@@ -509,18 +519,22 @@ class _CompactRow extends StatelessWidget {
     if (navHistory != null && modalRoute != null) {
       navHistory.registerTitle(modalRoute, spec.title);
     }
-    final runtimeHistory = runtime?.controller.historyItems() ??
+    final runtimeHistory =
+        runtime?.controller.historyItems() ??
         navHistory?.historyItems() ??
         const <UiNavigationBackHistoryItem>[];
     final configuredHistory = spec.back?.history ?? const [];
-    final resolvedHistory =
-        configuredHistory.isNotEmpty ? configuredHistory : runtimeHistory;
+    final resolvedHistory = configuredHistory.isNotEmpty
+        ? configuredHistory
+        : runtimeHistory;
     final strings = UiLocalizations.of(context);
-    final resolvedBackLabel = spec.back?.label ??
+    final resolvedBackLabel =
+        spec.back?.label ??
         (resolvedHistory.isNotEmpty
             ? resolvedHistory.first.title
             : strings.back);
-    final seededHistory = (spec.back?.label != null &&
+    final seededHistory =
+        (spec.back?.label != null &&
             resolvedHistory.every((item) => item.title != spec.back!.label))
         ? <UiNavigationBackHistoryItem>[
             UiNavigationBackHistoryItem(title: spec.back!.label!),
@@ -570,9 +584,9 @@ class _CompactRow extends StatelessWidget {
             : 44.0;
         final trailingWidth =
             spec.actions.isEmpty || spec.actionsFollowTitleCollapse
-                ? 0.0
-                : 44.0 * spec.actions.length +
-                    tokens.spacing.x2 * (spec.actions.length - 1);
+            ? 0.0
+            : 44.0 * spec.actions.length +
+                  tokens.spacing.x2 * (spec.actions.length - 1);
         final middleSideReserve =
             math.max(backMaxWidth, trailingWidth) + tokens.spacing.x2;
         final leading = spec.back != null
@@ -647,9 +661,7 @@ class _CompactRow extends StatelessWidget {
                     if (showTitle)
                       Flexible(
                         child: AnimatedSwitcher(
-                          key: const Key(
-                            'ui_navigation_compact_title_fade',
-                          ),
+                          key: const Key('ui_navigation_compact_title_fade'),
                           duration: tokens.motion.fast * 0.8,
                           reverseDuration: tokens.motion.fast * 0.8,
                           switchInCurve: tokens.motion.standardCurve,
@@ -768,7 +780,8 @@ class _TitleTrackingActions extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     final largeLine = _lineHeightFor(tokens.typography.displayMd);
     final subtitleLine = _lineHeightFor(tokens.typography.bodySm);
-    final expandedBlockHeight = largeLine +
+    final expandedBlockHeight =
+        largeLine +
         (spec.subtitle == null ? 0 : tokens.spacing.x1 + subtitleLine);
     final expandedTitleTop =
         expandedHeight - tokens.spacing.x1 - expandedBlockHeight;
@@ -776,10 +789,7 @@ class _TitleTrackingActions extends StatelessWidget {
     final expandedActionTop = expandedTitleTop + (largeLine - actionExtent) / 2;
     final compactActionTop =
         topInset + (collapsedHeight - topInset - actionExtent) / 2;
-    final top = math.max(
-      compactActionTop,
-      expandedActionTop - scrollOffset,
-    );
+    final top = math.max(compactActionTop, expandedActionTop - scrollOffset);
 
     return PositionedDirectional(
       key: const Key('ui_navigation_tracking_actions'),
@@ -844,8 +854,8 @@ class _LargeTitle extends StatelessWidget {
     final trailingReserved = spec.actions.isEmpty
         ? tokens.spacing.x4
         : tokens.spacing.x4 +
-            44.0 * spec.actions.length +
-            tokens.spacing.x2 * (spec.actions.length - 1);
+              44.0 * spec.actions.length +
+              tokens.spacing.x2 * (spec.actions.length - 1);
     return PositionedDirectional(
       start: tokens.spacing.x4,
       end: trailingReserved,

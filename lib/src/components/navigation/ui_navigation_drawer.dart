@@ -140,7 +140,8 @@ class UiNavigationDrawer extends StatelessWidget {
                     _NavigationDrawerRow(
                       label: destination.label,
                       icon: destination.icon,
-                      badge: destination.badge ??
+                      badge:
+                          destination.badge ??
                           _badgeFor(destination.badgeCount),
                       iconSize: destination.iconSize,
                       selected: destination.selected,
@@ -160,28 +161,28 @@ class UiNavigationDrawer extends StatelessWidget {
   Widget _footerItemFor(Object item, BorderRadius borderRadius) {
     return switch (item) {
       UiNavigationDrawerAction action => _NavigationDrawerRow(
-          label: action.label,
-          icon: action.icon,
-          badge: action.badge ?? _badgeFor(action.badgeCount),
-          onPressed: action.onPressed,
-          borderRadius: borderRadius,
-        ),
+        label: action.label,
+        icon: action.icon,
+        badge: action.badge ?? _badgeFor(action.badgeCount),
+        onPressed: action.onPressed,
+        borderRadius: borderRadius,
+      ),
       UiNavigationDrawerDestination destination => _NavigationDrawerRow(
-          label: destination.label,
-          icon: destination.icon,
-          badge: destination.badge ?? _badgeFor(destination.badgeCount),
-          iconSize: destination.iconSize,
-          selected: destination.selected,
-          onPressed: destination.onPressed,
-          borderRadius: borderRadius,
-        ),
+        label: destination.label,
+        icon: destination.icon,
+        badge: destination.badge ?? _badgeFor(destination.badgeCount),
+        iconSize: destination.iconSize,
+        selected: destination.selected,
+        onPressed: destination.onPressed,
+        borderRadius: borderRadius,
+      ),
       Widget widget => widget,
       _ => throw ArgumentError.value(
-          item,
-          'footerActions',
-          'Expected a Widget, UiNavigationDrawerAction, or '
-              'UiNavigationDrawerDestination.',
-        ),
+        item,
+        'footerActions',
+        'Expected a Widget, UiNavigationDrawerAction, or '
+            'UiNavigationDrawerDestination.',
+      ),
     };
   }
 }
@@ -209,8 +210,9 @@ class _NavigationDrawerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final colors = tokens.colors;
-    final verticalInset =
-        ((38 - iconSize) / 2).clamp(1.0, tokens.spacing.x2).toDouble();
+    final verticalInset = ((38 - iconSize) / 2)
+        .clamp(1.0, tokens.spacing.x2)
+        .toDouble();
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.x1),
@@ -222,8 +224,8 @@ class _NavigationDrawerRow extends StatelessWidget {
           final background = selected
               ? colors.surfaceMuted
               : state.hovered || state.pressed
-                  ? colors.surfaceMuted.withValues(alpha: 0.5)
-                  : const Color(0x00000000);
+              ? colors.surfaceMuted.withValues(alpha: 0.5)
+              : const Color(0x00000000);
 
           return UiFocusRing(
             visible: state.focused,
@@ -262,8 +264,9 @@ class _NavigationDrawerRow extends StatelessWidget {
                       label,
                       variant: UiTextVariant.body,
                       style: TextStyle(
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: colors.textPrimary,
                       ),
                       maxLines: 1,

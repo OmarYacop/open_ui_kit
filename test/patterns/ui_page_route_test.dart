@@ -43,16 +43,13 @@ void main() {
       await tester.pumpWidget(
         UiApp(
           lightTokens: UiThemeTokens.light,
-          localizationsDelegates: const [
-            DefaultWidgetsLocalizations.delegate,
-          ],
+          localizationsDelegates: const [DefaultWidgetsLocalizations.delegate],
           home: Builder(
             builder: (context) => Center(
               child: UiButton(
                 label: 'Open',
-                onPressed: () => context.pushUiPage<void>(
-                  (_) => const Text('Detail'),
-                ),
+                onPressed: () =>
+                    context.pushUiPage<void>((_) => const Text('Detail')),
               ),
             ),
           ),
@@ -65,45 +62,46 @@ void main() {
 
       await tester.pumpAndSettle();
       expect(find.text('Detail'), findsOneWidget);
-      expect(ModalRoute.of(tester.element(find.text('Detail'))),
-          isA<UiPageRoute>());
+      expect(
+        ModalRoute.of(tester.element(find.text('Detail'))),
+        isA<UiPageRoute>(),
+      );
     });
 
     testWidgets(
-        'dragging past halfway from the left edge on iOS pops the route', (
-      tester,
-    ) async {
-      await _runWithPlatform(TargetPlatform.iOS, () async {
-        await tester.pumpWidget(
-          UiApp(
-            lightTokens: UiThemeTokens.light,
-            localizationsDelegates: const [
-              DefaultWidgetsLocalizations.delegate,
-            ],
-            home: Builder(
-              builder: (context) => Center(
-                child: UiButton(
-                  label: 'Open',
-                  onPressed: () => context.pushUiPage<void>(
-                    (_) => const Text('Detail'),
+      'dragging past halfway from the left edge on iOS pops the route',
+      (tester) async {
+        await _runWithPlatform(TargetPlatform.iOS, () async {
+          await tester.pumpWidget(
+            UiApp(
+              lightTokens: UiThemeTokens.light,
+              localizationsDelegates: const [
+                DefaultWidgetsLocalizations.delegate,
+              ],
+              home: Builder(
+                builder: (context) => Center(
+                  child: UiButton(
+                    label: 'Open',
+                    onPressed: () =>
+                        context.pushUiPage<void>((_) => const Text('Detail')),
                   ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
-        expect(find.text('Detail'), findsOneWidget);
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+          expect(find.text('Detail'), findsOneWidget);
 
-        await _dragFromEdge(tester, fraction: 0.6);
-        await tester.pumpAndSettle();
+          await _dragFromEdge(tester, fraction: 0.6);
+          await tester.pumpAndSettle();
 
-        expect(find.text('Open'), findsOneWidget);
-        expect(find.text('Detail'), findsNothing);
-      });
-    });
+          expect(find.text('Open'), findsOneWidget);
+          expect(find.text('Detail'), findsNothing);
+        });
+      },
+    );
 
     testWidgets('no edge-swipe gesture is installed on Android', (
       tester,
@@ -119,9 +117,8 @@ void main() {
               builder: (context) => Center(
                 child: UiButton(
                   label: 'Open',
-                  onPressed: () => context.pushUiPage<void>(
-                    (_) => const Text('Detail'),
-                  ),
+                  onPressed: () =>
+                      context.pushUiPage<void>((_) => const Text('Detail')),
                 ),
               ),
             ),
@@ -192,8 +189,8 @@ void main() {
             ],
             home: Builder(
               builder: (context) {
-                final widgetsApp =
-                    context.findAncestorWidgetOfExactType<WidgetsApp>();
+                final widgetsApp = context
+                    .findAncestorWidgetOfExactType<WidgetsApp>();
                 builder = widgetsApp!.pageRouteBuilder!;
                 return const SizedBox();
               },

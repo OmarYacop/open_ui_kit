@@ -72,53 +72,52 @@ void main() {
   });
 
   testWidgets(
-      'UiNavigationRail renders destination badge in expanded and collapsed states',
-      (
-    tester,
-  ) async {
-    var collapsed = false;
+    'UiNavigationRail renders destination badge in expanded and collapsed states',
+    (tester) async {
+      var collapsed = false;
 
-    await tester.pumpWidget(
-      UiApp(
-        title: 'Example App',
-        home: StatefulBuilder(
-          builder: (context, setState) => UiNavigationRail(
-            collapsed: collapsed,
-            onToggleCollapsed: () => setState(() => collapsed = !collapsed),
-            destinations: [
-              UiNavigationRailDestination(
-                label: 'Alerts',
-                icon: LucideIcons.megaphone,
-                badge: 4,
-                selected: true,
-                onPressed: () {},
-              ),
-            ],
+      await tester.pumpWidget(
+        UiApp(
+          title: 'Example App',
+          home: StatefulBuilder(
+            builder: (context, setState) => UiNavigationRail(
+              collapsed: collapsed,
+              onToggleCollapsed: () => setState(() => collapsed = !collapsed),
+              destinations: [
+                UiNavigationRailDestination(
+                  label: 'Alerts',
+                  icon: LucideIcons.megaphone,
+                  badge: 4,
+                  selected: true,
+                  onPressed: () {},
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(UiNavigationCountBadge), findsOneWidget);
-    expect(find.text('4'), findsOneWidget);
+      expect(find.byType(UiNavigationCountBadge), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('Collapse navigation rail'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Collapse navigation rail'));
+      await tester.pumpAndSettle();
 
-    expect(collapsed, isTrue);
-    expect(find.byType(UiNavigationCountBadge), findsOneWidget);
-    expect(find.text('4'), findsOneWidget);
-    final badgeStack = tester.widget<Stack>(
-      find
-          .ancestor(
-            of: find.byType(UiNavigationCountBadge),
-            matching: find.byType(Stack),
-          )
-          .first,
-    );
-    expect(badgeStack.clipBehavior, Clip.none);
-  });
+      expect(collapsed, isTrue);
+      expect(find.byType(UiNavigationCountBadge), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      final badgeStack = tester.widget<Stack>(
+        find
+            .ancestor(
+              of: find.byType(UiNavigationCountBadge),
+              matching: find.byType(Stack),
+            )
+            .first,
+      );
+      expect(badgeStack.clipBehavior, Clip.none);
+    },
+  );
 
   testWidgets('UiNavigationRail main surface hugs its destinations', (
     tester,
@@ -153,9 +152,9 @@ void main() {
 
     final naturalHeight =
         UiNavigationRailGeometry.defaults.expandedHeaderTopPadding +
-            UiNavigationRailGeometry.defaults.headerHeight +
-            2 * UiNavigationRailGeometry.defaults.destinationExtent +
-            UiNavigationRailGeometry.defaults.itemPadding;
+        UiNavigationRailGeometry.defaults.headerHeight +
+        2 * UiNavigationRailGeometry.defaults.destinationExtent +
+        UiNavigationRailGeometry.defaults.itemPadding;
     expect(surfaceHeight, naturalHeight);
   });
 
@@ -237,78 +236,77 @@ void main() {
     expect(radius.bottomRight.x, 24);
   });
 
-  testWidgets(
-    'UiNavigationRail shrinks the main surface before its footer',
-    (tester) async {
-      Widget host(double height) {
-        return UiApp(
-          title: 'Example App',
-          home: Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: UiNavigationRail.expandedOuterWidth,
-              height: height,
-              child: UiNavigationRail(
-                collapsed: false,
-                onToggleCollapsed: () {},
-                destinations: [
-                  for (var index = 0; index < 6; index++)
-                    UiNavigationRailDestination(
-                      label: 'Destination $index',
-                      icon: LucideIcons.circle,
-                      selected: index == 0,
-                      onPressed: () {},
-                    ),
-                ],
-                footerActions: [
-                  UiNavigationRailAction(
-                    label: 'Notifications',
-                    icon: LucideIcons.bell,
-                    onPressed: () {},
-                  ),
-                ],
-                footerDestinations: [
+  testWidgets('UiNavigationRail shrinks the main surface before its footer', (
+    tester,
+  ) async {
+    Widget host(double height) {
+      return UiApp(
+        title: 'Example App',
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: UiNavigationRail.expandedOuterWidth,
+            height: height,
+            child: UiNavigationRail(
+              collapsed: false,
+              onToggleCollapsed: () {},
+              destinations: [
+                for (var index = 0; index < 6; index++)
                   UiNavigationRailDestination(
-                    label: 'Account',
-                    icon: LucideIcons.user,
+                    label: 'Destination $index',
+                    icon: LucideIcons.circle,
+                    selected: index == 0,
                     onPressed: () {},
                   ),
-                ],
-              ),
+              ],
+              footerActions: [
+                UiNavigationRailAction(
+                  label: 'Notifications',
+                  icon: LucideIcons.bell,
+                  onPressed: () {},
+                ),
+              ],
+              footerDestinations: [
+                UiNavigationRailDestination(
+                  label: 'Account',
+                  icon: LucideIcons.user,
+                  onPressed: () {},
+                ),
+              ],
             ),
           ),
-        );
-      }
+        ),
+      );
+    }
 
-      await tester.pumpWidget(host(700));
-      await tester.pumpAndSettle();
-      final tallMainHeight = tester
-          .getSize(find.byKey(const Key('ui_navigation_rail_main_surface')))
-          .height;
-      final tallFooterHeight = tester
-          .getSize(find.byKey(const Key('ui_navigation_rail_footer_surface')))
-          .height;
-      final naturalMainHeight =
-          UiNavigationRailGeometry.defaults.expandedHeaderTopPadding +
-              UiNavigationRailGeometry.defaults.headerHeight +
-              6 * UiNavigationRailGeometry.defaults.destinationExtent +
-              UiNavigationRailGeometry.defaults.itemPadding;
-      expect(tallMainHeight, naturalMainHeight);
+    await tester.pumpWidget(host(700));
+    await tester.pumpAndSettle();
+    final tallMainHeight = tester
+        .getSize(find.byKey(const Key('ui_navigation_rail_main_surface')))
+        .height;
+    final tallFooterHeight = tester
+        .getSize(find.byKey(const Key('ui_navigation_rail_footer_surface')))
+        .height;
+    final naturalMainHeight =
+        UiNavigationRailGeometry.defaults.expandedHeaderTopPadding +
+        UiNavigationRailGeometry.defaults.headerHeight +
+        6 * UiNavigationRailGeometry.defaults.destinationExtent +
+        UiNavigationRailGeometry.defaults.itemPadding;
+    expect(tallMainHeight, naturalMainHeight);
 
-      await tester.pumpWidget(host(260));
-      await tester.pumpAndSettle();
-      final shortMainHeight = tester
-          .getSize(find.byKey(const Key('ui_navigation_rail_main_surface')))
-          .height;
-      final shortFooterHeight = tester
-          .getSize(find.byKey(const Key('ui_navigation_rail_footer_surface')))
-          .height;
+    await tester.pumpWidget(host(260));
+    await tester.pumpAndSettle();
+    final shortMainHeight = tester
+        .getSize(find.byKey(const Key('ui_navigation_rail_main_surface')))
+        .height;
+    final shortFooterHeight = tester
+        .getSize(find.byKey(const Key('ui_navigation_rail_footer_surface')))
+        .height;
 
-      expect(shortMainHeight, lessThan(tallMainHeight));
-      expect(shortFooterHeight, closeTo(tallFooterHeight, 0.1));
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(shortMainHeight, lessThan(tallMainHeight));
+    expect(shortFooterHeight, closeTo(tallFooterHeight, 0.1));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('UiNavigationRail expanded header uses default top padding', (
     tester,
@@ -449,78 +447,77 @@ void main() {
     },
   );
 
-  testWidgets(
-    'UiNavigationRail expands in window mode without overflowing',
-    (tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      final platformCapabilities = _FakePlatformCapabilities(
-        UiWindowMode.windowed,
-      );
-      var collapsed = true;
+  testWidgets('UiNavigationRail expands in window mode without overflowing', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    final platformCapabilities = _FakePlatformCapabilities(
+      UiWindowMode.windowed,
+    );
+    var collapsed = true;
 
-      try {
-        await tester.pumpWidget(
-          UiApp(
-            title: 'Example App',
-            home: Align(
-              alignment: Alignment.topLeft,
-              child: SizedBox(
-                width: UiNavigationRail.expandedOuterWidth,
-                height: 420,
-                child: StatefulBuilder(
-                  builder: (context, setState) => UiNavigationRail(
-                    collapsed: collapsed,
-                    onToggleCollapsed: () =>
-                        setState(() => collapsed = !collapsed),
-                    platformCapabilities: platformCapabilities,
-                    destinations: [
-                      for (var index = 0; index < 6; index++)
-                        UiNavigationRailDestination(
-                          label: 'Destination $index',
-                          icon: LucideIcons.circle,
-                          selected: index == 0,
-                          onPressed: () {},
-                        ),
-                    ],
-                    footerActions: [
-                      UiNavigationRailAction(
-                        label: 'Notifications',
-                        icon: LucideIcons.bell,
-                        onPressed: () {},
-                      ),
-                    ],
-                    footerDestinations: [
+    try {
+      await tester.pumpWidget(
+        UiApp(
+          title: 'Example App',
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: UiNavigationRail.expandedOuterWidth,
+              height: 420,
+              child: StatefulBuilder(
+                builder: (context, setState) => UiNavigationRail(
+                  collapsed: collapsed,
+                  onToggleCollapsed: () =>
+                      setState(() => collapsed = !collapsed),
+                  platformCapabilities: platformCapabilities,
+                  destinations: [
+                    for (var index = 0; index < 6; index++)
                       UiNavigationRailDestination(
-                        label: 'Account',
-                        icon: LucideIcons.user,
+                        label: 'Destination $index',
+                        icon: LucideIcons.circle,
+                        selected: index == 0,
                         onPressed: () {},
                       ),
-                    ],
-                  ),
+                  ],
+                  footerActions: [
+                    UiNavigationRailAction(
+                      label: 'Notifications',
+                      icon: LucideIcons.bell,
+                      onPressed: () {},
+                    ),
+                  ],
+                  footerDestinations: [
+                    UiNavigationRailDestination(
+                      label: 'Account',
+                      icon: LucideIcons.user,
+                      onPressed: () {},
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.bySemanticsLabel('Expand navigation rail'));
-        await tester.pump();
-        expect(tester.takeException(), isNull);
+      await tester.tap(find.bySemanticsLabel('Expand navigation rail'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
 
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.takeException(), isNull);
 
-        await tester.pumpAndSettle();
-        expect(collapsed, isFalse);
-        expect(tester.takeException(), isNull);
-      } finally {
-        await tester.pumpWidget(const SizedBox.shrink());
-        debugDefaultTargetPlatformOverride = null;
-        await platformCapabilities.close();
-      }
-    },
-  );
+      await tester.pumpAndSettle();
+      expect(collapsed, isFalse);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      debugDefaultTargetPlatformOverride = null;
+      await platformCapabilities.close();
+    }
+  });
 
   testWidgets('UiNavigationRail applies explicitly reported window chrome', (
     tester,
@@ -713,7 +710,8 @@ void main() {
     final toggleRect = tester.getRect(
       find.byKey(const Key('ui_navigation_rail_toggle_button')),
     );
-    final expectedEnd = UiNavigationRailGeometry.defaults.outerMargin +
+    final expectedEnd =
+        UiNavigationRailGeometry.defaults.outerMargin +
         UiNavigationRailGeometry.defaults.expandedPanelWidth -
         UiNavigationRailGeometry.defaults.headerEndPadding;
 

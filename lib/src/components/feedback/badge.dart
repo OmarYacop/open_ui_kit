@@ -64,16 +64,18 @@ class UiBadge extends StatelessWidget {
     final palette = UiIntentPalette.rest(intent, tokens.colors);
 
     final resolvedForeground = foregroundColor ?? color ?? palette.foreground;
-    final background = backgroundColor ??
+    final background =
+        backgroundColor ??
         (color == null
             ? (outlined ? const Color(0x00000000) : palette.background)
             : (outlined ? const Color(0x00000000) : color!.withAlpha(30)));
-    final resolvedBorder = borderColor ??
+    final resolvedBorder =
+        borderColor ??
         (backgroundColor != null
             ? null
             : color == null
-                ? (outlined ? palette.foreground : palette.border)
-                : color!.withAlpha(100));
+            ? (outlined ? palette.foreground : palette.border)
+            : color!.withAlpha(100));
 
     return UiBox(
       background: background,

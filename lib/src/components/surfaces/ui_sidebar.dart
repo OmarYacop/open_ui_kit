@@ -101,9 +101,7 @@ class UiSidebar extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final n in items) _buildNode(context, n),
-                ],
+                children: [for (final n in items) _buildNode(context, n)],
               ),
             ),
           ),
@@ -194,8 +192,8 @@ class _SidebarItemRow extends StatelessWidget {
           final background = item.active
               ? c.surfaceMuted
               : state.hovered || state.pressed
-                  ? c.surfaceMuted.withValues(alpha: 0.5)
-                  : const Color(0x00000000);
+              ? c.surfaceMuted.withValues(alpha: 0.5)
+              : const Color(0x00000000);
           final fg = c.textPrimary;
           return UiFocusRing(
             visible: state.focused,

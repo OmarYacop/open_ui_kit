@@ -20,8 +20,8 @@ class UiLegibilityShadow extends SingleChildRenderObjectWidget {
     this.offset = const Offset(0, 1.25),
     this.blurSigma = 2,
     this.spreadRadius = 0.5,
-  })  : assert(blurSigma >= 0),
-        assert(spreadRadius >= 0);
+  }) : assert(blurSigma >= 0),
+       assert(spreadRadius >= 0);
 
   /// Defaults to the theme background at 92% opacity.
   final Color? color;
@@ -58,14 +58,11 @@ class UiLegibilityShadow extends SingleChildRenderObjectWidget {
 
 class RenderUiLegibilityShadow extends RenderProxyBox {
   RenderUiLegibilityShadow({
-    required Color color,
-    required Offset offset,
-    required double blurSigma,
-    required double spreadRadius,
-  })  : _color = color,
-        _offset = offset,
-        _blurSigma = blurSigma,
-        _spreadRadius = spreadRadius;
+    required this._color,
+    required this._offset,
+    required this._blurSigma,
+    required this._spreadRadius,
+  });
 
   Color _color;
   Offset _offset;
@@ -150,8 +147,9 @@ class RenderUiLegibilityShadow extends RenderProxyBox {
   @override
   Rect get paintBounds {
     final inflation = _blurSigma * 3 + _spreadRadius;
-    return super.paintBounds.shift(_offset).inflate(inflation).expandToInclude(
-          super.paintBounds,
-        );
+    return super.paintBounds
+        .shift(_offset)
+        .inflate(inflation)
+        .expandToInclude(super.paintBounds);
   }
 }

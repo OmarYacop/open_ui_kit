@@ -51,8 +51,9 @@ void main() {
     expect(earlierY, lessThan(olderY));
   });
 
-  testWidgets('renders actor, changes, tags, message, and description',
-      (tester) async {
+  testWidgets('renders actor, changes, tags, message, and description', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(
         UiTimeline(
@@ -67,9 +68,7 @@ void main() {
                 name: 'Amina Hassan',
                 initials: 'AH',
               ),
-              changes: const [
-                UiTimelineChange(from: 'Open', to: 'Resolved'),
-              ],
+              changes: const [UiTimelineChange(from: 'Open', to: 'Resolved')],
               tags: const [UiTimelineTag(label: 'Support')],
               messageTitle: 'Customer note',
               messageBody: 'Everything is working again.',
@@ -91,8 +90,9 @@ void main() {
     expect(find.text('Updated from the ticket workspace.'), findsOneWidget);
   });
 
-  testWidgets('loads remaining events for the selected UTC day',
-      (tester) async {
+  testWidgets('loads remaining events for the selected UTC day', (
+    tester,
+  ) async {
     String? requestedDay;
     await tester.pumpWidget(
       _host(
@@ -194,8 +194,9 @@ void main() {
     expect(calls, 0);
   });
 
-  testWidgets('aligns multi-field changes and renders missing values',
-      (tester) async {
+  testWidgets('aligns multi-field changes and renders missing values', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(
         SizedBox(
@@ -228,39 +229,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('stacks labelled changes and aligns load-more on compact widths',
-      (tester) async {
-    await tester.pumpWidget(
-      _host(
-        SizedBox(
-          width: 260,
-          child: UiTimeline(
-            dateLabelBuilder: (_) => 'Today',
-            events: [
-              UiTimelineEvent(
-                id: 1,
-                at: DateTime.utc(2026, 8, 3),
-                title: 'Created',
-                changes: const [
-                  UiTimelineChange(
-                    label: 'A very long localized field label',
-                    to: 'Value',
-                  ),
-                ],
-              ),
-            ],
-            dayTotals: const {'2026-08-03': 2},
-            onLoadMore: (_) {},
+  testWidgets(
+    'stacks labelled changes and aligns load-more on compact widths',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SizedBox(
+            width: 260,
+            child: UiTimeline(
+              dateLabelBuilder: (_) => 'Today',
+              events: [
+                UiTimelineEvent(
+                  id: 1,
+                  at: DateTime.utc(2026, 8, 3),
+                  title: 'Created',
+                  changes: const [
+                    UiTimelineChange(
+                      label: 'A very long localized field label',
+                      to: 'Value',
+                    ),
+                  ],
+                ),
+              ],
+              dayTotals: const {'2026-08-03': 2},
+              onLoadMore: (_) {},
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    final labelY =
-        tester.getTopLeft(find.text('A very long localized field label')).dy;
-    final valueY = tester.getTopLeft(find.text('Value')).dy;
-    expect(valueY, greaterThan(labelY));
-    expect(tester.getTopLeft(find.text('1 more')).dx, lessThan(150));
-    expect(tester.takeException(), isNull);
-  });
+      final labelY = tester
+          .getTopLeft(find.text('A very long localized field label'))
+          .dy;
+      final valueY = tester.getTopLeft(find.text('Value')).dy;
+      expect(valueY, greaterThan(labelY));
+      expect(tester.getTopLeft(find.text('1 more')).dx, lessThan(150));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

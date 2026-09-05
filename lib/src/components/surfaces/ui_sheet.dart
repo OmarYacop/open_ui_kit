@@ -19,18 +19,12 @@ enum UiSheetSnapKind { fit, fraction }
 /// Snap-point model for [UiSheet] presentation.
 @immutable
 class UiSheetSnap {
-  const UiSheetSnap.fit()
-      : fraction = null,
-        kind = UiSheetSnapKind.fit;
+  const UiSheetSnap.fit() : fraction = null, kind = UiSheetSnapKind.fit;
   const UiSheetSnap.fraction(double value)
-      : fraction = value,
-        kind = UiSheetSnapKind.fraction;
-  const UiSheetSnap.half()
-      : fraction = 0.5,
-        kind = UiSheetSnapKind.fraction;
-  const UiSheetSnap.full()
-      : fraction = 1.0,
-        kind = UiSheetSnapKind.fraction;
+    : fraction = value,
+      kind = UiSheetSnapKind.fraction;
+  const UiSheetSnap.half() : fraction = 0.5, kind = UiSheetSnapKind.fraction;
+  const UiSheetSnap.full() : fraction = 1.0, kind = UiSheetSnapKind.fraction;
 
   final double? fraction;
   final UiSheetSnapKind kind;
@@ -111,7 +105,9 @@ class UiSheet extends StatelessWidget {
               color: c.card.withValues(alpha: 0.96),
               child: header!,
             ),
-          Flexible(child: Padding(padding: bodyPadding, child: child)),
+          Flexible(
+            child: Padding(padding: bodyPadding, child: child),
+          ),
           if (footer != null) ...[
             UiComponentShadow(
               key: const Key('ui_sheet_footer_shadow'),
@@ -151,12 +147,7 @@ class UiSheetHandle extends StatelessWidget {
 
 /// Pre-composed header with optional title/subtitle and trailing slot.
 class UiSheetHeader extends StatelessWidget {
-  const UiSheetHeader({
-    super.key,
-    this.title,
-    this.subtitle,
-    this.trailing,
-  });
+  const UiSheetHeader({super.key, this.title, this.subtitle, this.trailing});
 
   final String? title;
   final String? subtitle;
@@ -352,7 +343,7 @@ class UiSheetScope {
 /// one. Mixing the two is not supported.
 class UiPersistentSheetController extends ChangeNotifier {
   UiPersistentSheetController({int initialIndex = 0})
-      : _snapIndex = initialIndex;
+    : _snapIndex = initialIndex;
 
   int _snapIndex;
   int _snapCount = 0;
@@ -413,8 +404,9 @@ class UiPersistentSheetController extends ChangeNotifier {
 /// sheet directly (the surrounding [UiPersistentSheet] fills its parent
 /// layout and therefore reports the wrong height).
 @visibleForTesting
-const ValueKey<String> persistentSheetSurfaceKey =
-    ValueKey('ui_persistent_sheet_surface');
+const ValueKey<String> persistentSheetSurfaceKey = ValueKey(
+  'ui_persistent_sheet_surface',
+);
 
 /// A non-modal, persistent bottom sheet that keeps the host body
 /// visible and interactive — the design used by Apple Maps / Google
@@ -751,11 +743,7 @@ class _UiPersistentSheetState extends State<UiPersistentSheet>
       _anim.value = target;
       return;
     }
-    _anim.animateTo(
-      target,
-      duration: duration,
-      curve: _effectiveCurve,
-    );
+    _anim.animateTo(target, duration: duration, curve: _effectiveCurve);
   }
 
   Duration get _effectiveDuration => _resolvedDuration;
@@ -882,8 +870,10 @@ class _SheetHostState<T> extends State<_SheetHost<T>> {
                 onVerticalDragUpdate: widget.isDismissible
                     ? (d) {
                         setState(() {
-                          _dragOffset =
-                              (_dragOffset + d.delta.dy).clamp(0.0, 1000.0);
+                          _dragOffset = (_dragOffset + d.delta.dy).clamp(
+                            0.0,
+                            1000.0,
+                          );
                         });
                       }
                     : null,

@@ -122,11 +122,7 @@ class UiResponsiveNavigationScaffold extends StatelessWidget {
 enum _SideChromeSlot { body, sidebar, secondary }
 
 class _SideChromeLayout extends StatelessWidget {
-  const _SideChromeLayout({
-    required this.body,
-    this.sidebar,
-    this.secondary,
-  });
+  const _SideChromeLayout({required this.body, this.sidebar, this.secondary});
 
   final Widget body;
   final Widget? sidebar;
@@ -216,12 +212,7 @@ class _BodyWithFloatingChrome extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Positioned.fill(child: body),
-          PositionedDirectional(
-            start: 0,
-            end: 0,
-            bottom: 0,
-            child: bottomBar!,
-          ),
+          PositionedDirectional(start: 0, end: 0, bottom: 0, child: bottomBar!),
         ],
       );
     }

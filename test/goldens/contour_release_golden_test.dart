@@ -51,19 +51,19 @@ void main() {
     );
   });
 
-  testWidgets('expanded, offset from origin — actions must actually be painted',
-      (
-    tester,
-  ) async {
-    await pumpGoldenFrame(
-      tester,
-      brightness: Brightness.light,
-      child: offsetContour(expanded: true),
-    );
-    await tester.pump();
-    await expectLater(
-      find.byType(UiContourRelease),
-      matchesGoldenFile('goldens/contour_release_expanded_offset.png'),
-    );
-  });
+  testWidgets(
+    'expanded, offset from origin — actions must actually be painted',
+    (tester) async {
+      await pumpGoldenFrame(
+        tester,
+        brightness: Brightness.light,
+        child: offsetContour(expanded: true),
+      );
+      await tester.pump();
+      await expectLater(
+        find.byType(UiContourRelease),
+        matchesGoldenFile('goldens/contour_release_expanded_offset.png'),
+      );
+    },
+  );
 }

@@ -50,8 +50,8 @@ class UiSwitch extends StatelessWidget {
         final trackColor = value
             ? c.primary
             : state.hovered || state.pressed
-                ? c.accent
-                : c.input;
+            ? c.accent
+            : c.input;
 
         final knobColor = value ? c.primaryForeground : c.surface;
 
@@ -62,8 +62,8 @@ class UiSwitch extends StatelessWidget {
           hint: loading
               ? 'loading'
               : !_interactive
-                  ? 'disabled'
-                  : null,
+              ? 'disabled'
+              : null,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -82,8 +82,9 @@ class UiSwitch extends StatelessWidget {
                     border: Border.all(color: value ? c.primary : c.input),
                   ),
                   child: Align(
-                    alignment:
-                        value ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: value
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: UiBox(
                       width: 16,
                       height: 16,

@@ -53,8 +53,9 @@ void main() {
   });
 
   group('theme', () {
-    testWidgets('UiThemeTokens.of falls back to light when absent',
-        (tester) async {
+    testWidgets('UiThemeTokens.of falls back to light when absent', (
+      tester,
+    ) async {
       late UiThemeTokens resolved;
       await tester.pumpWidget(
         MaterialApp(
@@ -103,8 +104,9 @@ void main() {
       expect(resolved.colors.background, UiColorTokens.dark.background);
     });
 
-    testWidgets('UiThemeTokens.of respects reduced-motion preference',
-        (tester) async {
+    testWidgets('UiThemeTokens.of respects reduced-motion preference', (
+      tester,
+    ) async {
       late UiThemeTokens resolved;
       await tester.pumpWidget(
         MaterialApp(
@@ -126,8 +128,9 @@ void main() {
       expect(resolved.motion.standardCurve, Curves.linear);
     });
 
-    testWidgets('UiApp route transition does not wrap routes with fade',
-        (tester) async {
+    testWidgets('UiApp route transition does not wrap routes with fade', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         UiApp(
           home: const Directionality(
@@ -158,8 +161,9 @@ void main() {
       expect(find.byType(DecoratedBox), findsWidgets);
     });
 
-    testWidgets('UiConstrained caps width inside tight parents',
-        (tester) async {
+    testWidgets('UiConstrained caps width inside tight parents', (
+      tester,
+    ) async {
       const childKey = Key('constrained-child');
 
       await tester.pumpWidget(
@@ -185,9 +189,7 @@ void main() {
 
     testWidgets('UiText applies heading font size', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: const UiText('hi', variant: UiTextVariant.heading),
-        ),
+        MaterialApp(home: const UiText('hi', variant: UiTextVariant.heading)),
       );
       final rendered = tester.widget<Text>(find.text('hi'));
       expect(
@@ -196,8 +198,9 @@ void main() {
       );
     });
 
-    testWidgets('UiFadeScaleTransition composes fade and scale',
-        (tester) async {
+    testWidgets('UiFadeScaleTransition composes fade and scale', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -212,8 +215,9 @@ void main() {
       expect(find.byType(ScaleTransition), findsOneWidget);
     });
 
-    testWidgets('UiSlideFadeTransition supports logical-pixel offsets',
-        (tester) async {
+    testWidgets('UiSlideFadeTransition supports logical-pixel offsets', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,

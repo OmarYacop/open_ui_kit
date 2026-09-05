@@ -46,8 +46,8 @@ class UiEffectsTokens {
     this.enableBackdropBlur = true,
     this.blurScale = 1,
     this.animateBlur = true,
-  })  : assert(blurScale >= 0),
-        assert(blurScale <= 1);
+  }) : assert(blurScale >= 0),
+       assert(blurScale <= 1);
 
   static const adaptive = UiEffectsTokens();
 
@@ -77,7 +77,8 @@ class UiEffectsTokens {
     bool disableAnimations = false,
     bool accessibleNavigation = false,
   }) {
-    final hasCompileTimeLevel = UiEffectsBuildConfig.effectsLevel == 'full' ||
+    final hasCompileTimeLevel =
+        UiEffectsBuildConfig.effectsLevel == 'full' ||
         UiEffectsBuildConfig.effectsLevel == 'reduced';
     final compileTimeLevel = switch (UiEffectsBuildConfig.effectsLevel) {
       'full' => UiEffectsLevel.full,
@@ -87,16 +88,19 @@ class UiEffectsTokens {
     final resolvedLevel = compileTimeLevel == UiEffectsLevel.adaptive
         ? UiEffectsLevel.full
         : compileTimeLevel;
-    final platformDefaults =
-        resolvedLevel == UiEffectsLevel.full ? full : reduced;
+    final platformDefaults = resolvedLevel == UiEffectsLevel.full
+        ? full
+        : reduced;
     final useResolvedLevelDefaults =
         hasCompileTimeLevel || level == UiEffectsLevel.adaptive;
-    final resolvedEnableBackdropBlur = enableBackdropBlur &&
+    final resolvedEnableBackdropBlur =
+        enableBackdropBlur &&
         (!useResolvedLevelDefaults || platformDefaults.enableBackdropBlur);
     final resolvedBlurScale = useResolvedLevelDefaults
         ? blurScale * platformDefaults.blurScale
         : blurScale;
-    final resolvedAnimateBlur = animateBlur &&
+    final resolvedAnimateBlur =
+        animateBlur &&
         (!useResolvedLevelDefaults || platformDefaults.animateBlur);
     final accessibilityRequiresReducedEffects =
         disableAnimations || accessibleNavigation;
@@ -130,11 +134,7 @@ class UiEffectsTokens {
     );
   }
 
-  static UiEffectsTokens lerp(
-    UiEffectsTokens a,
-    UiEffectsTokens b,
-    double t,
-  ) {
+  static UiEffectsTokens lerp(UiEffectsTokens a, UiEffectsTokens b, double t) {
     return UiEffectsTokens(
       level: t < 0.5 ? a.level : b.level,
       enableBackdropBlur: t < 0.5 ? a.enableBackdropBlur : b.enableBackdropBlur,

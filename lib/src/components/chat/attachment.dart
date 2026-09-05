@@ -47,7 +47,8 @@ class UiAttachment extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final error = state == UiAttachmentState.error;
-    final active = state == UiAttachmentState.uploading ||
+    final active =
+        state == UiAttachmentState.uploading ||
         state == UiAttachmentState.processing;
     final mediaExtent = switch (size) {
       UiAttachmentSize.sm => 40.0,
@@ -114,8 +115,9 @@ class UiAttachment extends StatelessWidget {
             children: [
               if (mediaSlot != null)
                 Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: mediaSlot),
+                  alignment: AlignmentDirectional.centerStart,
+                  child: mediaSlot,
+                ),
               if (mediaSlot != null) SizedBox(height: tokens.spacing.x3),
               metadata,
               if (actionRow != null) ...[

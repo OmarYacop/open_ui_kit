@@ -278,7 +278,8 @@ class _TimelineGroupView extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.x3),
               Expanded(
-                  child: Container(height: 1, color: tokens.colors.border)),
+                child: Container(height: 1, color: tokens.colors.border),
+              ),
             ],
           ),
           SizedBox(height: tokens.spacing.x3),
@@ -322,7 +323,8 @@ class _TimelineEventView extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 300 ||
+        final compact =
+            constraints.maxWidth < 300 ||
             MediaQuery.textScalerOf(context).scale(1) > 1.3;
         return IntrinsicHeight(
           child: Row(
@@ -395,7 +397,8 @@ class _TimelineMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actor = event.actor;
-    final useActor = actor != null &&
+    final useActor =
+        actor != null &&
         event.marker != UiTimelineMarker.icon &&
         (event.marker == UiTimelineMarker.actor ||
             event.marker == UiTimelineMarker.automatic);
@@ -449,12 +452,12 @@ class _TimelineMarker extends StatelessWidget {
   }
 
   static IconData _toneIcon(UiTimelineTone tone) => switch (tone) {
-        UiTimelineTone.success => LucideIcons.circleCheck,
-        UiTimelineTone.warning => LucideIcons.circleAlert,
-        UiTimelineTone.error => LucideIcons.circleAlert,
-        UiTimelineTone.info => LucideIcons.info,
-        UiTimelineTone.neutral => LucideIcons.clock3,
-      };
+    UiTimelineTone.success => LucideIcons.circleCheck,
+    UiTimelineTone.warning => LucideIcons.circleAlert,
+    UiTimelineTone.error => LucideIcons.circleAlert,
+    UiTimelineTone.info => LucideIcons.info,
+    UiTimelineTone.neutral => LucideIcons.clock3,
+  };
 }
 
 class _TimelineEventContent extends StatelessWidget {
@@ -473,7 +476,8 @@ class _TimelineEventContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final inlineChange = event.changes.length == 1 &&
+    final inlineChange =
+        event.changes.length == 1 &&
             _isBlank(event.changes.single.label) &&
             (!_isBlank(event.changes.single.from) ||
                 !_isBlank(event.changes.single.to))
@@ -486,9 +490,7 @@ class _TimelineEventContent extends StatelessWidget {
           timeLabel!,
           variant: UiTextVariant.caption,
           tone: UiTextTone.muted,
-          style: const TextStyle(
-            fontFeatures: [FontFeature.tabularFigures()],
-          ),
+          style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
         ),
       Wrap(
         spacing: tokens.spacing.x1,
@@ -520,10 +522,7 @@ class _TimelineEventContent extends StatelessWidget {
       if (event.changes.isNotEmpty && inlineChange == null)
         _TimelineChangeList(changes: event.changes, stacked: compact),
       if (!_isBlank(event.messageBody))
-        _MessageCallout(
-          event: event,
-          defaultMessageTitle: defaultMessageTitle,
-        ),
+        _MessageCallout(event: event, defaultMessageTitle: defaultMessageTitle),
       if (!_isBlank(event.description))
         UiText(
           event.description!,
@@ -590,10 +589,7 @@ class _TimelineEventContent extends StatelessWidget {
 }
 
 class _TimelineChangeList extends StatelessWidget {
-  const _TimelineChangeList({
-    required this.changes,
-    required this.stacked,
-  });
+  const _TimelineChangeList({required this.changes, required this.stacked});
 
   final List<UiTimelineChange> changes;
   final bool stacked;
@@ -791,7 +787,8 @@ class _LoadMore extends StatelessWidget {
     final label = labelBuilder?.call(remaining) ?? '$remaining more';
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 300 ||
+        final compact =
+            constraints.maxWidth < 300 ||
             MediaQuery.textScalerOf(context).scale(1) > 1.3;
         return Padding(
           padding: EdgeInsetsDirectional.only(

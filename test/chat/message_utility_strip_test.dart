@@ -70,18 +70,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final stripBottom =
-        tester.getBottomLeft(find.byType(UiMessageUtilityStrip)).dy;
-    final actionBottom =
-        tester.getBottomLeft(find.bySemanticsLabel('Reply')).dy;
+    final stripBottom = tester
+        .getBottomLeft(find.byType(UiMessageUtilityStrip))
+        .dy;
+    final actionBottom = tester
+        .getBottomLeft(find.bySemanticsLabel('Reply'))
+        .dy;
     expect(stripBottom - actionBottom, greaterThanOrEqualTo(12));
   });
 }
 
 Widget _host(Widget child) {
   return UiApp(
-    home: Scaffold(
-      body: SizedBox(width: 390, height: 600, child: child),
-    ),
+    home: Scaffold(body: SizedBox(width: 390, height: 600, child: child)),
   );
 }

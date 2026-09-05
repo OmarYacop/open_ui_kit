@@ -27,8 +27,8 @@ class UiDateRange {
 @immutable
 class UiTimeValue {
   const UiTimeValue({required this.hour, required this.minute})
-      : assert(hour >= 0 && hour < 24, 'hour must be 0..23'),
-        assert(minute >= 0 && minute < 60, 'minute must be 0..59');
+    : assert(hour >= 0 && hour < 24, 'hour must be 0..23'),
+      assert(minute >= 0 && minute < 60, 'minute must be 0..59');
 
   factory UiTimeValue.fromDateTime(DateTime value) =>
       UiTimeValue(hour: value.hour, minute: value.minute);

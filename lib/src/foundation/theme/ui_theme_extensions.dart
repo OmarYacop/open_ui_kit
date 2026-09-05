@@ -121,10 +121,7 @@ class UiThemeTokens {
   static Brightness brightnessOf(BuildContext context) =>
       _ofAspect(context, UiThemeAspect.brightness).brightness;
 
-  static UiThemeTokens _ofAspect(
-    BuildContext context,
-    UiThemeAspect aspect,
-  ) {
+  static UiThemeTokens _ofAspect(BuildContext context, UiThemeAspect aspect) {
     return UiTheme.maybeOf(context, aspect: aspect) ?? light;
   }
 
@@ -195,15 +192,15 @@ class UiThemeTokens {
 
   @override
   int get hashCode => Object.hash(
-        colors,
-        spacing,
-        radius,
-        shadows,
-        typography,
-        motion,
-        effects,
-        brightness,
-      );
+    colors,
+    spacing,
+    radius,
+    shadows,
+    typography,
+    motion,
+    effects,
+    brightness,
+  );
 }
 
 /// [InheritedWidget] host for [UiThemeTokens].
@@ -212,14 +209,8 @@ class UiTheme extends InheritedModel<UiThemeAspect> {
 
   final UiThemeTokens tokens;
 
-  static UiThemeTokens? maybeOf(
-    BuildContext context, {
-    UiThemeAspect? aspect,
-  }) {
-    return InheritedModel.inheritFrom<UiTheme>(
-      context,
-      aspect: aspect,
-    )?.tokens;
+  static UiThemeTokens? maybeOf(BuildContext context, {UiThemeAspect? aspect}) {
+    return InheritedModel.inheritFrom<UiTheme>(context, aspect: aspect)?.tokens;
   }
 
   @override

@@ -51,8 +51,9 @@ class UiMessageBubble extends StatelessWidget {
             ),
       child: UiBubble(
         alignment: alignment,
-        variant:
-            isOutgoing ? UiBubbleVariant.primary : UiBubbleVariant.secondary,
+        variant: isOutgoing
+            ? UiBubbleVariant.primary
+            : UiBubbleVariant.secondary,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
           child: Opacity(

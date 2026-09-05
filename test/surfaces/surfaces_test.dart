@@ -179,8 +179,7 @@ void main() {
   });
 
   group('UiPersistentSheet', () {
-    testWidgets(
-        'mounts at initial snap and leaves the host body interactive '
+    testWidgets('mounts at initial snap and leaves the host body interactive '
         '(no modal barrier)', (tester) async {
       var hostTaps = 0;
       final controller = UiPersistentSheetController(initialIndex: 0);
@@ -253,14 +252,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final peekHeight =
-          tester.getRect(find.byKey(persistentSheetSurfaceKey)).height;
+      final peekHeight = tester
+          .getRect(find.byKey(persistentSheetSurfaceKey))
+          .height;
 
       controller.expand();
       await tester.pumpAndSettle();
 
-      final expandedHeight =
-          tester.getRect(find.byKey(persistentSheetSurfaceKey)).height;
+      final expandedHeight = tester
+          .getRect(find.byKey(persistentSheetSurfaceKey))
+          .height;
       expect(expandedHeight, greaterThan(peekHeight));
       expect(controller.snapIndex, 1);
       expect(controller.isExpanded, isTrue);
@@ -724,9 +725,7 @@ void main() {
     expect(drawerRect.height, lessThanOrEqualTo(640));
   });
 
-  testWidgets('drawer maxWidth customizes tablet bottom width', (
-    tester,
-  ) async {
+  testWidgets('drawer maxWidth customizes tablet bottom width', (tester) async {
     _useViewSize(tester, const Size(1000, 1180));
     await tester.pumpWidget(
       _host(
@@ -885,105 +884,106 @@ void main() {
     );
 
     expect(
-        tester.getSize(firstDrawer).width, tester.getSize(secondDrawer).width);
+      tester.getSize(firstDrawer).width,
+      tester.getSize(secondDrawer).width,
+    );
   });
 
-  testWidgets(
-    'swiping a nested drawer reverses the stacked drawer depth',
-    (tester) async {
-      _useViewSize(tester, const Size(390, 844));
-      await tester.pumpWidget(
-        _host(
-          Builder(
-            builder: (context) {
-              return UiButton(
-                label: 'Open swipe stack',
-                onPressed: () {
-                  UiDrawerScope.show<void>(
-                    context,
-                    side: UiDrawerSide.right,
-                    variant: UiDrawerVariant.stacked,
-                    blurBackdrop: false,
-                    builder: (outerContext) => UiDrawer(
-                      width: 280,
-                      child: Column(
-                        children: [
-                          const Text('Swipe first drawer'),
-                          UiButton(
-                            label: 'Open swipe nested drawer',
-                            onPressed: () {
-                              UiDrawerScope.show<void>(
-                                outerContext,
-                                side: UiDrawerSide.right,
-                                variant: UiDrawerVariant.stacked,
-                                blurBackdrop: false,
-                                builder: (_) => const UiDrawer(
-                                  width: 280,
-                                  child: Text('Swipe second drawer'),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+  testWidgets('swiping a nested drawer reverses the stacked drawer depth', (
+    tester,
+  ) async {
+    _useViewSize(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      _host(
+        Builder(
+          builder: (context) {
+            return UiButton(
+              label: 'Open swipe stack',
+              onPressed: () {
+                UiDrawerScope.show<void>(
+                  context,
+                  side: UiDrawerSide.right,
+                  variant: UiDrawerVariant.stacked,
+                  blurBackdrop: false,
+                  builder: (outerContext) => UiDrawer(
+                    width: 280,
+                    child: Column(
+                      children: [
+                        const Text('Swipe first drawer'),
+                        UiButton(
+                          label: 'Open swipe nested drawer',
+                          onPressed: () {
+                            UiDrawerScope.show<void>(
+                              outerContext,
+                              side: UiDrawerSide.right,
+                              variant: UiDrawerVariant.stacked,
+                              blurBackdrop: false,
+                              builder: (_) => const UiDrawer(
+                                width: 280,
+                                child: Text('Swipe second drawer'),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                  );
-                },
-              );
-            },
-          ),
+                  ),
+                );
+              },
+            );
+          },
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.text('Open swipe stack'));
-      await tester.pumpAndSettle();
-      final firstBeforeNested = tester.getRect(
-        find.ancestor(
-          of: find.text('Swipe first drawer'),
-          matching: find.byType(UiDrawer),
-        ),
-      );
-
-      await tester.tap(find.text('Open swipe nested drawer'));
-      await tester.pumpAndSettle();
-
-      final firstDrawer = find.ancestor(
+    await tester.tap(find.text('Open swipe stack'));
+    await tester.pumpAndSettle();
+    final firstBeforeNested = tester.getRect(
+      find.ancestor(
         of: find.text('Swipe first drawer'),
         matching: find.byType(UiDrawer),
-      );
-      final secondDrawer = find.ancestor(
-        of: find.text('Swipe second drawer'),
-        matching: find.byType(UiDrawer),
-      );
-      final firstStacked = tester.getRect(firstDrawer);
-      final secondStacked = tester.getRect(secondDrawer);
+      ),
+    );
 
-      expect(firstStacked.left, lessThan(firstBeforeNested.left));
+    await tester.tap(find.text('Open swipe nested drawer'));
+    await tester.pumpAndSettle();
 
-      final gesture = await tester.startGesture(secondStacked.center);
-      await gesture.moveBy(const Offset(80, 0));
-      await tester.pump();
+    final firstDrawer = find.ancestor(
+      of: find.text('Swipe first drawer'),
+      matching: find.byType(UiDrawer),
+    );
+    final secondDrawer = find.ancestor(
+      of: find.text('Swipe second drawer'),
+      matching: find.byType(UiDrawer),
+    );
+    final firstStacked = tester.getRect(firstDrawer);
+    final secondStacked = tester.getRect(secondDrawer);
 
-      final firstDuringDrag = tester.getRect(firstDrawer);
-      final secondDuringDrag = tester.getRect(secondDrawer);
-      expect(firstDuringDrag.left, greaterThan(firstStacked.left));
-      expect(secondDuringDrag.left, greaterThan(secondStacked.left));
+    expect(firstStacked.left, lessThan(firstBeforeNested.left));
 
-      await gesture.up();
-      await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(secondStacked.center);
+    await gesture.moveBy(const Offset(80, 0));
+    await tester.pump();
 
-      expect(tester.getRect(firstDrawer).left, firstStacked.left);
-      expect(tester.getRect(secondDrawer).left, secondStacked.left);
+    final firstDuringDrag = tester.getRect(firstDrawer);
+    final secondDuringDrag = tester.getRect(secondDrawer);
+    expect(firstDuringDrag.left, greaterThan(firstStacked.left));
+    expect(secondDuringDrag.left, greaterThan(secondStacked.left));
 
-      await tester.tapAt(const Offset(20, 20));
-      await tester.pumpAndSettle();
-      expect(find.text('Swipe second drawer'), findsNothing);
+    await gesture.up();
+    await tester.pumpAndSettle();
 
-      await tester.tapAt(const Offset(20, 20));
-      await tester.pumpAndSettle();
-      expect(find.text('Swipe first drawer'), findsNothing);
-    },
-  );
+    expect(tester.getRect(firstDrawer).left, firstStacked.left);
+    expect(tester.getRect(secondDrawer).left, secondStacked.left);
+
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    expect(find.text('Swipe second drawer'), findsNothing);
+
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    expect(find.text('Swipe first drawer'), findsNothing);
+  });
 
   testWidgets('drawer scope applies floating inset styling', (tester) async {
     await tester.pumpWidget(
@@ -1252,39 +1252,37 @@ void main() {
   });
 
   testWidgets(
-      'navigation drawer footer actions render widgets and destinations',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: UiNavigationDrawer(
-            title: 'More',
-            destinations: [
-              UiNavigationDrawerDestination(
-                label: 'Home',
-                onPressed: _noop,
-              ),
-            ],
-            footerActions: [
-              Text('Language select'),
-              UiNavigationDrawerDestination(
-                label: 'Account',
-                onPressed: _noop,
-              ),
-            ],
+    'navigation drawer footer actions render widgets and destinations',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: const Directionality(
+            textDirection: TextDirection.ltr,
+            child: UiNavigationDrawer(
+              title: 'More',
+              destinations: [
+                UiNavigationDrawerDestination(label: 'Home', onPressed: _noop),
+              ],
+              footerActions: [
+                Text('Language select'),
+                UiNavigationDrawerDestination(
+                  label: 'Account',
+                  onPressed: _noop,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text('Language select'), findsOneWidget);
-    expect(find.text('Account'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Language select')).dy,
-      lessThan(tester.getTopLeft(find.text('Account')).dy),
-    );
-  });
+      expect(find.text('Language select'), findsOneWidget);
+      expect(find.text('Account'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Language select')).dy,
+        lessThan(tester.getTopLeft(find.text('Account')).dy),
+      );
+    },
+  );
 
   testWidgets('navigation drawer rows use comfortable content padding', (
     tester,
@@ -1296,10 +1294,7 @@ void main() {
           child: UiNavigationDrawer(
             title: 'More',
             destinations: [
-              UiNavigationDrawerDestination(
-                label: 'Home',
-                onPressed: _noop,
-              ),
+              UiNavigationDrawerDestination(label: 'Home', onPressed: _noop),
             ],
           ),
         ),
@@ -1311,10 +1306,7 @@ void main() {
     );
     final rowAncestorPaddings = tester
         .widgetList<Padding>(
-          find.ancestor(
-            of: find.text('Home'),
-            matching: find.byType(Padding),
-          ),
+          find.ancestor(of: find.text('Home'), matching: find.byType(Padding)),
         )
         .map((padding) => padding.padding)
         .toList();
@@ -1534,16 +1526,16 @@ void main() {
 
     final shadowedDrawerSurfaces = tester
         .widgetList<DecoratedBox>(
-      find.descendant(
-        of: find.byType(UiDrawer),
-        matching: find.byType(DecoratedBox),
-      ),
-    )
+          find.descendant(
+            of: find.byType(UiDrawer),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
         .where((box) {
-      final decoration = box.decoration;
-      return decoration is BoxDecoration &&
-          (decoration.boxShadow?.isNotEmpty ?? false);
-    });
+          final decoration = box.decoration;
+          return decoration is BoxDecoration &&
+              (decoration.boxShadow?.isNotEmpty ?? false);
+        });
     expect(shadowedDrawerSurfaces.length, 1);
 
     await tester.tapAt(const Offset(380, 20));

@@ -67,40 +67,36 @@ class UiAlert extends StatelessWidget {
 
     final (bg, fg, borderColor) = switch (intent) {
       UiAlertIntent.destructive => (
-          c.danger.withValues(alpha: 0.08),
-          c.danger,
-          c.danger.withValues(alpha: 0.35),
-        ),
+        c.danger.withValues(alpha: 0.08),
+        c.danger,
+        c.danger.withValues(alpha: 0.35),
+      ),
       UiAlertIntent.warning => (
-          c.warning.withValues(alpha: 0.10),
-          c.warning,
-          c.warning.withValues(alpha: 0.35),
-        ),
+        c.warning.withValues(alpha: 0.10),
+        c.warning,
+        c.warning.withValues(alpha: 0.35),
+      ),
       UiAlertIntent.success => (
-          c.success.withValues(alpha: 0.10),
-          c.success,
-          c.success.withValues(alpha: 0.35),
-        ),
+        c.success.withValues(alpha: 0.10),
+        c.success,
+        c.success.withValues(alpha: 0.35),
+      ),
       UiAlertIntent.info => (c.surfaceMuted, c.textPrimary, c.border),
-      UiAlertIntent.defaultIntent => (
-          c.surfaceMuted,
-          c.textPrimary,
-          c.border,
-        ),
+      UiAlertIntent.defaultIntent => (c.surfaceMuted, c.textPrimary, c.border),
     };
 
     // Title colour: tinted for coloured intents, neutral otherwise.
     final titleColor = switch (intent) {
       UiAlertIntent.destructive ||
       UiAlertIntent.warning ||
-      UiAlertIntent.success =>
-        fg,
+      UiAlertIntent.success => fg,
       _ => c.textPrimary,
     };
 
     return Semantics(
       container: true,
-      liveRegion: intent == UiAlertIntent.destructive ||
+      liveRegion:
+          intent == UiAlertIntent.destructive ||
           intent == UiAlertIntent.warning,
       label: _semanticsLabel(),
       child: UiBox(
@@ -142,7 +138,8 @@ class UiAlert extends StatelessWidget {
                       description!,
                       variant: UiTextVariant.bodySm,
                       style: TextStyle(
-                        color: intent == UiAlertIntent.defaultIntent ||
+                        color:
+                            intent == UiAlertIntent.defaultIntent ||
                                 intent == UiAlertIntent.info
                             ? c.textMuted
                             : fg,

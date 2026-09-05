@@ -86,10 +86,11 @@ class UiAlertDialog extends StatelessWidget {
             border: Border.all(color: c.border),
             borderRadius: tokens.radius.xlAll,
             padding: EdgeInsetsDirectional.only(
-                top: tokens.spacing.x5,
-                start: tokens.spacing.x5,
-                bottom: tokens.spacing.x3,
-                end: tokens.spacing.x3),
+              top: tokens.spacing.x5,
+              start: tokens.spacing.x5,
+              bottom: tokens.spacing.x3,
+              end: tokens.spacing.x3,
+            ),
             boxShadow: tokens.shadows.lg,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -259,10 +260,7 @@ class _AlertDialogHost extends StatelessWidget {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: UiFadeScaleTransition(
-              animation: curved,
-              child: child,
-            ),
+            child: UiFadeScaleTransition(animation: curved, child: child),
           ),
         ),
       ],
@@ -271,10 +269,7 @@ class _AlertDialogHost extends StatelessWidget {
 }
 
 class _AlertDialogBackdrop extends StatelessWidget {
-  const _AlertDialogBackdrop({
-    required this.animation,
-    required this.color,
-  });
+  const _AlertDialogBackdrop({required this.animation, required this.color});
 
   final Animation<double> animation;
   final Color color;
@@ -293,10 +288,7 @@ class _AlertDialogBackdrop extends StatelessWidget {
     // ImageFilter every frame during the route transition.
     return IgnorePointer(
       child: RepaintBoundary(
-        child: FadeTransition(
-          opacity: animation,
-          child: backdrop,
-        ),
+        child: FadeTransition(opacity: animation, child: backdrop),
       ),
     );
   }

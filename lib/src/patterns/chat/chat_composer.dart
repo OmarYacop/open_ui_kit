@@ -224,7 +224,8 @@ class _UiChatComposerState extends State<UiChatComposer> {
                         ),
                       ),
                     ),
-                    child: !_canSend &&
+                    child:
+                        !_canSend &&
                             !widget.allowEmptySend &&
                             widget.idleAction != null
                         ? KeyedSubtree(
@@ -237,7 +238,8 @@ class _UiChatComposerState extends State<UiChatComposer> {
                             semanticsLabel: widget.sendLabel,
                             intent: UiIntent.primary,
                             borderRadius: tokens.radius.pillAll,
-                            onPressed: widget.disabled ||
+                            onPressed:
+                                widget.disabled ||
                                     widget.loading ||
                                     (!_canSend && !widget.allowEmptySend)
                                 ? null
@@ -270,10 +272,7 @@ class _UiChatComposerState extends State<UiChatComposer> {
 
     final tokens = UiThemeTokens.of(context);
     final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: tokens.typography.body,
-      ),
+      text: TextSpan(text: text, style: tokens.typography.body),
       textDirection: widget.textDirection ?? Directionality.of(context),
       maxLines: widget.maxLines,
     )..layout(maxWidth: _inputWidth);

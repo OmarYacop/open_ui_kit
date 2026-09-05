@@ -21,8 +21,9 @@ Widget _reducedMotionHost(Widget child) {
 }
 
 void main() {
-  testWidgets('outside tap closes menu and activates underlying control',
-      (tester) async {
+  testWidgets('outside tap closes menu and activates underlying control', (
+    tester,
+  ) async {
     var outsidePressed = false;
     await tester.pumpWidget(
       MaterialApp(
@@ -31,9 +32,7 @@ void main() {
             children: [
               UiDropdownMenu(
                 trigger: const Text('Open menu'),
-                items: [
-                  UiMenuItem(label: 'Profile', onPressed: () {}),
-                ],
+                items: [UiMenuItem(label: 'Profile', onPressed: () {})],
               ),
               const Spacer(),
               TextButton(
@@ -77,15 +76,14 @@ void main() {
     expect(find.text('Profile'), findsOneWidget);
   });
 
-  testWidgets('dropdown closes when the trigger is tapped again',
-      (tester) async {
+  testWidgets('dropdown closes when the trigger is tapped again', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
           trigger: const Text('Open menu'),
-          items: [
-            UiMenuItem(label: 'Profile', onPressed: () {}),
-          ],
+          items: [UiMenuItem(label: 'Profile', onPressed: () {})],
         ),
       ),
     );
@@ -99,8 +97,9 @@ void main() {
     expect(find.text('Profile'), findsNothing);
   });
 
-  testWidgets('long press can drag to a menu item and select on release',
-      (tester) async {
+  testWidgets('long press can drag to a menu item and select on release', (
+    tester,
+  ) async {
     var selected = '';
     await tester.pumpWidget(
       _host(
@@ -130,16 +129,15 @@ void main() {
     expect(find.text('Second'), findsNothing);
   });
 
-  testWidgets('long press release outside the menu does not select an item',
-      (tester) async {
+  testWidgets('long press release outside the menu does not select an item', (
+    tester,
+  ) async {
     var selected = false;
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
           trigger: const Text('Quick actions'),
-          items: [
-            UiMenuItem(label: 'First', onPressed: () => selected = true),
-          ],
+          items: [UiMenuItem(label: 'First', onPressed: () => selected = true)],
         ),
       ),
     );
@@ -157,15 +155,14 @@ void main() {
     expect(find.text('First'), findsOneWidget);
   });
 
-  testWidgets('dropdown entrance resolves immediately with reduced motion',
-      (tester) async {
+  testWidgets('dropdown entrance resolves immediately with reduced motion', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _reducedMotionHost(
         UiDropdownMenu(
           trigger: const Text('Open menu'),
-          items: [
-            UiMenuItem(label: 'Profile', onPressed: () {}),
-          ],
+          items: [UiMenuItem(label: 'Profile', onPressed: () {})],
         ),
       ),
     );
@@ -194,8 +191,9 @@ void main() {
     expect(scaleValues, contains(1.0));
   });
 
-  testWidgets('keyboard navigation activates focused row with Enter',
-      (tester) async {
+  testWidgets('keyboard navigation activates focused row with Enter', (
+    tester,
+  ) async {
     var selected = '';
     await tester.pumpWidget(
       _host(
@@ -221,8 +219,9 @@ void main() {
     expect(find.text('Second'), findsNothing);
   });
 
-  testWidgets('destructive and disabled rows expose semantics hints',
-      (tester) async {
+  testWidgets('destructive and disabled rows expose semantics hints', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
@@ -245,8 +244,9 @@ void main() {
     expect(disabledNode.hint, contains('disabled'));
   });
 
-  testWidgets('fully fitting content is not wrapped in a scroll view',
-      (tester) async {
+  testWidgets('fully fitting content is not wrapped in a scroll view', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
@@ -265,126 +265,132 @@ void main() {
     expect(find.byType(SingleChildScrollView), findsNothing);
   });
 
-  testWidgets('menu sizes to its widest item and inserts spacing between rows',
-      (tester) async {
-    await tester.pumpWidget(
-      _host(
-        UiDropdownMenu(
-          minWidth: 0,
-          trigger: const SizedBox(width: 20, child: Text('Open')),
-          items: [
-            UiMenuItem(label: 'A', onPressed: () {}),
-            UiMenuItem(
-              label: 'A wider menu item',
-              shortcut: const UiMenuShortcut('⌘K'),
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-
-    await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
-
-    final surface = find.byWidgetPredicate(
-      (widget) => widget is UiBox && widget.border != null,
-    );
-    final wideText = tester.getRect(find.text('A wider menu item'));
-    final menuRect = tester.getRect(surface);
-    expect(menuRect.width, greaterThan(wideText.width));
-    expect(menuRect.width, lessThanOrEqualTo(320));
-
-    final firstRow = tester.getRect(
-      find
-          .ancestor(of: find.text('A'), matching: find.byType(UiPressable))
-          .first,
-    );
-    final secondRow = tester.getRect(
-      find
-          .ancestor(
-            of: find.text('A wider menu item'),
-            matching: find.byType(UiPressable),
-          )
-          .first,
-    );
-    final tokens = UiThemeTokens.of(tester.element(find.text('A')));
-    expect(secondRow.top - firstRow.bottom, closeTo(tokens.spacing.x1, 0.01));
-  });
-
-  testWidgets('content-sized menu does not exceed the available viewport width',
-      (tester) async {
-    await tester.binding.setSurfaceSize(const Size(180, 300));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(
-      _host(
-        UiDropdownMenu(
-          minWidth: 0,
-          maxWidth: 400,
-          trigger: const Text('Open narrow menu'),
-          items: [
-            UiMenuItem(
-              label: 'An item much wider than the available viewport',
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-
-    await tester.tap(find.text('Open narrow menu'));
-    await tester.pumpAndSettle();
-
-    final surface = find.byWidgetPredicate(
-      (widget) => widget is UiBox && widget.border != null,
-    );
-    expect(tester.getRect(surface).width, lessThanOrEqualTo(180));
-  });
-
   testWidgets(
-      'menu stays inside the app viewport and scrolls only when cramped',
-      (tester) async {
-    await tester.binding.setSurfaceSize(const Size(320, 240));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Stack(
-            children: [
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: UiDropdownMenu(
-                  trigger: const Text('Edge menu'),
-                  items: [
-                    for (var i = 0; i < 12; i++)
-                      UiMenuItem(label: 'Action $i', onPressed: () {}),
-                  ],
-                ),
+    'menu sizes to its widest item and inserts spacing between rows',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiDropdownMenu(
+            minWidth: 0,
+            trigger: const SizedBox(width: 20, child: Text('Open')),
+            items: [
+              UiMenuItem(label: 'A', onPressed: () {}),
+              UiMenuItem(
+                label: 'A wider menu item',
+                shortcut: const UiMenuShortcut('⌘K'),
+                onPressed: () {},
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Edge menu'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
 
-    final surface = find.byWidgetPredicate(
-      (widget) => widget is UiBox && widget.border != null,
-    );
-    expect(surface, findsOneWidget);
-    final rect = tester.getRect(surface);
-    expect(rect.left, greaterThanOrEqualTo(0));
-    expect(rect.top, greaterThanOrEqualTo(0));
-    expect(rect.right, lessThanOrEqualTo(320));
-    expect(rect.bottom, lessThanOrEqualTo(240));
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
-  });
+      final surface = find.byWidgetPredicate(
+        (widget) => widget is UiBox && widget.border != null,
+      );
+      final wideText = tester.getRect(find.text('A wider menu item'));
+      final menuRect = tester.getRect(surface);
+      expect(menuRect.width, greaterThan(wideText.width));
+      expect(menuRect.width, lessThanOrEqualTo(320));
 
-  testWidgets('menu uses shadcn content inset and nested corner radii',
-      (tester) async {
+      final firstRow = tester.getRect(
+        find
+            .ancestor(of: find.text('A'), matching: find.byType(UiPressable))
+            .first,
+      );
+      final secondRow = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('A wider menu item'),
+              matching: find.byType(UiPressable),
+            )
+            .first,
+      );
+      final tokens = UiThemeTokens.of(tester.element(find.text('A')));
+      expect(secondRow.top - firstRow.bottom, closeTo(tokens.spacing.x1, 0.01));
+    },
+  );
+
+  testWidgets(
+    'content-sized menu does not exceed the available viewport width',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(180, 300));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _host(
+          UiDropdownMenu(
+            minWidth: 0,
+            maxWidth: 400,
+            trigger: const Text('Open narrow menu'),
+            items: [
+              UiMenuItem(
+                label: 'An item much wider than the available viewport',
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open narrow menu'));
+      await tester.pumpAndSettle();
+
+      final surface = find.byWidgetPredicate(
+        (widget) => widget is UiBox && widget.border != null,
+      );
+      expect(tester.getRect(surface).width, lessThanOrEqualTo(180));
+    },
+  );
+
+  testWidgets(
+    'menu stays inside the app viewport and scrolls only when cramped',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 240));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: UiDropdownMenu(
+                    trigger: const Text('Edge menu'),
+                    items: [
+                      for (var i = 0; i < 12; i++)
+                        UiMenuItem(label: 'Action $i', onPressed: () {}),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Edge menu'));
+      await tester.pumpAndSettle();
+
+      final surface = find.byWidgetPredicate(
+        (widget) => widget is UiBox && widget.border != null,
+      );
+      expect(surface, findsOneWidget);
+      final rect = tester.getRect(surface);
+      expect(rect.left, greaterThanOrEqualTo(0));
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.right, lessThanOrEqualTo(320));
+      expect(rect.bottom, lessThanOrEqualTo(240));
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+    },
+  );
+
+  testWidgets('menu uses shadcn content inset and nested corner radii', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
@@ -415,8 +421,9 @@ void main() {
     expect(row.borderRadius, tokens.radius.smAll);
   });
 
-  testWidgets('open menu follows its trigger while the page scrolls',
-      (tester) async {
+  testWidgets('open menu follows its trigger while the page scrolls', (
+    tester,
+  ) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.binding.setSurfaceSize(const Size(400, 500));
@@ -459,8 +466,9 @@ void main() {
     expect(find.text('Scrolling action'), findsOneWidget);
   });
 
-  testWidgets('navigation chrome paints and receives input above dropdowns',
-      (tester) async {
+  testWidgets('navigation chrome paints and receives input above dropdowns', (
+    tester,
+  ) async {
     var menuHit = false;
     var navigationHit = false;
     await tester.pumpWidget(

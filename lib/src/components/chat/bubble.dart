@@ -49,44 +49,30 @@ class UiBubble extends StatelessWidget {
     final colors = tokens.colors;
     final palette = switch (variant) {
       UiBubbleVariant.primary => (colors.primary, colors.onPrimary, null),
-      UiBubbleVariant.secondary => (
-          colors.secondary,
-          colors.onSecondary,
-          null,
-        ),
-      UiBubbleVariant.muted => (
-          colors.surfaceMuted,
-          colors.textMuted,
-          null,
-        ),
+      UiBubbleVariant.secondary => (colors.secondary, colors.onSecondary, null),
+      UiBubbleVariant.muted => (colors.surfaceMuted, colors.textMuted, null),
       UiBubbleVariant.tinted => (
-          Color.alphaBlend(
-            colors.primary.withValues(alpha: .10),
-            colors.surface,
-          ),
-          colors.textPrimary,
-          null,
-        ),
+        Color.alphaBlend(colors.primary.withValues(alpha: .10), colors.surface),
+        colors.textPrimary,
+        null,
+      ),
       UiBubbleVariant.outline => (
-          colors.surface,
-          colors.textPrimary,
-          colors.border,
-        ),
+        colors.surface,
+        colors.textPrimary,
+        colors.border,
+      ),
       UiBubbleVariant.ghost => (
-          const Color(0x00000000),
-          colors.textPrimary,
-          null,
-        ),
-      UiBubbleVariant.destructive => (
-          colors.danger,
-          colors.onDanger,
-          null,
-        ),
+        const Color(0x00000000),
+        colors.textPrimary,
+        null,
+      ),
+      UiBubbleVariant.destructive => (colors.danger, colors.onDanger, null),
     };
     final effectiveBackground = backgroundColor ?? palette.$1;
     final effectiveForeground = foregroundColor ?? palette.$2;
     final effectiveBorder = borderColor ?? palette.$3;
-    final ghost = variant == UiBubbleVariant.ghost &&
+    final ghost =
+        variant == UiBubbleVariant.ghost &&
         backgroundColor == null &&
         borderColor == null;
     final radius = BorderRadiusDirectional.only(
@@ -110,7 +96,8 @@ class UiBubble extends StatelessWidget {
               ? null
               : Border.all(color: effectiveBorder),
           borderRadius: ghost ? null : borderRadius ?? radius,
-          padding: padding ??
+          padding:
+              padding ??
               (ghost
                   ? EdgeInsets.zero
                   : EdgeInsets.symmetric(
@@ -155,11 +142,7 @@ class UiBubble extends StatelessWidget {
 }
 
 class UiBubbleGroup extends StatelessWidget {
-  const UiBubbleGroup({
-    super.key,
-    required this.children,
-    this.spacing = 4,
-  });
+  const UiBubbleGroup({super.key, required this.children, this.spacing = 4});
 
   final List<Widget> children;
   final double spacing;

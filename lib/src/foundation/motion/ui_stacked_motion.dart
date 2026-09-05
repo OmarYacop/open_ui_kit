@@ -73,16 +73,14 @@ class UiStackedOverlaySurface extends StatelessWidget {
     this.entranceDistance = 20,
     this.visible = true,
     this.depthOffsetStep = UiStackedMotion.offsetStep,
-    this.duration = const UiMotionDuration.custom(
-      Duration(milliseconds: 180),
-    ),
+    this.duration = const UiMotionDuration.custom(Duration(milliseconds: 180)),
     this.curve = Curves.easeOutCubic,
     this.scaleAlignment = Alignment.center,
     this.applyOpacity = true,
     @Deprecated(
       'UiStackedOverlaySurface now derives scale directly from the single '
       'depth timeline; this flag no longer has an effect and will be '
-      'removed.',
+      'removed. Scheduled for removal in 1.0.0.',
     )
     this.implicitScaleAnimation = true,
     this.repaintBoundary = true,
@@ -115,10 +113,10 @@ class UiStackedOverlaySurface extends StatelessWidget {
         final entranceOffset = entranceDirection == null
             ? Offset.zero
             : UiStackedMotion.entranceOffsetFor(
-                  direction: entranceDirection!,
-                  distance: entranceDistance,
-                ) *
-                (1 - progress);
+                    direction: entranceDirection!,
+                    distance: entranceDistance,
+                  ) *
+                  (1 - progress);
         final depthOffset = UiStackedMotion.offsetForDepth(
           depth: depthValue,
           direction: stackDirection,
@@ -145,10 +143,7 @@ class UiStackedOverlaySurface extends StatelessWidget {
         );
         if (applyOpacity) {
           current = Opacity(
-            opacity: (visible ? depthOpacity * progress : 0.0).clamp(
-              0.0,
-              1.0,
-            ),
+            opacity: (visible ? depthOpacity * progress : 0.0).clamp(0.0, 1.0),
             child: current,
           );
         }

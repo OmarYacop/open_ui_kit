@@ -129,22 +129,25 @@ class _UiContentPageState extends State<UiContentPage>
       onRefresh: widget.onRefresh,
       body: Builder(
         builder: (context) {
-          final basePadding = (widget.padding ??
-                  EdgeInsets.fromLTRB(
-                    tokens.spacing.x4,
-                    tokens.spacing.x4,
-                    tokens.spacing.x4,
-                    tokens.spacing.x16 + tokens.spacing.x8,
-                  ))
-              .resolve(Directionality.of(context));
+          final basePadding =
+              (widget.padding ??
+                      EdgeInsets.fromLTRB(
+                        tokens.spacing.x4,
+                        tokens.spacing.x4,
+                        tokens.spacing.x4,
+                        tokens.spacing.x16 + tokens.spacing.x8,
+                      ))
+                  .resolve(Directionality.of(context));
           final bodyInsets = UiPageBodyInsets.of(context);
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final compact = constraints.maxWidth.isFinite &&
+              final compact =
+                  constraints.maxWidth.isFinite &&
                   constraints.maxWidth < _compactBreakpoint;
-              final titleStartPadding =
-                  compact ? floatingWindowChromeLeadingInset : 0.0;
+              final titleStartPadding = compact
+                  ? floatingWindowChromeLeadingInset
+                  : 0.0;
               final contentPadding = EdgeInsets.fromLTRB(
                 basePadding.left,
                 basePadding.top,
@@ -153,8 +156,9 @@ class _UiContentPageState extends State<UiContentPage>
               );
 
               return CustomScrollView(
-                physics:
-                    widget.onRefresh == null ? null : UiRefresher.sliverPhysics,
+                physics: widget.onRefresh == null
+                    ? null
+                    : UiRefresher.sliverPhysics,
                 slivers: [
                   UiSliverNavigationBar(
                     spec: UiNavigationSpec(

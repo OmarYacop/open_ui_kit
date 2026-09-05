@@ -40,74 +40,81 @@ void main() {
     });
 
     testWidgets(
-        'a value with a different default identity starts a dissolve: both '
-        'endpoints are visible mid-transition', (tester) async {
-      final ctx = await _pumpContext(tester);
-      final crossfade = UiContourCrossfadeController<String>(vsync: vsync);
-      addTearDown(crossfade.dispose);
+      'a value with a different default identity starts a dissolve: both '
+      'endpoints are visible mid-transition',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final crossfade = UiContourCrossfadeController<String>(vsync: vsync);
+        addTearDown(crossfade.dispose);
 
-      crossfade.update(ctx, 'a');
-      await tester.pumpAndSettle();
+        crossfade.update(ctx, 'a');
+        await tester.pumpAndSettle();
 
-      crossfade.update(ctx, 'b');
-      expect(crossfade.previous, 'a');
-      expect(crossfade.current, 'b');
-      expect(crossfade.isTransitioning, isTrue);
+        crossfade.update(ctx, 'b');
+        expect(crossfade.previous, 'a');
+        expect(crossfade.current, 'b');
+        expect(crossfade.isTransitioning, isTrue);
 
-      // Ticker warm-up: the first tick after starting establishes elapsed=0.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 60));
-      expect(crossfade.progress, greaterThan(0));
-      expect(crossfade.progress, lessThan(1));
-      // Both endpoints remain readable mid-flight — this is the whole point
-      // of a cross-dissolve as opposed to a hard cut.
-      expect(crossfade.previous, 'a');
-      expect(crossfade.current, 'b');
+        // Ticker warm-up: the first tick after starting establishes elapsed=0.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(crossfade.progress, greaterThan(0));
+        expect(crossfade.progress, lessThan(1));
+        // Both endpoints remain readable mid-flight — this is the whole point
+        // of a cross-dissolve as opposed to a hard cut.
+        expect(crossfade.previous, 'a');
+        expect(crossfade.current, 'b');
 
-      await tester.pumpAndSettle();
-      expect(crossfade.progress, 1);
-      expect(crossfade.previous, isNull);
-      expect(crossfade.current, 'b');
-      expect(crossfade.isTransitioning, isFalse);
-    });
-
-    testWidgets(
-        'an explicit identity that matches the current one accepts a fresh '
-        'instance without animating', (tester) async {
-      final ctx = await _pumpContext(tester);
-      final crossfade =
-          UiContourCrossfadeController<List<String>>(vsync: vsync);
-      addTearDown(crossfade.dispose);
-
-      crossfade.update(ctx, ['home'], identity: 'home');
-      await tester.pumpAndSettle();
-
-      // A logically-equal-but-not-identical instance rebuilt for the same
-      // slot (the common Flutter case: a new object every build).
-      crossfade.update(ctx, ['home', 'again'], identity: 'home');
-      expect(crossfade.current, ['home', 'again']);
-      expect(crossfade.previous, isNull);
-      expect(crossfade.isTransitioning, isFalse);
-      expect(crossfade.progress, 1);
-    });
+        await tester.pumpAndSettle();
+        expect(crossfade.progress, 1);
+        expect(crossfade.previous, isNull);
+        expect(crossfade.current, 'b');
+        expect(crossfade.isTransitioning, isFalse);
+      },
+    );
 
     testWidgets(
-        'an explicit identity that differs starts a dissolve even if the '
-        'values would otherwise be `==`', (tester) async {
-      final ctx = await _pumpContext(tester);
-      final crossfade = UiContourCrossfadeController<String>(vsync: vsync);
-      addTearDown(crossfade.dispose);
+      'an explicit identity that matches the current one accepts a fresh '
+      'instance without animating',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final crossfade = UiContourCrossfadeController<List<String>>(
+          vsync: vsync,
+        );
+        addTearDown(crossfade.dispose);
 
-      crossfade.update(ctx, 'shared', identity: 'home');
-      await tester.pumpAndSettle();
+        crossfade.update(ctx, ['home'], identity: 'home');
+        await tester.pumpAndSettle();
 
-      crossfade.update(ctx, 'shared', identity: 'messages');
-      expect(crossfade.isTransitioning, isTrue);
-      expect(crossfade.previous, 'shared');
-      expect(crossfade.current, 'shared');
+        // A logically-equal-but-not-identical instance rebuilt for the same
+        // slot (the common Flutter case: a new object every build).
+        crossfade.update(ctx, ['home', 'again'], identity: 'home');
+        expect(crossfade.current, ['home', 'again']);
+        expect(crossfade.previous, isNull);
+        expect(crossfade.isTransitioning, isFalse);
+        expect(crossfade.progress, 1);
+      },
+    );
 
-      await tester.pumpAndSettle();
-    });
+    testWidgets(
+      'an explicit identity that differs starts a dissolve even if the '
+      'values would otherwise be `==`',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final crossfade = UiContourCrossfadeController<String>(vsync: vsync);
+        addTearDown(crossfade.dispose);
+
+        crossfade.update(ctx, 'shared', identity: 'home');
+        await tester.pumpAndSettle();
+
+        crossfade.update(ctx, 'shared', identity: 'messages');
+        expect(crossfade.isTransitioning, isTrue);
+        expect(crossfade.previous, 'shared');
+        expect(crossfade.current, 'shared');
+
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('interrupting mid-dissolve restarts cleanly from the blend', (
       tester,
@@ -157,9 +164,7 @@ void main() {
       expect(crossfade.progress, 1);
     });
 
-    test(
-        'dispose is safe and use-after-dispose is inert on the underlying controller',
-        () {
+    test('dispose is safe and use-after-dispose is inert on the underlying controller', () {
       final crossfade = UiContourCrossfadeController<String>(vsync: _Vsync());
       crossfade.dispose();
       expect(crossfade.isDisposed, isTrue);
@@ -224,9 +229,7 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     });
 
-    testWidgets('never blurs on Android, even mid-transition', (
-      tester,
-    ) async {
+    testWidgets('never blurs on Android, even mid-transition', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       await tester.pumpWidget(
         MaterialApp(

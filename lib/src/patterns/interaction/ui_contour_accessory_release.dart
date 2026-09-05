@@ -80,9 +80,7 @@ class UiContourAccessoryRelease extends StatefulWidget {
 
 class _UiContourAccessoryReleaseState extends State<UiContourAccessoryRelease>
     with SingleTickerProviderStateMixin {
-  late final UiContourController _controller = UiContourController(
-    vsync: this,
-  );
+  late final UiContourController _controller = UiContourController(vsync: this);
   bool _uncontrolledExpanded = false;
   bool _initialized = false;
 
@@ -223,7 +221,8 @@ class _UiContourAccessoryReleaseState extends State<UiContourAccessoryRelease>
                                 ),
                                 visibility: g.accessoryVisibility,
                                 onCollapse: () => _requestExpand(false),
-                                child: widget.accessoryChild ??
+                                child:
+                                    widget.accessoryChild ??
                                     const SizedBox.shrink(),
                               ),
                             ),
@@ -363,7 +362,9 @@ class _ContourAccessorySurface extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 8),
-                Expanded(child: Opacity(opacity: visibility, child: child)),
+                Expanded(
+                  child: Opacity(opacity: visibility, child: child),
+                ),
                 UiIconButton(
                   icon: const Icon(LucideIcons.x),
                   semanticsLabel: 'Close search',

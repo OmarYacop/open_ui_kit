@@ -17,9 +17,9 @@ class UiComponentShadow extends StatelessWidget {
     this.shape = BoxShape.rectangle,
     this.borderRadius,
   }) : assert(
-          shape != BoxShape.circle || borderRadius == null,
-          'A circular shadow cannot have a border radius.',
-        );
+         shape != BoxShape.circle || borderRadius == null,
+         'A circular shadow cannot have a border radius.',
+       );
 
   /// The shadow color. Defaults to the current theme background.
   final Color? color;

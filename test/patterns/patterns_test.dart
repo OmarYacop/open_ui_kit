@@ -42,16 +42,14 @@ class _LifecycleProbeState extends State<_LifecycleProbe> {
 
 void main() {
   group('UiMessageBubble', () {
-    testWidgets('outgoing uses primary background; incoming uses muted',
-        (tester) async {
+    testWidgets('outgoing uses primary background; incoming uses muted', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const Column(
             children: [
-              UiMessageBubble(
-                text: 'hello',
-                author: UiMessageAuthor.incoming,
-              ),
+              UiMessageBubble(text: 'hello', author: UiMessageAuthor.incoming),
               UiMessageBubble(
                 text: 'hi back',
                 author: UiMessageAuthor.outgoing,
@@ -94,17 +92,13 @@ void main() {
   });
 
   group('UiChatComposer', () {
-    testWidgets('send button is disabled until text is entered',
-        (tester) async {
+    testWidgets('send button is disabled until text is entered', (
+      tester,
+    ) async {
       final messages = <String>[];
       final controller = TextEditingController();
       await tester.pumpWidget(
-        _host(
-          UiChatComposer(
-            controller: controller,
-            onSend: messages.add,
-          ),
-        ),
+        _host(UiChatComposer(controller: controller, onSend: messages.add)),
       );
 
       await tester.tap(find.text('Send'));
@@ -125,12 +119,7 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        _host(
-          UiChatComposer(
-            controller: controller,
-            onSend: (_) {},
-          ),
-        ),
+        _host(UiChatComposer(controller: controller, onSend: (_) {})),
       );
 
       controller.text =
@@ -224,8 +213,9 @@ void main() {
       );
     });
 
-    testWidgets('UiAppBar resolves brand logo for light and dark themes',
-        (tester) async {
+    testWidgets('UiAppBar resolves brand logo for light and dark themes', (
+      tester,
+    ) async {
       const brand = UiBrand(
         id: 'acme',
         displayName: 'Acme App',
@@ -238,10 +228,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: const Scaffold(
-            body: UiAppBar(
-              title: 'Courses',
-              brand: brand,
-            ),
+            body: UiAppBar(title: 'Courses', brand: brand),
           ),
         ),
       );
@@ -253,10 +240,7 @@ void main() {
           home: UiTheme(
             tokens: UiThemeData.dark(),
             child: const Scaffold(
-              body: UiAppBar(
-                title: 'Courses',
-                brand: brand,
-              ),
+              body: UiAppBar(title: 'Courses', brand: brand),
             ),
           ),
         ),
@@ -266,8 +250,9 @@ void main() {
       expect(find.text('acme-dark-logo'), findsOneWidget);
     });
 
-    testWidgets('UiAppBar layout remains stable when logo is absent',
-        (tester) async {
+    testWidgets('UiAppBar layout remains stable when logo is absent', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiAppBar(
@@ -306,15 +291,14 @@ void main() {
       expect(find.text('Session list'), findsOneWidget);
     });
 
-    testWidgets('keeps its generated title below the system top inset',
-        (tester) async {
+    testWidgets('keeps its generated title below the system top inset', (
+      tester,
+    ) async {
       const topInset = 59.0;
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
-            data: const MediaQueryData(
-              padding: EdgeInsets.only(top: topInset),
-            ),
+            data: const MediaQueryData(padding: EdgeInsets.only(top: topInset)),
             child: const UiPageLayout(
               title: 'Safe title',
               body: SizedBox.expand(),
@@ -354,8 +338,9 @@ void main() {
   });
 
   group('UiFormPage', () {
-    testWidgets('renders form chrome, fields, footer, and actions',
-        (tester) async {
+    testWidgets('renders form chrome, fields, footer, and actions', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const SizedBox(
@@ -365,12 +350,8 @@ void main() {
               title: 'Reset password',
               hero: Text('Illustration'),
               footer: Text('Code expires soon'),
-              actions: [
-                Text('Send code'),
-              ],
-              children: [
-                Text('Phone field'),
-              ],
+              actions: [Text('Send code')],
+              children: [Text('Phone field')],
             ),
           ),
         ),
@@ -383,8 +364,9 @@ void main() {
       expect(find.text('Send code'), findsOneWidget);
     });
 
-    testWidgets('keeps the form column within the configured max width',
-        (tester) async {
+    testWidgets('keeps the form column within the configured max width', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const SizedBox(
@@ -428,8 +410,9 @@ void main() {
       expect(find.text('Review'), findsOneWidget);
     });
 
-    testWidgets('renders empty state when the collection is empty',
-        (tester) async {
+    testWidgets('renders empty state when the collection is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SizedBox(
@@ -447,8 +430,9 @@ void main() {
       expect(find.text('No sessions yet'), findsOneWidget);
     });
 
-    testWidgets('adaptiveGrid uses grid placement on wide viewports',
-        (tester) async {
+    testWidgets('adaptiveGrid uses grid placement on wide viewports', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           SizedBox(
@@ -481,10 +465,8 @@ void main() {
               gridMaxCrossAxisExtent: 300,
               gridMainAxisExtent: 180,
               items: const ['One', 'Two'],
-              itemBuilder: (context, item, index) => SizedBox.expand(
-                key: ValueKey(item),
-                child: Text(item),
-              ),
+              itemBuilder: (context, item, index) =>
+                  SizedBox.expand(key: ValueKey(item), child: Text(item)),
             ),
           ),
         ),
@@ -525,8 +507,9 @@ void main() {
       expect(find.text('Need help?'), findsOneWidget);
     });
 
-    testWidgets('selects an item by id through the list callback',
-        (tester) async {
+    testWidgets('selects an item by id through the list callback', (
+      tester,
+    ) async {
       String? selected;
       await tester.pumpWidget(
         _host(
@@ -538,9 +521,7 @@ void main() {
               onItemSelected: (id) => selected = id,
               groups: const [
                 UiSettingsGroup(
-                  items: [
-                    UiSettingsItem(id: 'devices', label: 'Devices'),
-                  ],
+                  items: [UiSettingsItem(id: 'devices', label: 'Devices')],
                 ),
               ],
             ),
@@ -552,8 +533,9 @@ void main() {
       expect(selected, 'devices');
     });
 
-    testWidgets('settings group uses a standard surface on desktop',
-        (tester) async {
+    testWidgets('settings group uses a standard surface on desktop', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const SizedBox(
@@ -563,9 +545,7 @@ void main() {
               selectedItemId: 'devices',
               groups: [
                 UiSettingsGroup(
-                  items: [
-                    UiSettingsItem(id: 'devices', label: 'Devices'),
-                  ],
+                  items: [UiSettingsItem(id: 'devices', label: 'Devices')],
                 ),
               ],
             ),
@@ -618,8 +598,9 @@ void main() {
       );
     });
 
-    testWidgets('renders item descriptions, trailing controls, and actions',
-        (tester) async {
+    testWidgets('renders item descriptions, trailing controls, and actions', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const SizedBox(
@@ -634,9 +615,7 @@ void main() {
                       description: 'Allow in-app notification delivery.',
                       leading: Icon(Icons.notifications_active_rounded),
                       trailing: Text('Switch'),
-                      actions: [
-                        Text('System settings'),
-                      ],
+                      actions: [Text('System settings')],
                     ),
                   ],
                 ),
@@ -679,9 +658,7 @@ void main() {
               name: 'Grace Hopper',
               subtitle: 'Teacher',
               avatar: Text('GH'),
-              actions: [
-                Text('Edit'),
-              ],
+              actions: [Text('Edit')],
             ),
           ),
         ),
@@ -695,8 +672,9 @@ void main() {
   });
 
   group('UiAsyncState', () {
-    testWidgets('section icons inherit muted color in dark mode',
-        (tester) async {
+    testWidgets('section icons inherit muted color in dark mode', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: UiTheme(
@@ -718,124 +696,123 @@ void main() {
   });
 
   group('Environment widgets', () {
-    testWidgets('UiPageScaffold applies system bars annotation',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(const UiPageScaffold(body: Text('body'))),
-      );
+    testWidgets('UiPageScaffold applies system bars annotation', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(const UiPageScaffold(body: Text('body'))));
 
-      expect(
-        find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
-        findsWidgets,
-      );
+      expect(find.byType(AnnotatedRegion<SystemUiOverlayStyle>), findsWidgets);
       expect(find.text('body'), findsOneWidget);
     });
 
     testWidgets(
-        'UiPageScaffold uses opaque fade backing for transparent system bars',
-        (tester) async {
-      const darkBacking = Color(0xFF101214);
-      await tester.pumpWidget(
-        _host(
-          const UiPageScaffold(
-            backgroundColor: Color(0x00000000),
-            scrollFadeBackgroundColor: darkBacking,
-            body: Text('body'),
+      'UiPageScaffold uses opaque fade backing for transparent system bars',
+      (tester) async {
+        const darkBacking = Color(0xFF101214);
+        await tester.pumpWidget(
+          _host(
+            const UiPageScaffold(
+              backgroundColor: Color(0x00000000),
+              scrollFadeBackgroundColor: darkBacking,
+              body: Text('body'),
+            ),
           ),
-        ),
-      );
+        );
 
-      final annotation = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
-        find.descendant(
-          of: find.byType(UiPageScaffold),
-          matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
-        ),
-      );
+        final annotation = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+          find.descendant(
+            of: find.byType(UiPageScaffold),
+            matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+          ),
+        );
 
-      expect(annotation.value.statusBarIconBrightness, Brightness.light);
-      expect(
-        annotation.value.systemNavigationBarIconBrightness,
-        Brightness.light,
-      );
-    });
+        expect(annotation.value.statusBarIconBrightness, Brightness.light);
+        expect(
+          annotation.value.systemNavigationBarIconBrightness,
+          Brightness.light,
+        );
+      },
+    );
 
     testWidgets(
-        'UiPageScaffold bleeds vertically and stays horizontally safe by default',
-        (tester) async {
-      const topInset = 59.0;
-      const bottomInset = 34.0;
-      const leftInset = 47.0;
-      const rightInset = 31.0;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            padding: EdgeInsets.only(
-              top: topInset,
-              bottom: bottomInset,
-              left: leftInset,
-              right: rightInset,
+      'UiPageScaffold bleeds vertically and stays horizontally safe by default',
+      (tester) async {
+        const topInset = 59.0;
+        const bottomInset = 34.0;
+        const leftInset = 47.0;
+        const rightInset = 31.0;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              padding: EdgeInsets.only(
+                top: topInset,
+                bottom: bottomInset,
+                left: leftInset,
+                right: rightInset,
+              ),
             ),
-          ),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiPageScaffold(
-              body: Builder(
-                builder: (context) {
-                  final insets = UiPageBodyInsets.of(context);
-                  return Stack(
-                    children: [
-                      const Positioned.fill(
-                        child: SizedBox(key: Key('safe-body')),
-                      ),
-                      Text('insets:${insets.top}/${insets.bottom}'),
-                    ],
-                  );
-                },
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiPageScaffold(
+                body: Builder(
+                  builder: (context) {
+                    final insets = UiPageBodyInsets.of(context);
+                    return Stack(
+                      children: [
+                        const Positioned.fill(
+                          child: SizedBox(key: Key('safe-body')),
+                        ),
+                        Text('insets:${insets.top}/${insets.bottom}'),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final bodyRect = tester.getRect(find.byKey(const Key('safe-body')));
-      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-      expect(bodyRect.top, 0);
-      expect(bodyRect.bottom, screen.height);
-      expect(bodyRect.left, leftInset);
-      expect(bodyRect.right, screen.width - rightInset);
-      expect(find.text('insets:$topInset/$bottomInset'), findsOneWidget);
-    });
+        final bodyRect = tester.getRect(find.byKey(const Key('safe-body')));
+        final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+        expect(bodyRect.top, 0);
+        expect(bodyRect.bottom, screen.height);
+        expect(bodyRect.left, leftInset);
+        expect(bodyRect.right, screen.width - rightInset);
+        expect(find.text('insets:$topInset/$bottomInset'), findsOneWidget);
+      },
+    );
 
-    testWidgets('UiPageScaffold keeps its default top bar below the top inset',
-        (tester) async {
-      const topInset = 59.0;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            padding: EdgeInsets.only(top: topInset),
-          ),
-          child: const Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiPageScaffold(
-              topBar: SizedBox(
-                key: Key('safe-top-bar'),
-                height: 48,
-                child: Text('Safe top bar'),
+    testWidgets(
+      'UiPageScaffold keeps its default top bar below the top inset',
+      (tester) async {
+        const topInset = 59.0;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(padding: EdgeInsets.only(top: topInset)),
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiPageScaffold(
+                topBar: SizedBox(
+                  key: Key('safe-top-bar'),
+                  height: 48,
+                  child: Text('Safe top bar'),
+                ),
+                body: SizedBox.expand(),
               ),
-              body: SizedBox.expand(),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        tester.getRect(find.byKey(const Key('safe-top-bar'))).top,
-        greaterThanOrEqualTo(topInset),
-      );
-    });
+        expect(
+          tester.getRect(find.byKey(const Key('safe-top-bar'))).top,
+          greaterThanOrEqualTo(topInset),
+        );
+      },
+    );
 
-    testWidgets('UiPageScaffold allows an explicit full-bleed opt-out',
-        (tester) async {
+    testWidgets('UiPageScaffold allows an explicit full-bleed opt-out', (
+      tester,
+    ) async {
       const topInset = 59.0;
       const leftInset = 47.0;
       await tester.pumpWidget(
@@ -860,56 +837,53 @@ void main() {
         ),
       );
 
-      expect(
-        tester.getRect(find.byKey(const Key('full-bleed-body'))).top,
-        0,
-      );
-      expect(
-        tester.getRect(find.byKey(const Key('full-bleed-body'))).left,
-        0,
-      );
+      expect(tester.getRect(find.byKey(const Key('full-bleed-body'))).top, 0);
+      expect(tester.getRect(find.byKey(const Key('full-bleed-body'))).left, 0);
     });
 
     testWidgets(
-        'UiPageScaffold paints background full-bleed under the status bar',
-        (tester) async {
-      // Regression: if the scaffold painted its background *inside* the
-      // SafeArea, the strip above the safe area would fall through to
-      // whatever sits behind the scaffold (producing a black band on
-      // top of a light page). The background must wrap the SafeArea.
-      const bg = Color(0xFF123456);
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(padding: EdgeInsets.only(top: 44)),
-          child: const Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiPageScaffold(
-              backgroundColor: bg,
-              body: SizedBox.expand(),
+      'UiPageScaffold paints background full-bleed under the status bar',
+      (tester) async {
+        // Regression: if the scaffold painted its background *inside* the
+        // SafeArea, the strip above the safe area would fall through to
+        // whatever sits behind the scaffold (producing a black band on
+        // top of a light page). The background must wrap the SafeArea.
+        const bg = Color(0xFF123456);
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(padding: EdgeInsets.only(top: 44)),
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiPageScaffold(
+                backgroundColor: bg,
+                body: SizedBox.expand(),
+              ),
             ),
           ),
-        ),
-      );
-      // The outermost decorated box in the scaffold uses the full screen.
-      final decorations =
-          tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).toList();
-      final fullBleed = decorations.firstWhere(
-        (d) {
+        );
+        // The outermost decorated box in the scaffold uses the full screen.
+        final decorations = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .toList();
+        final fullBleed = decorations.firstWhere((d) {
           if (d.decoration is! BoxDecoration) return false;
           final dec = d.decoration as BoxDecoration;
           if (dec.color != bg) return false;
           final rect = tester.getRect(find.byWidget(d));
           return rect.top == 0;
-        },
-        orElse: () => throw StateError('No full-bleed background found'),
-      );
-      final rect = tester.getRect(find.byWidget(fullBleed));
-      expect(rect.top, 0,
-          reason: 'Background must extend above the safe-area inset.');
-    });
+        }, orElse: () => throw StateError('No full-bleed background found'));
+        final rect = tester.getRect(find.byWidget(fullBleed));
+        expect(
+          rect.top,
+          0,
+          reason: 'Background must extend above the safe-area inset.',
+        );
+      },
+    );
 
-    testWidgets('UiPageScaffold respects bottom padding from MediaQuery',
-        (tester) async {
+    testWidgets('UiPageScaffold respects bottom padding from MediaQuery', (
+      tester,
+    ) async {
       const bottomInset = 34.0;
       await tester.pumpWidget(
         MediaQuery(
@@ -922,7 +896,9 @@ void main() {
               safeViewportMode: UiSafeViewportMode.all,
               scrollFade: false,
               body: Container(
-                  key: const Key('body'), color: const Color(0xFFFF0000)),
+                key: const Key('body'),
+                color: const Color(0xFFFF0000),
+              ),
             ),
           ),
         ),
@@ -932,8 +908,9 @@ void main() {
       expect(bodyRect.bottom, lessThanOrEqualTo(screen.height - bottomInset));
     });
 
-    testWidgets('UiPageScaffold can move safe insets into a full-bleed fade',
-        (tester) async {
+    testWidgets('UiPageScaffold can move safe insets into a full-bleed fade', (
+      tester,
+    ) async {
       const topInset = 44.0;
       const bottomInset = 34.0;
       const leftInset = 24.0;
@@ -974,8 +951,9 @@ void main() {
         ),
       );
 
-      final bodyRect =
-          tester.getRect(find.byKey(const Key('scroll_fade_body')));
+      final bodyRect = tester.getRect(
+        find.byKey(const Key('scroll_fade_body')),
+      );
       final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
       expect(bodyRect.top, 0);
       expect(bodyRect.bottom, screen.height);
@@ -985,8 +963,9 @@ void main() {
       expect(find.byType(SafeArea), findsOneWidget);
     });
 
-    testWidgets('UiPageBodyInsets does not inject horizontal page padding',
-        (tester) async {
+    testWidgets('UiPageBodyInsets does not inject horizontal page padding', (
+      tester,
+    ) async {
       const topInset = 44.0;
       const bottomInset = 34.0;
       const leftInset = 24.0;
@@ -1020,137 +999,143 @@ void main() {
       );
 
       expect(
-          find.text('insets:0.0/$topInset/0.0/$bottomInset'), findsOneWidget);
+        find.text('insets:0.0/$topInset/0.0/$bottomInset'),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
-        'UiPageScaffold keeps the surface-color fade on non-Apple platforms',
-        (tester) async {
-      const bg = Color(0xFFFFFFFF);
-      final previous = debugDefaultTargetPlatformOverride;
-      try {
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        await tester.pumpWidget(
-          const Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiPageScaffold(
-              backgroundColor: bg,
-              body: SizedBox.expand(),
-            ),
-          ),
-        );
-
-        final gradients = tester
-            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-            .map((box) => box.decoration)
-            .whereType<BoxDecoration>()
-            .map((decoration) => decoration.gradient)
-            .whereType<LinearGradient>()
-            .toList();
-
-        expect(gradients, isNotEmpty);
-        expect(
-          gradients.any(
-            (gradient) => gradient.colors.last == bg.withValues(alpha: 0),
-          ),
-          isTrue,
-          reason: 'Non-Apple fades must retain the configured surface color.',
-        );
-        expect(find.byType(BackdropFilter), findsNothing);
-        expect(find.byType(ShaderMask), findsNothing);
-        expect(
-          find.byKey(const Key('ui_scroll_edge_progressive_blur')),
-          findsNothing,
-        );
-      } finally {
-        debugDefaultTargetPlatformOverride = previous;
-      }
-    });
-
-    testWidgets('UiPageScaffold graduates Apple top blur with an adaptive tint',
-        (tester) async {
-      final previous = debugDefaultTargetPlatformOverride;
-      try {
-        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        await tester.pumpWidget(
-          _host(
-            const UiPageScaffold(
-              backgroundColor: Color(0xFFFFFFFF),
-              body: SizedBox.expand(),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final gradients = tester
-            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-            .map((box) => box.decoration)
-            .whereType<BoxDecoration>()
-            .map((decoration) => decoration.gradient)
-            .whereType<LinearGradient>()
-            .toList();
-        final topFade = gradients.singleWhere(
-          (gradient) => gradient.begin == Alignment.topCenter,
-        );
-        final bottomFade = gradients.singleWhere(
-          (gradient) => gradient.begin == Alignment.bottomCenter,
-        );
-
-        expect(
-          find.byKey(const Key('ui_scroll_edge_progressive_blur')),
-          findsOneWidget,
-          reason: 'Apple should use one continuous shader-driven blur.',
-        );
-        expect(find.byType(BackdropFilter), findsNothing);
-        expect(find.byType(ShaderMask), findsNothing);
-        expect(
-          topFade.colors.first,
-          const Color(0xFFFFFFFF).withValues(alpha: 0.84),
-          reason: 'Light appearance should use a translucent white material.',
-        );
-        expect(
-          bottomFade.colors,
-          [
-            const Color(0xFFFFFFFF).withValues(alpha: 0.84),
-            const Color(0xFFFFFFFF).withValues(alpha: 0.84),
-            const Color(0xFFFFFFFF).withValues(alpha: 0),
-          ],
-          reason: 'The bottom edge should mirror the tint fade without blur.',
-        );
-        expect(bottomFade.stops, const [0, 0.12, 1]);
-
-        await tester.pumpWidget(
-          UiTheme(
-            tokens: UiThemeData.dark(effects: UiEffectsTokens.full),
-            child: const Directionality(
+      'UiPageScaffold keeps the surface-color fade on non-Apple platforms',
+      (tester) async {
+        const bg = Color(0xFFFFFFFF);
+        final previous = debugDefaultTargetPlatformOverride;
+        try {
+          debugDefaultTargetPlatformOverride = TargetPlatform.android;
+          await tester.pumpWidget(
+            const Directionality(
               textDirection: TextDirection.ltr,
               child: UiPageScaffold(
-                backgroundColor: Color(0xFF000000),
+                backgroundColor: bg,
                 body: SizedBox.expand(),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        final darkTopFade = tester
-            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-            .map((box) => box.decoration)
-            .whereType<BoxDecoration>()
-            .map((decoration) => decoration.gradient)
-            .whereType<LinearGradient>()
-            .singleWhere((gradient) => gradient.begin == Alignment.topCenter);
-        expect(
-          darkTopFade.colors.first,
-          const Color(0xFF000000).withValues(alpha: 0.84),
-          reason: 'Dark appearance should use a translucent black material.',
-        );
-      } finally {
-        debugDefaultTargetPlatformOverride = previous;
-      }
-    });
+          );
 
-    testWidgets('tablet rail uses the mobile large-to-centered title handoff',
-        (tester) async {
+          final gradients = tester
+              .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+              .map((box) => box.decoration)
+              .whereType<BoxDecoration>()
+              .map((decoration) => decoration.gradient)
+              .whereType<LinearGradient>()
+              .toList();
+
+          expect(gradients, isNotEmpty);
+          expect(
+            gradients.any(
+              (gradient) => gradient.colors.last == bg.withValues(alpha: 0),
+            ),
+            isTrue,
+            reason: 'Non-Apple fades must retain the configured surface color.',
+          );
+          expect(find.byType(BackdropFilter), findsNothing);
+          expect(find.byType(ShaderMask), findsNothing);
+          expect(
+            find.byKey(const Key('ui_scroll_edge_progressive_blur')),
+            findsNothing,
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = previous;
+        }
+      },
+    );
+
+    testWidgets(
+      'UiPageScaffold graduates Apple top blur with an adaptive tint',
+      (tester) async {
+        final previous = debugDefaultTargetPlatformOverride;
+        try {
+          debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+          await tester.pumpWidget(
+            _host(
+              const UiPageScaffold(
+                backgroundColor: Color(0xFFFFFFFF),
+                body: SizedBox.expand(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final gradients = tester
+              .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+              .map((box) => box.decoration)
+              .whereType<BoxDecoration>()
+              .map((decoration) => decoration.gradient)
+              .whereType<LinearGradient>()
+              .toList();
+          final topFade = gradients.singleWhere(
+            (gradient) => gradient.begin == Alignment.topCenter,
+          );
+          final bottomFade = gradients.singleWhere(
+            (gradient) => gradient.begin == Alignment.bottomCenter,
+          );
+
+          expect(
+            find.byKey(const Key('ui_scroll_edge_progressive_blur')),
+            findsOneWidget,
+            reason: 'Apple should use one continuous shader-driven blur.',
+          );
+          expect(find.byType(BackdropFilter), findsNothing);
+          expect(find.byType(ShaderMask), findsNothing);
+          expect(
+            topFade.colors.first,
+            const Color(0xFFFFFFFF).withValues(alpha: 0.84),
+            reason: 'Light appearance should use a translucent white material.',
+          );
+          expect(
+            bottomFade.colors,
+            [
+              const Color(0xFFFFFFFF).withValues(alpha: 0.84),
+              const Color(0xFFFFFFFF).withValues(alpha: 0.84),
+              const Color(0xFFFFFFFF).withValues(alpha: 0),
+            ],
+            reason: 'The bottom edge should mirror the tint fade without blur.',
+          );
+          expect(bottomFade.stops, const [0, 0.12, 1]);
+
+          await tester.pumpWidget(
+            UiTheme(
+              tokens: UiThemeData.dark(effects: UiEffectsTokens.full),
+              child: const Directionality(
+                textDirection: TextDirection.ltr,
+                child: UiPageScaffold(
+                  backgroundColor: Color(0xFF000000),
+                  body: SizedBox.expand(),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final darkTopFade = tester
+              .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+              .map((box) => box.decoration)
+              .whereType<BoxDecoration>()
+              .map((decoration) => decoration.gradient)
+              .whereType<LinearGradient>()
+              .singleWhere((gradient) => gradient.begin == Alignment.topCenter);
+          expect(
+            darkTopFade.colors.first,
+            const Color(0xFF000000).withValues(alpha: 0.84),
+            reason: 'Dark appearance should use a translucent black material.',
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = previous;
+        }
+      },
+    );
+
+    testWidgets('tablet rail uses the mobile large-to-centered title handoff', (
+      tester,
+    ) async {
       final previous = debugDefaultTargetPlatformOverride;
       final controller = ScrollController();
       addTearDown(controller.dispose);
@@ -1174,9 +1159,7 @@ void main() {
                         surface: UiNavigationSurface.transparent,
                       ),
                     ),
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 1200),
-                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 1200)),
                   ],
                 ),
               ),
@@ -1241,8 +1224,9 @@ void main() {
       }
     });
 
-    testWidgets('UiPageScaffold scroll fade is full-width by default',
-        (tester) async {
+    testWidgets('UiPageScaffold scroll fade is full-width by default', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -1271,10 +1255,7 @@ void main() {
     testWidgets('UiSafeViewport none does not inject SafeArea', (tester) async {
       await tester.pumpWidget(
         _host(
-          const UiSafeViewport(
-            mode: UiSafeViewportMode.none,
-            child: Text('x'),
-          ),
+          const UiSafeViewport(mode: UiSafeViewportMode.none, child: Text('x')),
         ),
       );
 
@@ -1283,37 +1264,35 @@ void main() {
     });
 
     testWidgets(
-        'UiSafeViewport horizontal consumes left/right but not top/bottom',
-        (tester) async {
-      const inset = 24.0;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            padding: EdgeInsets.all(inset),
-          ),
-          child: const Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiSafeViewport(
-              mode: UiSafeViewportMode.horizontal,
-              child: Text('x'),
+      'UiSafeViewport horizontal consumes left/right but not top/bottom',
+      (tester) async {
+        const inset = 24.0;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(padding: EdgeInsets.all(inset)),
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiSafeViewport(
+                mode: UiSafeViewportMode.horizontal,
+                child: Text('x'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final rect = tester.getRect(find.text('x'));
-      expect(rect.left, inset);
-      expect(rect.top, 0);
-    });
+        final rect = tester.getRect(find.text('x'));
+        expect(rect.left, inset);
+        expect(rect.top, 0);
+      },
+    );
 
-    testWidgets('UiSafeViewport all consumes MediaQuery top inset',
-        (tester) async {
+    testWidgets('UiSafeViewport all consumes MediaQuery top inset', (
+      tester,
+    ) async {
       const topInset = 44.0;
       await tester.pumpWidget(
         MediaQuery(
-          data: const MediaQueryData(
-            padding: EdgeInsets.only(top: topInset),
-          ),
+          data: const MediaQueryData(padding: EdgeInsets.only(top: topInset)),
           child: const Directionality(
             textDirection: TextDirection.ltr,
             child: UiSafeViewport(
@@ -1328,132 +1307,136 @@ void main() {
     });
 
     testWidgets(
-        'UiSafeViewport keyboardAware applies keyboard inset instead of bottom',
-        (tester) async {
-      const keyboard = 280.0;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            padding: EdgeInsets.only(top: 44, bottom: 34),
-            viewInsets: EdgeInsets.only(bottom: keyboard),
-          ),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiSafeViewport(
-              mode: UiSafeViewportMode.keyboardAware,
-              child: Container(
-                key: const Key('kbd'),
-                color: const Color(0xFF00FF00),
-                width: double.infinity,
-                height: double.infinity,
-              ),
-            ),
-          ),
-        ),
-      );
-      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-      final bottom = tester.getRect(find.byKey(const Key('kbd'))).bottom;
-      // Child should be lifted by the keyboard height, not the home
-      // indicator inset — so bottom sits around (screen - keyboard).
-      expect(
-        bottom,
-        closeTo(screen.height - keyboard, 1.0),
-      );
-    });
-
-    testWidgets(
-        'UiSafeViewport keyboardAware preserves child state as keyboard toggles',
-        (tester) async {
-      var initCount = 0;
-      var disposeCount = 0;
-
-      Widget host(double keyboard) {
-        return MediaQuery(
-          data: MediaQueryData(
-            padding: const EdgeInsets.only(top: 44, bottom: 34),
-            viewInsets: EdgeInsets.only(bottom: keyboard),
-          ),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: UiSafeViewport(
-              mode: UiSafeViewportMode.keyboardAware,
-              child: _LifecycleProbe(
-                onInit: () => initCount++,
-                onDispose: () => disposeCount++,
-              ),
-            ),
-          ),
-        );
-      }
-
-      await tester.pumpWidget(host(0));
-      expect(initCount, 1);
-      expect(disposeCount, 0);
-
-      await tester.pumpWidget(host(280));
-      expect(initCount, 1);
-      expect(disposeCount, 0);
-
-      await tester.pumpWidget(host(0));
-      expect(initCount, 1);
-      expect(disposeCount, 0);
-    });
-
-    testWidgets(
-        'UiSafeViewport keyboardAware preserves UiInput focus as keyboard opens',
-        (tester) async {
-      final focusNode = FocusNode();
-      addTearDown(focusNode.dispose);
-
-      Widget host(double keyboard) {
-        return MaterialApp(
-          home: MediaQuery(
-            data: MediaQueryData(
+      'UiSafeViewport keyboardAware applies keyboard inset instead of bottom',
+      (tester) async {
+        const keyboard = 280.0;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              padding: EdgeInsets.only(top: 44, bottom: 34),
               viewInsets: EdgeInsets.only(bottom: keyboard),
             ),
-            child: Scaffold(
-              body: UiSafeViewport(
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiSafeViewport(
                 mode: UiSafeViewportMode.keyboardAware,
-                child: UiInput(
-                  focusNode: focusNode,
-                  hint: 'Focused input',
+                child: Container(
+                  key: const Key('kbd'),
+                  color: const Color(0xFF00FF00),
+                  width: double.infinity,
+                  height: double.infinity,
                 ),
               ),
             ),
           ),
         );
-      }
+        final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+        final bottom = tester.getRect(find.byKey(const Key('kbd'))).bottom;
+        // Child should be lifted by the keyboard height, not the home
+        // indicator inset — so bottom sits around (screen - keyboard).
+        expect(bottom, closeTo(screen.height - keyboard, 1.0));
+      },
+    );
 
-      await tester.pumpWidget(host(0));
-      focusNode.requestFocus();
-      await tester.pump();
-      expect(focusNode.hasFocus, isTrue);
+    testWidgets(
+      'UiSafeViewport keyboardAware preserves child state as keyboard toggles',
+      (tester) async {
+        var initCount = 0;
+        var disposeCount = 0;
 
-      await tester.pumpWidget(host(280));
-      expect(focusNode.hasFocus, isTrue);
+        Widget host(double keyboard) {
+          return MediaQuery(
+            data: MediaQueryData(
+              padding: const EdgeInsets.only(top: 44, bottom: 34),
+              viewInsets: EdgeInsets.only(bottom: keyboard),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: UiSafeViewport(
+                mode: UiSafeViewportMode.keyboardAware,
+                child: _LifecycleProbe(
+                  onInit: () => initCount++,
+                  onDispose: () => disposeCount++,
+                ),
+              ),
+            ),
+          );
+        }
 
-      await tester.pumpWidget(host(0));
-      expect(focusNode.hasFocus, isTrue);
-    });
+        await tester.pumpWidget(host(0));
+        expect(initCount, 1);
+        expect(disposeCount, 0);
 
-    testWidgets('UiSystemBars.inferFromBackground picks dark icons on light bg',
-        (tester) async {
-      final style =
-          UiSystemBarsStyle.inferFromBackground(const Color(0xFFFAFAFA));
-      expect(style.statusBarIconBrightness, Brightness.dark);
-      expect(style.systemNavigationBarIconBrightness, Brightness.dark);
-    });
+        await tester.pumpWidget(host(280));
+        expect(initCount, 1);
+        expect(disposeCount, 0);
 
-    testWidgets('UiSystemBars.inferFromBackground picks light icons on dark bg',
-        (tester) async {
-      final style =
-          UiSystemBarsStyle.inferFromBackground(const Color(0xFF0A0A0A));
-      expect(style.statusBarIconBrightness, Brightness.light);
-      expect(style.systemNavigationBarIconBrightness, Brightness.light);
-    });
+        await tester.pumpWidget(host(0));
+        expect(initCount, 1);
+        expect(disposeCount, 0);
+      },
+    );
 
-    testWidgets('UiSystemBars infers from ambient theme when both args null',
-        (tester) async {
+    testWidgets(
+      'UiSafeViewport keyboardAware preserves UiInput focus as keyboard opens',
+      (tester) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+
+        Widget host(double keyboard) {
+          return MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                viewInsets: EdgeInsets.only(bottom: keyboard),
+              ),
+              child: Scaffold(
+                body: UiSafeViewport(
+                  mode: UiSafeViewportMode.keyboardAware,
+                  child: UiInput(focusNode: focusNode, hint: 'Focused input'),
+                ),
+              ),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(host(0));
+        focusNode.requestFocus();
+        await tester.pump();
+        expect(focusNode.hasFocus, isTrue);
+
+        await tester.pumpWidget(host(280));
+        expect(focusNode.hasFocus, isTrue);
+
+        await tester.pumpWidget(host(0));
+        expect(focusNode.hasFocus, isTrue);
+      },
+    );
+
+    testWidgets(
+      'UiSystemBars.inferFromBackground picks dark icons on light bg',
+      (tester) async {
+        final style = UiSystemBarsStyle.inferFromBackground(
+          const Color(0xFFFAFAFA),
+        );
+        expect(style.statusBarIconBrightness, Brightness.dark);
+        expect(style.systemNavigationBarIconBrightness, Brightness.dark);
+      },
+    );
+
+    testWidgets(
+      'UiSystemBars.inferFromBackground picks light icons on dark bg',
+      (tester) async {
+        final style = UiSystemBarsStyle.inferFromBackground(
+          const Color(0xFF0A0A0A),
+        );
+        expect(style.statusBarIconBrightness, Brightness.light);
+        expect(style.systemNavigationBarIconBrightness, Brightness.light);
+      },
+    );
+
+    testWidgets('UiSystemBars infers from ambient theme when both args null', (
+      tester,
+    ) async {
       SystemUiOverlayStyle? observed;
       await tester.pumpWidget(
         MaterialApp(
@@ -1462,9 +1445,12 @@ void main() {
             child: UiSystemBars(
               child: Builder(
                 builder: (ctx) {
-                  observed = (ctx.findAncestorWidgetOfExactType<
-                          AnnotatedRegion<SystemUiOverlayStyle>>())
-                      ?.value;
+                  observed =
+                      (ctx
+                              .findAncestorWidgetOfExactType<
+                                AnnotatedRegion<SystemUiOverlayStyle>
+                              >())
+                          ?.value;
                   return const SizedBox.shrink();
                 },
               ),
@@ -1477,8 +1463,9 @@ void main() {
       expect(observed!.statusBarIconBrightness, Brightness.light);
     });
 
-    testWidgets('UiSurfaceRegion syncs system bars when requested',
-        (tester) async {
+    testWidgets('UiSurfaceRegion syncs system bars when requested', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiSurfaceRegion(
@@ -1507,8 +1494,9 @@ void main() {
       subtitle: 'Recent conversations',
     );
 
-    testWidgets('UiSliverNavigationBar builds inside CustomScrollView',
-        (tester) async {
+    testWidgets('UiSliverNavigationBar builds inside CustomScrollView', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const CustomScrollView(
@@ -1530,191 +1518,196 @@ void main() {
     });
 
     testWidgets(
-        'title shadow defaults off on Apple and on elsewhere, with an override',
-        (tester) async {
-      final previous = debugDefaultTargetPlatformOverride;
-      tester.view.physicalSize = const Size(390, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+      'title shadow defaults off on Apple and on elsewhere, with an override',
+      (tester) async {
+        final previous = debugDefaultTargetPlatformOverride;
+        tester.view.physicalSize = const Size(390, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      Widget navigation({bool? showShadow}) => _host(
-            CustomScrollView(
-              slivers: [
-                UiSliverNavigationBar(
-                  showTitleLegibilityShadow: showShadow,
-                  spec: const UiNavigationSpec(
-                    title: 'Settings',
-                    largeTitle: false,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 600)),
-              ],
-            ),
-          );
-
-      try {
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        await tester.pumpWidget(navigation());
-        expect(
-          find.ancestor(
-            of: find.byKey(const Key('ui_navigation_compact_title')),
-            matching: find.byType(UiLegibilityShadow),
-          ),
-          findsOneWidget,
-        );
-
-        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        await tester.pumpWidget(navigation());
-        expect(
-          find.ancestor(
-            of: find.byKey(const Key('ui_navigation_compact_title')),
-            matching: find.byType(UiLegibilityShadow),
-          ),
-          findsNothing,
-        );
-
-        await tester.pumpWidget(navigation(showShadow: true));
-        expect(
-          find.ancestor(
-            of: find.byKey(const Key('ui_navigation_compact_title')),
-            matching: find.byType(UiLegibilityShadow),
-          ),
-          findsOneWidget,
-        );
-      } finally {
-        debugDefaultTargetPlatformOverride = previous;
-      }
-    });
-
-    testWidgets(
-        'title-following actions stay end aligned and pin without fading',
-        (tester) async {
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(
-        _host(
+        Widget navigation({bool? showShadow}) => _host(
           CustomScrollView(
-            controller: controller,
             slivers: [
               UiSliverNavigationBar(
+                showTitleLegibilityShadow: showShadow,
                 spec: const UiNavigationSpec(
-                  title: 'Chats',
-                  actionsFollowTitleCollapse: true,
-                  actions: [
-                    SizedBox(
-                      key: Key('tracked-title-action'),
-                      width: 44,
-                      height: 44,
-                    ),
-                  ],
+                  title: 'Settings',
+                  largeTitle: false,
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 1000)),
+              const SliverToBoxAdapter(child: SizedBox(height: 600)),
             ],
           ),
-        ),
-      );
+        );
 
-      expect(
-        find.byKey(const Key('ui_navigation_large_title_shadow')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('ui_navigation_tracking_actions_shadow')),
-        findsOneWidget,
-      );
+        try {
+          debugDefaultTargetPlatformOverride = TargetPlatform.android;
+          await tester.pumpWidget(navigation());
+          expect(
+            find.ancestor(
+              of: find.byKey(const Key('ui_navigation_compact_title')),
+              matching: find.byType(UiLegibilityShadow),
+            ),
+            findsOneWidget,
+          );
 
-      final resting = tester.getTopRight(
-        find.byKey(const Key('tracked-title-action')),
-      );
-      controller.jumpTo(24);
-      await tester.pump();
-      final moving = tester.getTopRight(
-        find.byKey(const Key('tracked-title-action')),
-      );
-      controller.jumpTo(200);
-      await tester.pump();
-      final pinned = tester.getTopRight(
-        find.byKey(const Key('tracked-title-action')),
-      );
-      controller.jumpTo(260);
-      await tester.pump();
-      final stillPinned = tester.getTopRight(
-        find.byKey(const Key('tracked-title-action')),
-      );
+          debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+          await tester.pumpWidget(navigation());
+          expect(
+            find.ancestor(
+              of: find.byKey(const Key('ui_navigation_compact_title')),
+              matching: find.byType(UiLegibilityShadow),
+            ),
+            findsNothing,
+          );
 
-      expect(moving.dx, resting.dx);
-      expect(moving.dy, lessThan(resting.dy));
-      expect(stillPinned, pinned);
-    });
+          await tester.pumpWidget(navigation(showShadow: true));
+          expect(
+            find.ancestor(
+              of: find.byKey(const Key('ui_navigation_compact_title')),
+              matching: find.byType(UiLegibilityShadow),
+            ),
+            findsOneWidget,
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = previous;
+        }
+      },
+    );
 
     testWidgets(
-        'compact-row actions keep their state across unrelated rebuilds '
-        'that construct fresh action widget instances', (tester) async {
-      var initCount = 0;
-      var disposeCount = 0;
-      var rebuilds = 0;
+      'title-following actions stay end aligned and pin without fading',
+      (tester) async {
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) {
-              rebuilds++;
-              return CustomScrollView(
-                slivers: [
-                  UiSliverNavigationBar(
-                    spec: UiNavigationSpec(
-                      title: 'Sign up',
-                      largeTitle: false,
-                      actions: [
-                        // A fresh instance every build — the same shape a
-                        // caller's `build()` produces when it constructs
-                        // `actions: [SomeWidget(...)]` as a list literal
-                        // (e.g. AuthScaffold's language switcher) rather
-                        // than hoisting a stable instance.
-                        _LifecycleProbe(
-                          onInit: () => initCount++,
-                          onDispose: () => disposeCount++,
-                        ),
-                      ],
-                    ),
+        await tester.pumpWidget(
+          _host(
+            CustomScrollView(
+              controller: controller,
+              slivers: [
+                UiSliverNavigationBar(
+                  spec: const UiNavigationSpec(
+                    title: 'Chats',
+                    actionsFollowTitleCollapse: true,
+                    actions: [
+                      SizedBox(
+                        key: Key('tracked-title-action'),
+                        width: 44,
+                        height: 44,
+                      ),
+                    ],
                   ),
-                  SliverToBoxAdapter(
-                    child: ElevatedButton(
-                      onPressed: () => setState(() {}),
-                      child: const Text('trigger unrelated rebuild'),
-                    ),
-                  ),
-                ],
-              );
-            },
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 1000)),
+              ],
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(initCount, 1);
-      expect(disposeCount, 0);
+        expect(
+          find.byKey(const Key('ui_navigation_large_title_shadow')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('ui_navigation_tracking_actions_shadow')),
+          findsOneWidget,
+        );
 
-      // Simulate the reported bug's triggers: an unrelated ancestor
-      // `setState` (a role toggle, a focus/keyboard-inset change) that
-      // rebuilds the nav bar with a brand-new `actions` list each time.
-      for (var i = 0; i < 3; i++) {
-        await tester.tap(find.byType(ElevatedButton));
+        final resting = tester.getTopRight(
+          find.byKey(const Key('tracked-title-action')),
+        );
+        controller.jumpTo(24);
         await tester.pump();
-      }
+        final moving = tester.getTopRight(
+          find.byKey(const Key('tracked-title-action')),
+        );
+        controller.jumpTo(200);
+        await tester.pump();
+        final pinned = tester.getTopRight(
+          find.byKey(const Key('tracked-title-action')),
+        );
+        controller.jumpTo(260);
+        await tester.pump();
+        final stillPinned = tester.getTopRight(
+          find.byKey(const Key('tracked-title-action')),
+        );
 
-      expect(rebuilds, greaterThan(1));
-      // The action's State must survive unrelated rebuilds instead of being
-      // torn down and recreated (which would replay its entrance
-      // transition every time — the "language switcher animates in again"
-      // bug).
-      expect(initCount, 1);
-      expect(disposeCount, 0);
-    });
+        expect(moving.dx, resting.dx);
+        expect(moving.dy, lessThan(resting.dy));
+        expect(stillPinned, pinned);
+      },
+    );
 
-    testWidgets('UiSliverNavigationBar adaptive default is platform-neutral',
-        (tester) async {
+    testWidgets(
+      'compact-row actions keep their state across unrelated rebuilds '
+      'that construct fresh action widget instances',
+      (tester) async {
+        var initCount = 0;
+        var disposeCount = 0;
+        var rebuilds = 0;
+
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, setState) {
+                rebuilds++;
+                return CustomScrollView(
+                  slivers: [
+                    UiSliverNavigationBar(
+                      spec: UiNavigationSpec(
+                        title: 'Sign up',
+                        largeTitle: false,
+                        actions: [
+                          // A fresh instance every build — the same shape a
+                          // caller's `build()` produces when it constructs
+                          // `actions: [SomeWidget(...)]` as a list literal
+                          // (e.g. AuthScaffold's language switcher) rather
+                          // than hoisting a stable instance.
+                          _LifecycleProbe(
+                            onInit: () => initCount++,
+                            onDispose: () => disposeCount++,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: ElevatedButton(
+                        onPressed: () => setState(() {}),
+                        child: const Text('trigger unrelated rebuild'),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+
+        expect(initCount, 1);
+        expect(disposeCount, 0);
+
+        // Simulate the reported bug's triggers: an unrelated ancestor
+        // `setState` (a role toggle, a focus/keyboard-inset change) that
+        // rebuilds the nav bar with a brand-new `actions` list each time.
+        for (var i = 0; i < 3; i++) {
+          await tester.tap(find.byType(ElevatedButton));
+          await tester.pump();
+        }
+
+        expect(rebuilds, greaterThan(1));
+        // The action's State must survive unrelated rebuilds instead of being
+        // torn down and recreated (which would replay its entrance
+        // transition every time — the "language switcher animates in again"
+        // bug).
+        expect(initCount, 1);
+        expect(disposeCount, 0);
+      },
+    );
+
+    testWidgets('UiSliverNavigationBar adaptive default is platform-neutral', (
+      tester,
+    ) async {
       const nav = CustomScrollView(
         slivers: [
           UiSliverNavigationBar(spec: spec),
@@ -1725,9 +1718,7 @@ void main() {
       final previous = debugDefaultTargetPlatformOverride;
       try {
         debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        await tester.pumpWidget(
-          _host(nav),
-        );
+        await tester.pumpWidget(_host(nav));
         expect(find.byType(UiScrollEdgeFade), findsNothing);
         expect(find.byType(BackdropFilter), findsNothing);
       } finally {
@@ -1736,34 +1727,33 @@ void main() {
     });
 
     testWidgets(
-        'UiSliverNavigationBar default surface is solid on non-iOS platforms',
-        (tester) async {
-      const nav = CustomScrollView(
-        slivers: [
-          UiSliverNavigationBar(spec: spec),
-          SliverToBoxAdapter(child: SizedBox(height: 300)),
-        ],
-      );
-
-      final previous = debugDefaultTargetPlatformOverride;
-      try {
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        await tester.pumpWidget(
-          _host(nav),
+      'UiSliverNavigationBar default surface is solid on non-iOS platforms',
+      (tester) async {
+        const nav = CustomScrollView(
+          slivers: [
+            UiSliverNavigationBar(spec: spec),
+            SliverToBoxAdapter(child: SizedBox(height: 300)),
+          ],
         );
-        expect(
-          find.byType(BackdropFilter),
-          findsNothing,
-          reason:
-              'Non-iOS default should resolve adaptive surface to solid (no blur).',
-        );
-      } finally {
-        debugDefaultTargetPlatformOverride = previous;
-      }
-    });
 
-    testWidgets('collapse triggers a snappy time-based title crossfade',
-        (tester) async {
+        final previous = debugDefaultTargetPlatformOverride;
+        try {
+          debugDefaultTargetPlatformOverride = TargetPlatform.android;
+          await tester.pumpWidget(_host(nav));
+          expect(
+            find.byType(BackdropFilter),
+            findsNothing,
+            reason: 'Non-iOS default should resolve adaptive surface to solid (no blur).',
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = previous;
+        }
+      },
+    );
+
+    testWidgets('collapse triggers a snappy time-based title crossfade', (
+      tester,
+    ) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
 
@@ -1897,8 +1887,9 @@ void main() {
       );
     });
 
-    testWidgets('UiSliverNavigationBar stays pinned for the full scroll view',
-        (tester) async {
+    testWidgets('UiSliverNavigationBar stays pinned for the full scroll view', (
+      tester,
+    ) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
 
@@ -1925,17 +1916,71 @@ void main() {
     });
 
     testWidgets(
-        'UiSliverNavigationBar keeps its collapsible header beside a tablet rail',
-        (tester) async {
-      tester.view.physicalSize = const Size(900, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+      'UiSliverNavigationBar keeps its collapsible header beside a tablet rail',
+      (tester) async {
+        tester.view.physicalSize = const Size(900, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      Widget host() {
-        return _host(
-          const UiResponsiveNavigationScaffold(
-            sidebar: SizedBox(width: 96, child: Text('rail')),
-            body: CustomScrollView(
+        Widget host() {
+          return _host(
+            const UiResponsiveNavigationScaffold(
+              sidebar: SizedBox(width: 96, child: Text('rail')),
+              body: CustomScrollView(
+                slivers: [
+                  UiSliverNavigationBar(
+                    spec: UiNavigationSpec(
+                      title: 'Library',
+                      subtitle: 'Browse resources',
+                      surface: UiNavigationSurface.blurred,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: SizedBox(height: 1200)),
+                ],
+              ),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(host());
+
+        expect(find.text('Library'), findsOneWidget);
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(UiScrollEdgeFade), findsOneWidget);
+        expect(find.byType(SliverPersistentHeader), findsOneWidget);
+        expect(
+          find.byKey(const Key('ui_navigation_large_title')),
+          findsOneWidget,
+        );
+
+        tester.view.physicalSize = const Size(390, 700);
+        await tester.pumpWidget(host());
+        await tester.pump();
+
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(UiScrollEdgeFade), findsOneWidget);
+        expect(find.byType(SliverPersistentHeader), findsOneWidget);
+        final fade = tester.widget<UiScrollEdgeFade>(
+          find.byType(UiScrollEdgeFade),
+        );
+        expect(
+          fade.extent,
+          greaterThan(52),
+          reason: 'The fade should extend beyond the compact row to the title.',
+        );
+      },
+    );
+
+    testWidgets(
+      'UiSliverNavigationBar becomes a quiet page header on large screens',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          _host(
+            const CustomScrollView(
               slivers: [
                 UiSliverNavigationBar(
                   spec: UiNavigationSpec(
@@ -1949,67 +1994,16 @@ void main() {
             ),
           ),
         );
-      }
 
-      await tester.pumpWidget(host());
+        expect(find.text('Library'), findsOneWidget);
+        expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byType(SliverPersistentHeader), findsNothing);
+      },
+    );
 
-      expect(find.text('Library'), findsOneWidget);
-      expect(find.byType(BackdropFilter), findsNothing);
-      expect(find.byType(UiScrollEdgeFade), findsOneWidget);
-      expect(find.byType(SliverPersistentHeader), findsOneWidget);
-      expect(
-        find.byKey(const Key('ui_navigation_large_title')),
-        findsOneWidget,
-      );
-
-      tester.view.physicalSize = const Size(390, 700);
-      await tester.pumpWidget(host());
-      await tester.pump();
-
-      expect(find.byType(BackdropFilter), findsNothing);
-      expect(find.byType(UiScrollEdgeFade), findsOneWidget);
-      expect(find.byType(SliverPersistentHeader), findsOneWidget);
-      final fade = tester.widget<UiScrollEdgeFade>(
-        find.byType(UiScrollEdgeFade),
-      );
-      expect(
-        fade.extent,
-        greaterThan(52),
-        reason: 'The fade should extend beyond the compact row to the title.',
-      );
-    });
-
-    testWidgets(
-        'UiSliverNavigationBar becomes a quiet page header on large screens',
-        (tester) async {
-      tester.view.physicalSize = const Size(1000, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(
-        _host(
-          const CustomScrollView(
-            slivers: [
-              UiSliverNavigationBar(
-                spec: UiNavigationSpec(
-                  title: 'Library',
-                  subtitle: 'Browse resources',
-                  surface: UiNavigationSurface.blurred,
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 1200)),
-            ],
-          ),
-        ),
-      );
-
-      expect(find.text('Library'), findsOneWidget);
-      expect(find.byType(BackdropFilter), findsNothing);
-      expect(find.byType(SliverPersistentHeader), findsNothing);
-    });
-
-    testWidgets('UiSliverStickyRegion stacks below the collapsed phone bar',
-        (tester) async {
+    testWidgets('UiSliverStickyRegion stacks below the collapsed phone bar', (
+      tester,
+    ) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
 
@@ -2024,10 +2018,7 @@ void main() {
                   surface: UiNavigationSurface.solid,
                 ),
               ),
-              UiSliverStickyRegion(
-                extent: 52,
-                child: Text('Search'),
-              ),
+              UiSliverStickyRegion(extent: 52, child: Text('Search')),
               SliverToBoxAdapter(child: SizedBox(height: 1600)),
             ],
           ),
@@ -2059,56 +2050,56 @@ void main() {
       expect(fade.opacity, 1);
     });
 
-    testWidgets('UiSliverStickyRegion pins below the tablet compact title bar',
-        (tester) async {
-      tester.view.physicalSize = const Size(900, 700);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
+    testWidgets(
+      'UiSliverStickyRegion pins below the tablet compact title bar',
+      (tester) async {
+        tester.view.physicalSize = const Size(900, 700);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _host(
-          UiResponsiveNavigationScaffold(
-            sidebar: const SizedBox(width: 96, child: Text('rail')),
-            body: CustomScrollView(
-              controller: controller,
-              slivers: const [
-                UiSliverNavigationBar(
-                  spec: UiNavigationSpec(
-                    title: 'Library',
-                    surface: UiNavigationSurface.blurred,
+        await tester.pumpWidget(
+          _host(
+            UiResponsiveNavigationScaffold(
+              sidebar: const SizedBox(width: 96, child: Text('rail')),
+              body: CustomScrollView(
+                controller: controller,
+                slivers: const [
+                  UiSliverNavigationBar(
+                    spec: UiNavigationSpec(
+                      title: 'Library',
+                      surface: UiNavigationSurface.blurred,
+                    ),
                   ),
-                ),
-                UiSliverStickyRegion(
-                  extent: 52,
-                  child: Text('Search'),
-                ),
-                SliverToBoxAdapter(child: SizedBox(height: 1600)),
-              ],
+                  UiSliverStickyRegion(extent: 52, child: Text('Search')),
+                  SliverToBoxAdapter(child: SizedBox(height: 1600)),
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      controller.jumpTo(600);
-      await tester.pumpAndSettle();
+        controller.jumpTo(600);
+        await tester.pumpAndSettle();
 
-      final stickyRect = tester.getRect(
-        find.byKey(const Key('ui_sliver_sticky_region_surface')),
-      );
-      expect(stickyRect.top, closeTo(52, 0.1));
-      expect(find.byType(BackdropFilter), findsNothing);
+        final stickyRect = tester.getRect(
+          find.byKey(const Key('ui_sliver_sticky_region_surface')),
+        );
+        expect(stickyRect.top, closeTo(52, 0.1));
+        expect(find.byType(BackdropFilter), findsNothing);
 
-      final surface = tester.widget<AnimatedContainer>(
-        find.byKey(const Key('ui_sliver_sticky_region_surface')),
-      );
-      final decoration = surface.decoration! as BoxDecoration;
-      expect(decoration.border!.bottom.color.a, 0);
-    });
+        final surface = tester.widget<AnimatedContainer>(
+          find.byKey(const Key('ui_sliver_sticky_region_surface')),
+        );
+        final decoration = surface.decoration! as BoxDecoration;
+        expect(decoration.border!.bottom.color.a, 0);
+      },
+    );
 
-    testWidgets('subtitle renders only with the expanded large title',
-        (tester) async {
+    testWidgets('subtitle renders only with the expanded large title', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const CustomScrollView(
@@ -2145,8 +2136,9 @@ void main() {
       expect(find.text('Recent conversations'), findsNothing);
     });
 
-    testWidgets('compact title can differ from or omit the large title',
-        (tester) async {
+    testWidgets('compact title can differ from or omit the large title', (
+      tester,
+    ) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
 
@@ -2191,8 +2183,7 @@ void main() {
       );
     });
 
-    testWidgets(
-        'UiSliverNavigationBar publishes an annotated region that '
+    testWidgets('UiSliverNavigationBar publishes an annotated region that '
         'picks icon brightness from the surface', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -2222,8 +2213,9 @@ void main() {
       );
     });
 
-    testWidgets('UiPageScaffold + paintTopInsetWithTopBar paints inset',
-        (tester) async {
+    testWidgets('UiPageScaffold + paintTopInsetWithTopBar paints inset', (
+      tester,
+    ) async {
       const topInset = 44.0;
       const insetColor = Color(0xFFABCDEF);
       await tester.pumpWidget(
@@ -2246,14 +2238,12 @@ void main() {
           .map((d) => d.decoration)
           .whereType<BoxDecoration>()
           .toList();
-      expect(
-        decorations.any((d) => d.color == insetColor),
-        isTrue,
-      );
+      expect(decorations.any((d) => d.color == insetColor), isTrue);
     });
 
-    testWidgets('UiNavigationStack swaps children with a keyed transition',
-        (tester) async {
+    testWidgets('UiNavigationStack swaps children with a keyed transition', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         _host(
@@ -2293,8 +2283,9 @@ void main() {
       expect(find.text('page-b'), findsOneWidget);
     });
 
-    testWidgets('UiNavigationScope exposes the spec to descendants',
-        (tester) async {
+    testWidgets('UiNavigationScope exposes the spec to descendants', (
+      tester,
+    ) async {
       UiNavigationSpec? observed;
       await tester.pumpWidget(
         _host(
@@ -2312,8 +2303,9 @@ void main() {
       expect(observed, equals(spec));
     });
 
-    testWidgets('UiNavigationScope.maybeOf returns null when absent',
-        (tester) async {
+    testWidgets('UiNavigationScope.maybeOf returns null when absent', (
+      tester,
+    ) async {
       UiNavigationSpec? observed = spec;
       await tester.pumpWidget(
         _host(
@@ -2328,62 +2320,62 @@ void main() {
       expect(observed, isNull);
     });
 
-    testWidgets(
-      'spec with a back button forces inline title (no hero morph)',
-      (tester) async {
-        var backPresses = 0;
-        final specWithBack = UiNavigationSpec(
-          title: 'Detail',
-          subtitle: 'Sample',
-          largeTitle: true,
-          back: UiNavigationBackConfig(
-            label: 'Inbox',
-            onPressed: () => backPresses++,
-            showLabel: true,
+    testWidgets('spec with a back button forces inline title (no hero morph)', (
+      tester,
+    ) async {
+      var backPresses = 0;
+      final specWithBack = UiNavigationSpec(
+        title: 'Detail',
+        subtitle: 'Sample',
+        largeTitle: true,
+        back: UiNavigationBackConfig(
+          label: 'Inbox',
+          onPressed: () => backPresses++,
+          showLabel: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        _host(
+          CustomScrollView(
+            slivers: [
+              UiSliverNavigationBar(spec: specWithBack),
+              const SliverToBoxAdapter(child: SizedBox(height: 400)),
+            ],
           ),
-        );
+        ),
+      );
 
-        await tester.pumpWidget(
-          _host(
-            CustomScrollView(
-              slivers: [
-                UiSliverNavigationBar(spec: specWithBack),
-                const SliverToBoxAdapter(child: SizedBox(height: 400)),
-              ],
-            ),
-          ),
-        );
+      // Title appears exactly once (inline). No duplicate hero copy.
+      expect(find.text('Detail'), findsOneWidget);
+      // Back label is rendered and wired up.
+      expect(find.text('Inbox'), findsOneWidget);
+      await tester.tap(find.text('Inbox'));
+      await tester.pump();
+      expect(backPresses, 1);
 
-        // Title appears exactly once (inline). No duplicate hero copy.
-        expect(find.text('Detail'), findsOneWidget);
-        // Back label is rendered and wired up.
-        expect(find.text('Inbox'), findsOneWidget);
-        await tester.tap(find.text('Inbox'));
-        await tester.pump();
-        expect(backPresses, 1);
+      // With a back button, the bar pins at the collapsed height —
+      // no expanded mode exists for it to grow into. We check the
+      // AnnotatedRegion the bar wraps its paint box with; its size
+      // reflects the sliver's laid-out extent.
+      final barBox = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(UiSliverNavigationBar),
+              matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+            )
+            .first,
+      );
+      expect(
+        barBox.height,
+        lessThan(70),
+        reason: 'Back-button bars should pin at the compact height.',
+      );
+    });
 
-        // With a back button, the bar pins at the collapsed height —
-        // no expanded mode exists for it to grow into. We check the
-        // AnnotatedRegion the bar wraps its paint box with; its size
-        // reflects the sliver's laid-out extent.
-        final barBox = tester.getRect(
-          find
-              .descendant(
-                of: find.byType(UiSliverNavigationBar),
-                matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
-              )
-              .first,
-        );
-        expect(
-          barBox.height,
-          lessThan(70),
-          reason: 'Back-button bars should pin at the compact height.',
-        );
-      },
-    );
-
-    testWidgets('UiSliverNavigationBar resolves brand logo from spec',
-        (tester) async {
+    testWidgets('UiSliverNavigationBar resolves brand logo from spec', (
+      tester,
+    ) async {
       const brand = UiBrand(
         id: 'acme',
         displayName: 'Acme App',

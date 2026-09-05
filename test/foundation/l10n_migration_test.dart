@@ -47,30 +47,24 @@ class _InlineUiLocalizationsDelegate
 
 void main() {
   group('UiPagination localization (PR-1)', () {
-    testWidgets('uses English defaults without a delegate installed',
-        (tester) async {
+    testWidgets('uses English defaults without a delegate installed', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
-          UiPagination(
-            currentPage: 2,
-            totalPages: 3,
-            onPageChanged: (_) {},
-          ),
+          UiPagination(currentPage: 2, totalPages: 3, onPageChanged: (_) {}),
         ),
       );
       expect(find.text('Prev'), findsOneWidget);
       expect(find.text('Next'), findsOneWidget);
     });
 
-    testWidgets('flips to Arabic strings when the delegate returns ar',
-        (tester) async {
+    testWidgets('flips to Arabic strings when the delegate returns ar', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
-          UiPagination(
-            currentPage: 1,
-            totalPages: 3,
-            onPageChanged: (_) {},
-          ),
+          UiPagination(currentPage: 1, totalPages: 3, onPageChanged: (_) {}),
           dir: TextDirection.rtl,
           strings: const UiLocalizationsAr(),
         ),
@@ -82,8 +76,9 @@ void main() {
       expect(find.text('Next'), findsNothing);
     });
 
-    testWidgets('loading caption uses the localized "loading" string',
-        (tester) async {
+    testWidgets('loading caption uses the localized "loading" string', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiPagination(
@@ -99,16 +94,11 @@ void main() {
       expect(find.text('جارٍ التحميل…'), findsOneWidget);
     });
 
-    testWidgets(
-        'page semantics label uses pageSemanticsLabel(n) from the '
+    testWidgets('page semantics label uses pageSemanticsLabel(n) from the '
         'installed delegate', (tester) async {
       await tester.pumpWidget(
         _host(
-          UiPagination(
-            currentPage: 2,
-            totalPages: 3,
-            onPageChanged: (_) {},
-          ),
+          UiPagination(currentPage: 2, totalPages: 3, onPageChanged: (_) {}),
           strings: const UiLocalizationsAr(),
         ),
       );
@@ -122,8 +112,9 @@ void main() {
   });
 
   group('UiSliverNavigationBar back label (PR-1)', () {
-    testWidgets('falls back to localized `back` when no history / label',
-        (tester) async {
+    testWidgets('falls back to localized `back` when no history / label', (
+      tester,
+    ) async {
       final spec = UiNavigationSpec(
         title: 'Detail',
         back: UiNavigationBackConfig(onPressed: () {}, showLabel: true),
@@ -144,8 +135,9 @@ void main() {
       expect(find.text('Back'), findsNothing);
     });
 
-    testWidgets('explicit spec.back.label takes precedence over the locale',
-        (tester) async {
+    testWidgets('explicit spec.back.label takes precedence over the locale', (
+      tester,
+    ) async {
       final spec = UiNavigationSpec(
         title: 'Detail',
         back: UiNavigationBackConfig(
@@ -171,8 +163,9 @@ void main() {
   });
 
   group('UiDrawer semantics (PR-1)', () {
-    testWidgets('announces the localized drawer label by default',
-        (tester) async {
+    testWidgets('announces the localized drawer label by default', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiDrawer(child: Text('nav')),
@@ -186,14 +179,12 @@ void main() {
       expect(matches, findsWidgets);
     });
 
-    testWidgets('empty semanticsLabel suppresses the announcement',
-        (tester) async {
+    testWidgets('empty semanticsLabel suppresses the announcement', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
-          const UiDrawer(
-            semanticsLabel: '',
-            child: Text('nav'),
-          ),
+          const UiDrawer(semanticsLabel: '', child: Text('nav')),
           strings: const UiLocalizationsAr(),
         ),
       );
@@ -206,22 +197,20 @@ void main() {
     });
 
     testWidgets(
-        'explicit semanticsLabel overrides both the locale and the default',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          const UiDrawer(
-            semanticsLabel: 'Main nav',
-            child: Text('nav'),
+      'explicit semanticsLabel overrides both the locale and the default',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            const UiDrawer(semanticsLabel: 'Main nav', child: Text('nav')),
+            strings: const UiLocalizationsAr(),
           ),
-          strings: const UiLocalizationsAr(),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final matches = find.byWidgetPredicate(
-        (w) => w is Semantics && w.properties.label == 'Main nav',
-      );
-      expect(matches, findsWidgets);
-    });
+        );
+        await tester.pumpAndSettle();
+        final matches = find.byWidgetPredicate(
+          (w) => w is Semantics && w.properties.label == 'Main nav',
+        );
+        expect(matches, findsWidgets);
+      },
+    );
   });
 }

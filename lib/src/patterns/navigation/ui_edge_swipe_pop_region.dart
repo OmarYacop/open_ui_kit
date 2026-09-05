@@ -80,7 +80,8 @@ class UiEdgeSwipePopRegion extends StatefulWidget {
     double progress,
     Widget child,
     Widget? incoming,
-  )? transitionBuilder;
+  )?
+  transitionBuilder;
 
   @override
   State<UiEdgeSwipePopRegion> createState() => _UiEdgeSwipePopRegionState();
@@ -144,8 +145,9 @@ class _UiEdgeSwipePopRegionState extends State<UiEdgeSwipePopRegion>
   void _onUpdate(DragUpdateDetails d) {
     if (!_dragActive) return;
     _dragDx = (_dragDx + d.delta.dx).clamp(0.0, double.infinity);
-    final next =
-        _viewportWidth <= 0 ? 0.0 : (_dragDx / _viewportWidth).clamp(0.0, 1.0);
+    final next = _viewportWidth <= 0
+        ? 0.0
+        : (_dragDx / _viewportWidth).clamp(0.0, 1.0);
     _drive.value = next;
   }
 
@@ -306,13 +308,16 @@ class _LayeredBackSwipeStack extends StatelessWidget {
   Widget build(BuildContext context) {
     final incomingStart =
         -UiBackSwipeLayeredMetrics.incomingStartRatio * viewportWidth;
-    final incomingDx = (incomingStart + incomingStart.abs() * progress)
-        .clamp(incomingStart, 0.0);
+    final incomingDx = (incomingStart + incomingStart.abs() * progress).clamp(
+      incomingStart,
+      0.0,
+    );
     final outgoingDx = progress * viewportWidth;
 
     final scrimAlpha =
         UiBackSwipeLayeredMetrics.incomingScrimOpacity * (1.0 - progress);
-    final shadowAlpha = UiBackSwipeLayeredMetrics.outgoingShadowOpacity *
+    final shadowAlpha =
+        UiBackSwipeLayeredMetrics.outgoingShadowOpacity *
         (1.0 - (progress - 0.5).abs() * 2);
 
     final pageBackground = UiThemeTokens.colorsOf(context).background;
@@ -390,42 +395,45 @@ class _RawEdgeRecognizer extends StatelessWidget {
     return RawGestureDetector(
       behavior: HitTestBehavior.translucent,
       gestures: <Type, GestureRecognizerFactory>{
-        HorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<
-            HorizontalDragGestureRecognizer>(
-          () => HorizontalDragGestureRecognizer(),
-          (instance) {
-            instance
-              ..onStart = onStart
-              ..onUpdate = (details) {
-                if (isRtl) {
-                  onUpdate(DragUpdateDetails(
-                    sourceTimeStamp: details.sourceTimeStamp,
-                    delta: Offset(-details.delta.dx, details.delta.dy),
-                    primaryDelta: details.primaryDelta == null
-                        ? null
-                        : -details.primaryDelta!,
-                    globalPosition: details.globalPosition,
-                    localPosition: details.localPosition,
-                  ));
-                } else {
-                  onUpdate(details);
+        HorizontalDragGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<
+              HorizontalDragGestureRecognizer
+            >(() => HorizontalDragGestureRecognizer(), (instance) {
+              instance
+                ..onStart = onStart
+                ..onUpdate = (details) {
+                  if (isRtl) {
+                    onUpdate(
+                      DragUpdateDetails(
+                        sourceTimeStamp: details.sourceTimeStamp,
+                        delta: Offset(-details.delta.dx, details.delta.dy),
+                        primaryDelta: details.primaryDelta == null
+                            ? null
+                            : -details.primaryDelta!,
+                        globalPosition: details.globalPosition,
+                        localPosition: details.localPosition,
+                      ),
+                    );
+                  } else {
+                    onUpdate(details);
+                  }
                 }
-              }
-              ..onEnd = (details) {
-                if (isRtl) {
-                  onEnd(DragEndDetails(
-                    velocity: details.velocity,
-                    primaryVelocity: details.primaryVelocity == null
-                        ? null
-                        : -details.primaryVelocity!,
-                  ));
-                } else {
-                  onEnd(details);
+                ..onEnd = (details) {
+                  if (isRtl) {
+                    onEnd(
+                      DragEndDetails(
+                        velocity: details.velocity,
+                        primaryVelocity: details.primaryVelocity == null
+                            ? null
+                            : -details.primaryVelocity!,
+                      ),
+                    );
+                  } else {
+                    onEnd(details);
+                  }
                 }
-              }
-              ..onCancel = onCancel;
-          },
-        ),
+                ..onCancel = onCancel;
+            }),
       },
     );
   }

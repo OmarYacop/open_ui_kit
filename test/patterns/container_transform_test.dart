@@ -40,8 +40,9 @@ void main() {
         ),
         child: Builder(
           builder: (context) {
-            resolved =
-                UiContainerTransformGeometry.iosScreenBorderRadius(context);
+            resolved = UiContainerTransformGeometry.iosScreenBorderRadius(
+              context,
+            );
             return const SizedBox();
           },
         ),
@@ -52,44 +53,44 @@ void main() {
   });
 
   testWidgets(
-      'content occlusion supports tokens and reduced-motion custom timing', (
-    tester,
-  ) async {
-    late UiContentOcclusionSpec tokenSpec;
-    late UiContentOcclusionSpec reducedCustomSpec;
+    'content occlusion supports tokens and reduced-motion custom timing',
+    (tester) async {
+      late UiContentOcclusionSpec tokenSpec;
+      late UiContentOcclusionSpec reducedCustomSpec;
 
-    await tester.pumpWidget(
-      UiApp(
-        home: Builder(
-          builder: (context) {
-            tokenSpec = UiContentOcclusionSpec.resolve(
-              context,
-              switchTime: UiMotionSpeed.standard,
-              duration: UiMotionSpeed.faster,
-            );
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: true),
-              child: Builder(
-                builder: (context) {
-                  reducedCustomSpec = UiContentOcclusionSpec.custom(
-                    context,
-                    switchTime: const Duration(milliseconds: 175),
-                    duration: const Duration(milliseconds: 65),
-                  );
-                  return const SizedBox();
-                },
-              ),
-            );
-          },
+      await tester.pumpWidget(
+        UiApp(
+          home: Builder(
+            builder: (context) {
+              tokenSpec = UiContentOcclusionSpec.resolve(
+                context,
+                switchTime: UiMotionSpeed.standard,
+                duration: UiMotionSpeed.faster,
+              );
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: Builder(
+                  builder: (context) {
+                    reducedCustomSpec = UiContentOcclusionSpec.custom(
+                      context,
+                      switchTime: const Duration(milliseconds: 175),
+                      duration: const Duration(milliseconds: 65),
+                    );
+                    return const SizedBox();
+                  },
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(tokenSpec.switchTime, UiMotionTokens.defaults.standard);
-    expect(tokenSpec.duration, UiMotionTokens.defaults.faster);
-    expect(reducedCustomSpec.switchTime, Duration.zero);
-    expect(reducedCustomSpec.duration, Duration.zero);
-  });
+      expect(tokenSpec.switchTime, UiMotionTokens.defaults.standard);
+      expect(tokenSpec.duration, UiMotionTokens.defaults.faster);
+      expect(reducedCustomSpec.switchTime, Duration.zero);
+      expect(reducedCustomSpec.duration, Duration.zero);
+    },
+  );
 
   testWidgets('container transform expands and reverses with safe semantics', (
     tester,
@@ -133,9 +134,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 120));
 
-    final surface = find.byKey(
-      const Key('ui_container_transform_surface'),
-    );
+    final surface = find.byKey(const Key('ui_container_transform_surface'));
     expect(surface, findsOneWidget);
     final middleRect = tester.getRect(surface);
     expect(middleRect.width, greaterThan(sourceRect.width));
@@ -161,10 +160,8 @@ void main() {
         home: MediaQuery(
           data: const MediaQueryData(disableAnimations: true),
           child: UiOpenContainer(
-            closedBuilder: (_, open) => GestureDetector(
-              onTap: open,
-              child: const Text('Open'),
-            ),
+            closedBuilder: (_, open) =>
+                GestureDetector(onTap: open, child: const Text('Open')),
             pageBuilder: (_) => const Text('Destination'),
           ),
         ),
@@ -266,8 +263,9 @@ void main() {
 
       final plate = find.byKey(const Key('ui_ios_zoom_plate'));
       final plateDecoration = tester.widget<DecoratedBox>(plate);
-      final plateRadius = (plateDecoration.decoration as BoxDecoration)
-          .borderRadius! as BorderRadius;
+      final plateRadius =
+          (plateDecoration.decoration as BoxDecoration).borderRadius!
+              as BorderRadius;
       expect(plateRadius.topLeft.x, greaterThan(40));
       expect(
         tester.getSize(
@@ -289,9 +287,7 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 79));
 
-      final surface = find.byKey(
-        const Key('ui_container_transform_surface'),
-      );
+      final surface = find.byKey(const Key('ui_container_transform_surface'));
       expect(surface, findsOneWidget);
       expect(find.byType(Hero), findsNWidgets(2));
       expect(find.byType(UiContainerTransformTransition), findsNothing);
@@ -304,10 +300,7 @@ void main() {
       );
       expect(forwardSourceOpacity.opacity, 1);
       expect(forwardDestinationOpacity.opacity, 0);
-      expect(
-        find.byKey(const Key('ui_ios_zoom_content_cover')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_ios_zoom_content_cover')), findsNothing);
       final middleRect = tester.getRect(
         find.byKey(const Key('ui_ios_zoom_shadow')),
       );
@@ -323,10 +316,7 @@ void main() {
       final switchingDestinationOpacity = tester.widget<Opacity>(
         find.byKey(const Key('ui_ios_zoom_destination_opacity')),
       );
-      expect(
-        find.byKey(const Key('ui_ios_zoom_source_opacity')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_ios_zoom_source_opacity')), findsNothing);
       expect(switchingDestinationOpacity.opacity, 1);
       final forwardCover = tester.widget<Opacity>(
         find.byKey(const Key('ui_ios_zoom_content_cover')),
@@ -338,10 +328,7 @@ void main() {
       );
 
       await tester.pump(const Duration(milliseconds: 80));
-      expect(
-        find.byKey(const Key('ui_ios_zoom_source_opacity')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_ios_zoom_source_opacity')), findsNothing);
       expect(
         tester
             .widget<Opacity>(
@@ -350,10 +337,7 @@ void main() {
             .opacity,
         1,
       );
-      expect(
-        find.byKey(const Key('ui_ios_zoom_content_cover')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_ios_zoom_content_cover')), findsNothing);
       expect(
         tester.getSize(find.byKey(const Key('ui_ios_zoom_shadow'))).width,
         lessThan(800),
@@ -362,22 +346,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Zoom destination'), findsOneWidget);
       expect(find.byType(BackdropFilter), findsNothing);
-      expect(
-        find.byKey(const Key('ui_container_backdrop_tint')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_container_backdrop_tint')), findsNothing);
 
       Navigator.of(tester.element(find.text('Zoom destination'))).pop();
       await tester.pump();
-      await tester.pump(
-        totalDuration - contentSwitchTime - preContentGap,
-      );
+      await tester.pump(totalDuration - contentSwitchTime - preContentGap);
       expect(surface, findsOneWidget);
       expect(find.byType(BackdropFilter), findsOneWidget);
-      expect(
-        find.byKey(const Key('ui_ios_zoom_source_opacity')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('ui_ios_zoom_source_opacity')), findsNothing);
       expect(
         tester
             .widget<Opacity>(
@@ -549,7 +525,8 @@ void main() {
         expect(
           settled,
           isFalse,
-          reason: 'flying overlay must not reappear after disappearing '
+          reason:
+              'flying overlay must not reappear after disappearing '
               '(frame $i)',
         );
         final rect = tester.getRect(flightFinder);

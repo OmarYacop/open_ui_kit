@@ -36,8 +36,8 @@ class UiCalendarTimeGrid extends StatelessWidget {
     this.minimumDayWidth = 126,
     this.showDayHeaders = true,
     this.showDayDividers = true,
-  })  : assert(endHour > startHour),
-        assert(days.length > 0);
+  }) : assert(endHour > startHour),
+       assert(days.length > 0);
 
   final List<DateTime> days;
   final List<UiCalendarEvent> events;
@@ -168,10 +168,11 @@ class UiCalendarTimeGrid extends StatelessWidget {
   List<_EventLayout> _layoutEvents(double dayWidth) {
     final result = <_EventLayout>[];
     for (var dayIndex = 0; dayIndex < days.length; dayIndex++) {
-      final dayEvents = events
-          .where((event) => _sameDay(event.startAt, days[dayIndex]))
-          .toList()
-        ..sort((a, b) => a.startAt.compareTo(b.startAt));
+      final dayEvents =
+          events
+              .where((event) => _sameDay(event.startAt, days[dayIndex]))
+              .toList()
+            ..sort((a, b) => a.startAt.compareTo(b.startAt));
       final clusters = _overlapClusters(dayEvents);
       for (final cluster in clusters) {
         final columnEnds = <DateTime>[];
@@ -196,7 +197,8 @@ class UiCalendarTimeGrid extends StatelessWidget {
           result.add(
             _EventLayout(
               event: event,
-              left: timeRailWidth +
+              left:
+                  timeRailWidth +
                   dayIndex * dayWidth +
                   3 +
                   columns[event]! * columnWidth,
@@ -238,8 +240,10 @@ class _CalendarTimeLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final colors = tokens.colors;
-    final match = RegExp(r'^(.+?)\s+(AM|PM)$', caseSensitive: false)
-        .firstMatch(label.trim());
+    final match = RegExp(
+      r'^(.+?)\s+(AM|PM)$',
+      caseSensitive: false,
+    ).firstMatch(label.trim());
     final hour = match?.group(1) ?? label;
     final period = match?.group(2);
     return Text.rich(
@@ -292,9 +296,11 @@ class _PositionedCalendarEvent extends StatelessWidget {
       child: UiPressable(
         onPressed: onPressed,
         minTapSize: 0,
-        semanticsLabel: [event.title, event.subtitle, event.metadata]
-            .whereType<String>()
-            .join(', '),
+        semanticsLabel: [
+          event.title,
+          event.subtitle,
+          event.metadata,
+        ].whereType<String>().join(', '),
         builder: (context, state, _) {
           final background = selected
               ? colors.primary
@@ -555,12 +561,12 @@ class _EventLayout {
   final double height;
 
   _EventLayout shiftedVertically(double offset) => _EventLayout(
-        event: event,
-        left: left,
-        top: top + offset,
-        width: width,
-        height: height,
-      );
+    event: event,
+    left: left,
+    top: top + offset,
+    width: width,
+    height: height,
+  );
 }
 
 class _NowGeometry {

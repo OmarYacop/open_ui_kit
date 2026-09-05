@@ -12,7 +12,7 @@ import 'ui_pressable.dart';
 /// create + dispose an internal one when the controller arg is null.
 class UiCollapsibleController extends ChangeNotifier {
   UiCollapsibleController({bool initiallyExpanded = false})
-      : _expanded = initiallyExpanded;
+    : _expanded = initiallyExpanded;
 
   bool _expanded;
 
@@ -66,9 +66,9 @@ class UiCollapsible extends StatefulWidget {
     this.maintainState = false,
     this.focusNode,
   }) : assert(
-          expanded == null || controller == null,
-          'Pass either `expanded` (controlled) or `controller` — not both.',
-        );
+         expanded == null || controller == null,
+         'Pass either `expanded` (controlled) or `controller` — not both.',
+       );
 
   /// Optional trigger rendered above [child]. Tapping toggles the
   /// collapsible (in whichever control mode is active).
@@ -137,10 +137,9 @@ class _UiCollapsibleState extends State<UiCollapsible>
   void initState() {
     super.initState();
     _ownsController = widget.controller == null && !_isControlled;
-    _controller = widget.controller ??
-        UiCollapsibleController(
-          initiallyExpanded: widget.initiallyExpanded,
-        );
+    _controller =
+        widget.controller ??
+        UiCollapsibleController(initiallyExpanded: widget.initiallyExpanded);
     _anim = AnimationController(
       vsync: this,
       duration: Duration.zero,

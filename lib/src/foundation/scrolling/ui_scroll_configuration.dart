@@ -9,10 +9,7 @@ import 'package:flutter/widgets.dart';
 /// The ambient [ScrollBehavior] is copied so platform input, desktop
 /// scrollbars, keyboard dismissal, and custom physics remain intact.
 class UiScrollConfiguration extends StatelessWidget {
-  const UiScrollConfiguration({
-    super.key,
-    required this.child,
-  });
+  const UiScrollConfiguration({super.key, required this.child});
 
   final Widget child;
 

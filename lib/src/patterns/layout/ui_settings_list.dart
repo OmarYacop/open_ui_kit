@@ -53,11 +53,7 @@ class UiSettingsList extends StatelessWidget {
 
 @immutable
 class UiSettingsGroup {
-  const UiSettingsGroup({
-    required this.items,
-    this.title,
-    this.footer,
-  });
+  const UiSettingsGroup({required this.items, this.title, this.footer});
 
   final String? title;
   final String? footer;
@@ -206,7 +202,8 @@ class _SettingsItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final formFactor = uiFormFactorOf(context);
-    final effectiveSelected = selected &&
+    final effectiveSelected =
+        selected &&
         (item.showSelectedOnPhone || formFactor != UiFormFactor.phone);
 
     final content = ConstrainedBox(

@@ -28,7 +28,8 @@ void main() {
   testWidgets('back button shows its label by default', (tester) async {
     var pressed = false;
     await tester.pumpWidget(
-        _host(_bar(showLabel: true, onPressed: () => pressed = true)));
+      _host(_bar(showLabel: true, onPressed: () => pressed = true)),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('A very long previous page title'), findsOneWidget);
@@ -62,13 +63,15 @@ void main() {
     (tester) async {
       await tester.pumpWidget(_host(_bar(showLabel: true, onPressed: () {})));
       await tester.pumpAndSettle();
-      final withLabelWidth =
-          tester.getSize(find.byType(UiNavigationBackButton)).width;
+      final withLabelWidth = tester
+          .getSize(find.byType(UiNavigationBackButton))
+          .width;
 
       await tester.pumpWidget(_host(_bar(showLabel: false, onPressed: () {})));
       await tester.pumpAndSettle();
-      final iconOnlyWidth =
-          tester.getSize(find.byType(UiNavigationBackButton)).width;
+      final iconOnlyWidth = tester
+          .getSize(find.byType(UiNavigationBackButton))
+          .width;
 
       // `_CompactRow` reserves `middleSideReserve` for the centered title
       // based directly on the back button's max width, so a smaller leading

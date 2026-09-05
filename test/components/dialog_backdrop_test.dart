@@ -3,12 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) => MaterialApp(
-      builder: (context, appChild) => UiTheme(
-        tokens: UiThemeData.light(effects: UiEffectsTokens.full),
-        child: appChild ?? const SizedBox.shrink(),
-      ),
-      home: Scaffold(body: child),
-    );
+  builder: (context, appChild) => UiTheme(
+    tokens: UiThemeData.light(effects: UiEffectsTokens.full),
+    child: appChild ?? const SizedBox.shrink(),
+  ),
+  home: Scaffold(body: child),
+);
 
 void main() {
   group('UiDialog backdrop', () {
@@ -148,9 +148,7 @@ void main() {
       );
       final stackedButtons = tester.widgetList<UiButton>(
         find.descendant(
-          of: find.byKey(
-            const ValueKey('ui-alert-dialog-actions-stacked'),
-          ),
+          of: find.byKey(const ValueKey('ui-alert-dialog-actions-stacked')),
           matching: find.byType(UiButton),
         ),
       );

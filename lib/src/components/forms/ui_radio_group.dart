@@ -5,7 +5,6 @@ import '../../foundation/theme/ui_theme_extensions.dart';
 import 'ui_radio.dart';
 
 @immutable
-
 /// One selectable item rendered by [UiRadioGroup].
 ///
 /// Use a stable, typed [value] instead of relying on display text. This keeps
@@ -196,10 +195,7 @@ class _RadioGroupItem<T> extends StatelessWidget {
 }
 
 class _SpacedColumn extends StatelessWidget {
-  const _SpacedColumn({
-    required this.spacing,
-    required this.children,
-  });
+  const _SpacedColumn({required this.spacing, required this.children});
 
   final double spacing;
   final List<Widget> children;

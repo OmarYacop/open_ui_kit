@@ -33,8 +33,9 @@ class UiAppShell extends StatelessWidget {
       topBar: topBar,
       bottomBar: bottomBar,
       backgroundColor: backgroundColor,
-      safeViewportMode:
-          safeArea ? UiSafeViewportMode.all : UiSafeViewportMode.none,
+      safeViewportMode: safeArea
+          ? UiSafeViewportMode.all
+          : UiSafeViewportMode.none,
     );
   }
 }
@@ -80,9 +81,7 @@ class UiAppBar extends StatelessWidget {
                     child: Semantics(
                       container: true,
                       label: '${brand!.displayName} logo',
-                      child: ExcludeSemantics(
-                        child: logo,
-                      ),
+                      child: ExcludeSemantics(child: logo),
                     ),
                   ),
                   if (title != null) SizedBox(width: tokens.spacing.x2),

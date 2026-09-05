@@ -48,15 +48,16 @@ class UiCheckbox extends StatelessWidget {
         final borderColor = hasError
             ? c.destructive
             : state.focused
-                ? c.ring
-                : c.input;
+            ? c.ring
+            : c.input;
         final boxColor = value
             ? c.primary
             : state.hovered || state.pressed
-                ? c.accent
-                : c.surface;
-        final checkColor =
-            value ? c.primaryForeground : const Color(0x00000000);
+            ? c.accent
+            : c.surface;
+        final checkColor = value
+            ? c.primaryForeground
+            : const Color(0x00000000);
 
         return Semantics(
           checked: value,

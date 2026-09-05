@@ -46,6 +46,68 @@ import 'package:flutter/widgets.dart';
 abstract class UiLocalizations {
   const UiLocalizations();
 
+  // Concrete defaults keep existing custom localization subclasses compatible.
+  String get alertError => 'Error';
+  String get alertWarning => 'Warning';
+  String get alertSuccess => 'Success';
+  String get alertInfo => 'Info';
+  String get loadingTable => 'Loading table…';
+  String get emptyTable => 'No records yet.';
+  String get slider => 'Slider';
+  String get insideRange => 'inside range';
+  String ratingLabel(String value, int count) =>
+      'Rating: $value out of $count stars';
+  List<String> get monthNames => const [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  List<String> get shortMonthNames => const [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  /// Monday first, matching DateTime.weekday.
+  List<String> get weekdayNames => const [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  List<String> get shortWeekdayNames => const [
+    'Mo',
+    'Tu',
+    'We',
+    'Th',
+    'Fr',
+    'Sa',
+    'Su',
+  ];
+  String dateLabel(DateTime date) =>
+      '${weekdayNames[date.weekday - 1]}, ${monthNames[date.month - 1]} ${date.day}, ${date.year}';
+
   /// Default label for the navigation back button.
   String get back;
 
@@ -156,8 +218,10 @@ abstract class UiLocalizations {
   /// is installed, [UiLocalizationsEn] is returned so components keep
   /// working during test and bring-up.
   static UiLocalizations of(BuildContext context) {
-    final fromWidget =
-        Localizations.of<UiLocalizations>(context, UiLocalizations);
+    final fromWidget = Localizations.of<UiLocalizations>(
+      context,
+      UiLocalizations,
+    );
     return fromWidget ?? const UiLocalizationsEn();
   }
 
@@ -266,6 +330,58 @@ class UiLocalizationsAr extends UiLocalizations {
   const UiLocalizationsAr();
 
   @override
+  String get alertError => 'خطأ';
+  @override
+  String get alertWarning => 'تحذير';
+  @override
+  String get alertSuccess => 'نجاح';
+  @override
+  String get alertInfo => 'معلومة';
+  @override
+  String get loadingTable => 'جارٍ تحميل الجدول…';
+  @override
+  String get emptyTable => 'لا توجد سجلات بعد.';
+  @override
+  String get slider => 'شريط تمرير';
+  @override
+  String get insideRange => 'داخل النطاق';
+  @override
+  String ratingLabel(String value, int count) =>
+      'التقييم: $value من $count نجوم';
+  @override
+  List<String> get monthNames => const [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+  @override
+  List<String> get shortMonthNames => monthNames;
+  @override
+  List<String> get weekdayNames => const [
+    'الاثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+    'السبت',
+    'الأحد',
+  ];
+  @override
+  List<String> get shortWeekdayNames => weekdayNames;
+  @override
+  String dateLabel(DateTime date) =>
+      '${weekdayNames[date.weekday - 1]}، ${date.day} ${monthNames[date.month - 1]} ${date.year}';
+
+  @override
   String get back => 'رجوع';
 
   @override
@@ -364,8 +480,8 @@ class _UiLocalizationsDelegate extends LocalizationsDelegate<UiLocalizations> {
   // Built-in supported locales. The kit's delegate ships two (en, ar)
   // so the RTL story is testable out of the box. Host apps that need
   // additional locales should write their own delegate extending
-  // [UiLocalizations] and register it AFTER this one in the app's
-  // delegates list; Flutter will resolve to the most specific match.
+  // [UiLocalizations] and register it BEFORE this one in the app's
+  // delegates list; Flutter uses the first supported delegate for each type.
   @override
   bool isSupported(Locale locale) {
     return locale.languageCode == 'en' || locale.languageCode == 'ar';

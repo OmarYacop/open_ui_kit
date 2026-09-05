@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 @immutable
-
 /// A dated event rendered by Open UI calendar components.
 class UiCalendarEvent {
   const UiCalendarEvent({

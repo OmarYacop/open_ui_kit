@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
-  return MaterialApp(
-    home: Scaffold(body: child),
-  );
+  return MaterialApp(home: Scaffold(body: child));
 }
 
 void main() {
@@ -16,17 +14,14 @@ void main() {
         r'**bold** _italic_ ~~gone~~ `code` __line__ ==mark== **',
       );
 
-      expect(
-        matches.map((match) => match.rule.id),
-        [
-          'bold',
-          'italic',
-          'strikethrough',
-          'code',
-          'underline',
-          'highlight',
-        ],
-      );
+      expect(matches.map((match) => match.rule.id), [
+        'bold',
+        'italic',
+        'strikethrough',
+        'code',
+        'underline',
+        'highlight',
+      ]);
     });
 
     test('ignores escaped opening operators', () {
@@ -44,20 +39,16 @@ void main() {
       expect(controller.toggle('bold'), isTrue);
       expect(controller.text, '**hello** world');
       expect(
-          controller.selection,
-          const TextSelection(
-            baseOffset: 2,
-            extentOffset: 7,
-          ));
+        controller.selection,
+        const TextSelection(baseOffset: 2, extentOffset: 7),
+      );
 
       expect(controller.toggle('bold'), isTrue);
       expect(controller.text, 'hello world');
       expect(
-          controller.selection,
-          const TextSelection(
-            baseOffset: 0,
-            extentOffset: 5,
-          ));
+        controller.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 5),
+      );
     });
 
     test('inserts an empty pair with the caret between operators', () {
@@ -71,17 +62,16 @@ void main() {
     });
   });
 
-  testWidgets('display strips operators and applies their styles',
-      (tester) async {
-    await tester.pumpWidget(
-      _host(const UiFormattedText('A **bold** move')),
-    );
+  testWidgets('display strips operators and applies their styles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(const UiFormattedText('A **bold** move')));
 
     final richText = tester.widget<RichText>(find.byType(RichText).last);
     final root = richText.text as TextSpan;
-    final bold = root.children!
-        .whereType<TextSpan>()
-        .firstWhere((span) => span.style?.fontWeight == FontWeight.w700);
+    final bold = root.children!.whereType<TextSpan>().firstWhere(
+      (span) => span.style?.fontWeight == FontWeight.w700,
+    );
 
     expect(root.toPlainText(includeSemanticsLabels: false), 'A bold move');
     expect(bold.style?.fontWeight, FontWeight.w700);
@@ -95,14 +85,11 @@ void main() {
     final richText = tester.widget<RichText>(find.byType(RichText).last);
     final root = richText.text as TextSpan;
     final bold = root.children!.whereType<TextSpan>().first;
-    final italic = bold.children!
-        .whereType<TextSpan>()
-        .firstWhere((span) => span.style?.fontStyle == FontStyle.italic);
-
-    expect(
-      root.toPlainText(includeSemanticsLabels: false),
-      'bold and italic',
+    final italic = bold.children!.whereType<TextSpan>().firstWhere(
+      (span) => span.style?.fontStyle == FontStyle.italic,
     );
+
+    expect(root.toPlainText(includeSemanticsLabels: false), 'bold and italic');
     expect(bold.style?.fontWeight, FontWeight.w700);
     expect(italic.style?.fontWeight, FontWeight.w700);
     expect(italic.style?.fontStyle, FontStyle.italic);
@@ -111,9 +98,7 @@ void main() {
   testWidgets('toolbar exposes accessible formatting actions', (tester) async {
     final controller = UiFormattedTextController(text: 'hello')
       ..selection = const TextSelection(baseOffset: 0, extentOffset: 5);
-    await tester.pumpWidget(
-      _host(UiFormatToolbar(controller: controller)),
-    );
+    await tester.pumpWidget(_host(UiFormatToolbar(controller: controller)));
 
     expect(find.bySemanticsLabel('Text formatting'), findsOneWidget);
     final boldAction = find.byWidgetPredicate(

@@ -4,6 +4,8 @@ Foundation-first Flutter UI kit inspired by shadcn/ui. Neutral defaults,
 selective brand color use, and composable primitives that stay decoupled
 from Material/Cupertino styling.
 
+Requires Flutter **3.47.0+** and Dart **3.13.0+**.
+
 Created and maintained by [Omar Yacop](https://github.com/OmarYacop).
 
 ## See Open UI Kit in action

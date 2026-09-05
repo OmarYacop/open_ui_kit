@@ -96,16 +96,8 @@ void main() {
           child: UiMeasuredMorph(
             progress: 0.5,
             alignment: Alignment.topRight,
-            collapsed: SizedBox(
-              key: Key('collapsed'),
-              width: 40,
-              height: 20,
-            ),
-            expanded: SizedBox(
-              key: Key('expanded'),
-              width: 80,
-              height: 60,
-            ),
+            collapsed: SizedBox(key: Key('collapsed'), width: 40, height: 20),
+            expanded: SizedBox(key: Key('expanded'), width: 80, height: 60),
           ),
         ),
       ),

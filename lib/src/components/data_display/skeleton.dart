@@ -17,9 +17,7 @@ class UiSkeleton extends StatefulWidget {
     this.borderRadius,
     this.background,
     this.border,
-    this.duration = const UiMotionDuration.custom(
-      Duration(milliseconds: 1200),
-    ),
+    this.duration = const UiMotionDuration.custom(Duration(milliseconds: 1200)),
     this.animate = true,
     this.child,
   });
@@ -98,8 +96,11 @@ class _UiSkeletonState extends State<UiSkeleton>
     final colors = tokens.colors;
     final background = widget.background ?? colors.surfaceMuted;
     final baseColor = Color.lerp(colors.surfaceMuted, colors.textMuted, 0.10)!;
-    final highlightColor =
-        Color.lerp(colors.surfaceMuted, colors.textMuted, 0.20)!;
+    final highlightColor = Color.lerp(
+      colors.surfaceMuted,
+      colors.textMuted,
+      0.20,
+    )!;
 
     return _UiSkeletonScope(
       animation: _shouldAnimate ? _controller : null,
@@ -166,9 +167,9 @@ class UiSkeletonBar extends StatelessWidget {
   });
 
   const UiSkeletonBar.circle({super.key, required double size})
-      : width = size,
-        height = size,
-        borderRadius = const BorderRadius.all(Radius.circular(999));
+    : width = size,
+      height = size,
+      borderRadius = const BorderRadius.all(Radius.circular(999));
 
   final double? width;
   final double height;
@@ -181,12 +182,20 @@ class UiSkeletonBar extends StatelessWidget {
     final radius = borderRadius ?? BorderRadius.all(tokens.radius.pill);
 
     Widget bar(double value) {
-      final baseColor = scope?.baseColor ??
+      final baseColor =
+          scope?.baseColor ??
           Color.lerp(
-              tokens.colors.surfaceMuted, tokens.colors.textMuted, 0.10)!;
-      final highlightColor = scope?.highlightColor ??
+            tokens.colors.surfaceMuted,
+            tokens.colors.textMuted,
+            0.10,
+          )!;
+      final highlightColor =
+          scope?.highlightColor ??
           Color.lerp(
-              tokens.colors.surfaceMuted, tokens.colors.textMuted, 0.20)!;
+            tokens.colors.surfaceMuted,
+            tokens.colors.textMuted,
+            0.20,
+          )!;
       return Container(
         width: width,
         height: height,
