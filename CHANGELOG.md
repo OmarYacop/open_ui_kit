@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Form capabilities
+- Add `UiMultiSelect<T>` with searchable lazy options, removable selections, keyboard controls, limits, disabled values, and localized announcements. Add a runnable form composition example.
 - Add `UiFormController`, typed field controllers, text/custom field adapters, and error summaries. Async validation rejects stale results and submission preserves edits made during saving. Existing `UiFormSubmitController` remains compatible.
 
 ### Fixed

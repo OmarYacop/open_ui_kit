@@ -16,3 +16,4 @@ export 'ui_smart_action_group.dart';
 export 'ui_switch.dart';
 export 'ui_form_controller.dart';
 export 'ui_form_fields.dart';
+export 'ui_multi_select.dart';
