@@ -6,6 +6,18 @@ from Material/Cupertino styling.
 
 Created and maintained by [Omar Yacop](https://github.com/OmarYacop).
 
+## See Open UI Kit in action
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/overview-dark.png">
+  <img src="doc/assets/showcase/overview-light.png" alt="Open UI Kit release workspace showing forms, buttons, alerts, avatars, a date picker, badges, a data table, and pagination" width="1440">
+</picture>
+
+This release workspace is built from the package's public widgets. It shows the
+same token-driven composition in light and dark appearances; all release data
+is illustrative. Run the interactive version from [`example/lib/showcase.dart`](example/lib/showcase.dart)
+or browse the component choices in the [AI usage guide](doc/ai_usage_guide.md).
+
 Contributors should read [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [development workflow](doc/development_workflow.md). The repository uses structured issues,
 native GitHub stacked pull requests for dependent changes, one CI gate, and tag-gated pub.dev
@@ -285,6 +297,14 @@ UiIconButton(
 )
 ```
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/actions-dark.png">
+  <img src="doc/assets/showcase/actions-light.png" alt="Open UI Kit buttons demonstrating primary, neutral, danger, ghost, loading, disabled, and icon-only states" width="900">
+</picture>
+
+The same action API covers hierarchy, progress, availability, and compact
+icon-only controls.
+
 ### 3. Render an input with validation
 
 ```dart
@@ -312,6 +332,14 @@ UiFilterChip(
   onSelected: (selected) => toggleStatus('completed'),
 )
 ```
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/forms-dark.png">
+  <img src="doc/assets/showcase/forms-light.png" alt="Open UI Kit form showing valid and invalid inputs, a checkbox, a switch, and selectable filter chips" width="900">
+</picture>
+
+Inputs keep helper or error copy attached to their labels, while choice
+controls share the same spacing and selected-state language.
 
 ### 4. Render a card
 
@@ -372,6 +400,14 @@ UiBadge(
 )
 ```
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/dataDisplay-dark.png">
+  <img src="doc/assets/showcase/dataDisplay-light.png" alt="Open UI Kit card composing status badges, a data table, an avatar group, and pagination" width="900">
+</picture>
+
+Cards can frame related data components without nesting another card for each
+section.
+
 ### 5. Compose a chat surface
 
 ```dart
@@ -403,6 +439,14 @@ UiTypingIndicator(
   ],
 )
 ```
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/chat-dark.png">
+  <img src="doc/assets/showcase/chat-light.png" alt="Open UI Kit chat surface with incoming and outgoing messages, timestamps, a typing indicator, and a composer" width="900">
+</picture>
+
+Message direction, participant identity, typing state, and composition remain
+visually distinct on one conversational surface.
 
 ### 5b. Top-nav logo integration
 
@@ -447,6 +491,14 @@ final ok = await UiDialogScope.confirm(
   confirmIntent: UiIntent.danger,
 );
 ```
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/feedback-dark.png">
+  <img src="doc/assets/showcase/feedback-light.png" alt="Open UI Kit success alert, saved toast with an undo action, and destructive confirmation dialog" width="980">
+</picture>
+
+Use alerts for inline status, toasts for transient acknowledgement, and dialogs
+when the user must make a blocking decision.
 
 ## Environment Widgets
 
@@ -1210,6 +1262,14 @@ UiResponsiveNavigationScaffold(
 
 For touch platforms, push a modal drawer via `UiDrawerScope.show`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/navigation-dark.png">
+  <img src="doc/assets/showcase/navigation-light.png" alt="Open UI Kit navigation destinations represented as a desktop sidebar and an adaptive bottom tab dock" width="900">
+</picture>
+
+The same destination model can move from a sidebar on wide layouts to a bottom
+dock on compact layouts.
+
 ## Form factor + RTL + localization
 
 ### Form-factor classifier
@@ -1351,6 +1411,14 @@ UiTimePickerField(
 
 `UiTimePicker` is deprecated. Prefer `UiTimePickerField` for form
 inputs and `UiTimeGridPicker` for inline drawer/sheet content.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="doc/assets/showcase/pickers-dark.png">
+  <img src="doc/assets/showcase/pickers-light.png" alt="Open UI Kit date calendar and time grid picker with selected date, hour, minute, and period states" width="980">
+</picture>
+
+Date and time selections expose their current value and available choices
+without requiring Material or Cupertino picker chrome.
 
 Picker surfaces expose outer chrome knobs such as `showBorder` and
 `chromePadding` so drawers, sheets, and cards can avoid nested framed
