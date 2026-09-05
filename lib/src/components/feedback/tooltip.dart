@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
+import '../../foundation/overlay/ui_anchored_surface.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -32,7 +33,7 @@ class UiTooltip extends StatefulWidget {
 }
 
 class _UiTooltipState extends State<UiTooltip> {
-  OverlayEntry? _entry;
+  final _portal = OverlayPortalController();
   Timer? _dismissTimer;
   bool _focused = false;
   bool _hovered = false;
@@ -40,35 +41,15 @@ class _UiTooltipState extends State<UiTooltip> {
   @override
   void dispose() {
     _dismissTimer?.cancel();
-    _hide();
     super.dispose();
   }
 
   void _show() {
     _dismissTimer?.cancel();
-    if (_entry != null || widget.message.trim().isEmpty) return;
-    final overlay = Overlay.maybeOf(context);
-    if (overlay == null) return;
-
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final rect = box.localToGlobal(Offset.zero) & box.size;
-    final tokens = UiThemeTokens.of(context);
-    final direction = Directionality.of(context);
-
-    _dismissTimer?.cancel();
-    _entry = OverlayEntry(
-      builder: (context) => Directionality(
-        textDirection: direction,
-        child: _TooltipOverlay(
-          anchor: rect,
-          message: widget.message,
-          side: widget.side,
-          gap: tokens.spacing.x2,
-        ),
-      ),
-    );
-    overlay.insert(_entry!);
+    if (widget.message.trim().isEmpty || Overlay.maybeOf(context) == null) {
+      return;
+    }
+    _portal.show();
   }
 
   void _hideSoon() {
@@ -80,9 +61,7 @@ class _UiTooltipState extends State<UiTooltip> {
   void _hide() {
     _dismissTimer?.cancel();
     _dismissTimer = null;
-    _entry?.remove();
-    _entry?.dispose();
-    _entry = null;
+    _portal.hide();
   }
 
   @override
@@ -113,58 +92,35 @@ class _UiTooltipState extends State<UiTooltip> {
       );
     }
 
-    return Semantics(
-      tooltip: widget.message,
-      child: Focus(
-        canRequestFocus: false,
-        skipTraversal: true,
-        onFocusChange: (focused) {
-          _focused = focused;
-          if (focused) {
-            _show();
-          } else {
-            _hideSoon();
-          }
-        },
-        onKeyEvent: (_, event) {
-          if (event is KeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.escape &&
-              _entry != null) {
-            _hide();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
-        child: content,
+    return UiAnchoredSurface(
+      controller: _portal,
+      side: UiAnchoredSurfaceSide.values[widget.side.index],
+      overlayChild: IgnorePointer(
+        child: ExcludeSemantics(child: _TooltipBubble(message: widget.message)),
       ),
-    );
-  }
-}
-
-class _TooltipOverlay extends StatelessWidget {
-  const _TooltipOverlay({
-    required this.anchor,
-    required this.message,
-    required this.side,
-    required this.gap,
-  });
-
-  final Rect anchor;
-  final String message;
-  final UiTooltipSide side;
-  final double gap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: CustomSingleChildLayout(
-          delegate: _TooltipLayoutDelegate(
-            anchor: anchor,
-            side: side,
-            gap: gap,
-          ),
-          child: _TooltipBubble(message: message),
+      child: Semantics(
+        tooltip: widget.message,
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onFocusChange: (focused) {
+            _focused = focused;
+            if (focused) {
+              _show();
+            } else {
+              _hideSoon();
+            }
+          },
+          onKeyEvent: (_, event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape &&
+                _portal.isShowing) {
+              _hide();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: content,
         ),
       ),
     );
@@ -200,56 +156,5 @@ class _TooltipBubble extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _TooltipLayoutDelegate extends SingleChildLayoutDelegate {
-  const _TooltipLayoutDelegate({
-    required this.anchor,
-    required this.side,
-    required this.gap,
-  });
-
-  final Rect anchor;
-  final UiTooltipSide side;
-  final double gap;
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    return constraints.loosen();
-  }
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final preferred = switch (side) {
-      UiTooltipSide.top => Offset(
-        anchor.center.dx - childSize.width / 2,
-        anchor.top - childSize.height - gap,
-      ),
-      UiTooltipSide.bottom => Offset(
-        anchor.center.dx - childSize.width / 2,
-        anchor.bottom + gap,
-      ),
-      UiTooltipSide.left => Offset(
-        anchor.left - childSize.width - gap,
-        anchor.center.dy - childSize.height / 2,
-      ),
-      UiTooltipSide.right => Offset(
-        anchor.right + gap,
-        anchor.center.dy - childSize.height / 2,
-      ),
-    };
-
-    return Offset(
-      preferred.dx.clamp(gap, size.width - childSize.width - gap),
-      preferred.dy.clamp(gap, size.height - childSize.height - gap),
-    );
-  }
-
-  @override
-  bool shouldRelayout(_TooltipLayoutDelegate oldDelegate) {
-    return anchor != oldDelegate.anchor ||
-        side != oldDelegate.side ||
-        gap != oldDelegate.gap;
   }
 }

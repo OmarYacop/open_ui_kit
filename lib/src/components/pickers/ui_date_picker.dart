@@ -639,7 +639,7 @@ class _Header extends StatelessWidget {
           _NavArrow(
             onPressed: prev,
             icon: UiDirectionalIcons.chevronBack(context),
-            semanticsLabel: 'Previous',
+            semanticsLabel: UiLocalizations.of(context).previous,
           )
         else
           const SizedBox(width: _kHeaderHeight),
@@ -667,7 +667,7 @@ class _Header extends StatelessWidget {
           _NavArrow(
             onPressed: next,
             icon: UiDirectionalIcons.chevronForward(context),
-            semanticsLabel: 'Next',
+            semanticsLabel: UiLocalizations.of(context).next,
           )
         else
           const SizedBox(width: _kHeaderHeight),
@@ -693,7 +693,7 @@ class _HeaderLabelTrigger extends StatelessWidget {
     final c = tokens.colors;
     return Semantics(
       button: true,
-      label: _semanticsLabel(),
+      label: _semanticsLabel(context),
       onTap: onTap,
       child: UiPressable(
         key: datePickerHeaderTriggerKey,
@@ -719,11 +719,11 @@ class _HeaderLabelTrigger extends StatelessWidget {
     );
   }
 
-  String _semanticsLabel() {
+  String _semanticsLabel(BuildContext context) {
     final next = switch (view) {
-      _DateView.days => 'opens month picker',
-      _DateView.months => 'opens year picker',
-      _DateView.years => 'back to month grid',
+      _DateView.days => UiLocalizations.of(context).opensMonthPicker,
+      _DateView.months => UiLocalizations.of(context).opensYearPicker,
+      _DateView.years => UiLocalizations.of(context).backToMonthGrid,
     };
     return '$label, $next';
   }
@@ -1027,7 +1027,8 @@ class _GridCell extends StatelessWidget {
       container: true,
       button: true,
       selected: selected,
-      label: '$semanticsLabel${selected ? ', selected' : ''}',
+      label:
+          '$semanticsLabel${selected ? ', ${UiLocalizations.of(context).selected}' : ''}',
       onTap: onTap,
       child: UiPressable(
         onPressed: onTap,
