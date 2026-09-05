@@ -204,7 +204,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('2028 – 2039'), findsOneWidget);
 
-      await tester.tap(find.bySemanticsLabel('Previous'));
+      await tester.tap(
+        find.bySemanticsLabel(const UiLocalizationsEn().previous),
+      );
       await tester.pumpAndSettle();
       expect(find.text('2016 – 2027'), findsOneWidget);
     });
@@ -489,7 +491,10 @@ void main() {
 
         expect(find.text('January 2026'), findsOneWidget);
         expect(find.text('February 2026'), findsNothing);
-        expect(find.bySemanticsLabel('Previous'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(const UiLocalizationsEn().previous),
+          findsOneWidget,
+        );
         expect(find.bySemanticsLabel('Next'), findsOneWidget);
       },
     );

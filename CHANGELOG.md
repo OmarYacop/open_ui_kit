@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fixed
+- Tooltips follow their anchors and remain within narrow overlays; date-picker navigation and mode announcements are localized.
 - Preserve the selected gallery item when media changes, keep empty galleries dismissible,
   and constrain double-tap zoom to the configured range.
 - Report the final slider value consistently and support RTL pointer, paint, and keyboard input.

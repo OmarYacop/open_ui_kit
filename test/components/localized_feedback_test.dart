@@ -61,6 +61,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('سبتمبر 2026'), findsOneWidget);
     expect(
+      find.bySemanticsLabel(const UiLocalizationsAr().previous),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(const UiLocalizationsAr().opensMonthPicker)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+    await tester.pumpAndSettle();
+    expect(
+      find.bySemanticsLabel(RegExp(const UiLocalizationsAr().opensYearPicker)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+    await tester.pumpAndSettle();
+    expect(
+      find.bySemanticsLabel(RegExp(const UiLocalizationsAr().backToMonthGrid)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+    await tester.pumpAndSettle();
+
+    expect(
       find.bySemanticsLabel(RegExp('السبت.*سبتمبر.*اليوم')),
       findsOneWidget,
     );

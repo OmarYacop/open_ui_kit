@@ -11,10 +11,9 @@ touches localization.
 
 For a typical component with hard-coded strings:
 
-1. Add the missing getters to `UiLocalizations` (abstract), to
-   `UiLocalizationsEn` (defaults), and to `UiLocalizationsAr` (built-in
-   RTL sample). Exhaustive-switch callers are rare in the kit so the
-   change is almost always additive.
+1. Add concrete English defaults to `UiLocalizations` and Arabic overrides to
+   `UiLocalizationsAr`. Do not add abstract requirements: downstream localization
+   subclasses must remain source-compatible. Reuse existing hooks first.
 2. In the component build method:
 
    ```dart
@@ -41,7 +40,7 @@ For a typical component with hard-coded strings:
 | `UiAlertDialog` / `UiDialogScope.confirm` | 🚧 follow-up | `cancel`, `confirm` defaults | Currently inline; low risk because callers usually override. |
 | `UiDataTable` (Retry button) | 🚧 follow-up | `retry` | Follow-up: migrate the inline `'Retry'` label. |
 | `UiLoadingState` | 🚧 follow-up | `loading` | Default `semanticsLabel: 'Loading'`. |
-| `UiDatePicker` | 🚧 follow-up | `today`, `selected`, `disabled`, `rangeStart`, `rangeEnd`, `opensMonthPicker`, `opensYearPicker`, `backToMonthGrid` | A11y-visible; worth a dedicated PR. |
+| `UiDatePicker` | ✅ migrated | `today`, `selected`, `disabled`, `rangeStart`, `rangeEnd`, `opensMonthPicker`, `opensYearPicker`, `backToMonthGrid` | Date, navigation, mode switches, and grid selection use localized labels. |
 | `UiTimePicker` | 🚧 follow-up | `selected`, `disabled` | Part of the picker PR. |
 | `UiDropdownMenu` | 🚧 follow-up | `disabled` | Trivial swap. |
 | `UiCheckbox` / `UiRadio` / `UiSwitch` | 🚧 follow-up | `disabled` | Trivial swap. |
