@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -87,6 +88,9 @@ class _UiSliderState extends State<UiSlider> {
   bool _hovered = false;
   bool _focused = false;
   bool _dragging = false;
+  double? _dragValue;
+
+  bool get _rtl => Directionality.of(context) == TextDirection.rtl;
 
   static const double _thumbSize = 18;
   static const double _trackHeight = 6;
@@ -137,12 +141,15 @@ class _UiSliderState extends State<UiSlider> {
     if (width <= _thumbSize) return 0;
     final travel = width - _thumbSize;
     final x = (dx - _thumbSize / 2).clamp(0.0, travel);
-    return x / travel;
+    final fraction = x / travel;
+    return _rtl ? 1 - fraction : fraction;
   }
 
   void _handleDragStart(DragStartDetails details, double width) {
     if (!_interactive) return;
+    _focusNode.requestFocus();
     setState(() => _dragging = true);
+    _dragValue = widget.value;
     widget.onChangeStart?.call(widget.value);
     _updateFromDx(details.localPosition.dx, width);
   }
@@ -152,23 +159,32 @@ class _UiSliderState extends State<UiSlider> {
     _updateFromDx(details.localPosition.dx, width);
   }
 
-  void _handleDragEnd(DragEndDetails details) {
-    if (!_interactive) return;
-    setState(() => _dragging = false);
-    widget.onChangeEnd?.call(widget.value);
+  void _handleDragEnd(DragEndDetails details) => _finishDrag();
+
+  void _finishDrag() {
+    final next = _dragValue;
+    _dragValue = null;
+    if (_dragging) setState(() => _dragging = false);
+    if (_interactive && next != null) widget.onChangeEnd?.call(next);
   }
 
-  void _handleTapDown(TapDownDetails details, double width) {
+  void _handleTapUp(TapUpDetails details, double width) {
     if (!_interactive) return;
     _focusNode.requestFocus();
+    final next = _valueFromDx(details.localPosition.dx, width);
     widget.onChangeStart?.call(widget.value);
-    _updateFromDx(details.localPosition.dx, width);
-    widget.onChangeEnd?.call(_resolve(widget.value));
+    if (next != widget.value) widget.onChanged?.call(next);
+    widget.onChangeEnd?.call(next);
   }
 
+  double _valueFromDx(double dx, double width) =>
+      _resolve(_fractionToValue(_localDxToFraction(dx, width)));
+
   void _updateFromDx(double dx, double width) {
-    final next = _resolve(_fractionToValue(_localDxToFraction(dx, width)));
-    if (next != widget.value) widget.onChanged?.call(next);
+    final next = _valueFromDx(dx, width);
+    final previous = _dragValue ?? widget.value;
+    _dragValue = next;
+    if (next != previous) widget.onChanged?.call(next);
   }
 
   void _handleAdjust(int direction) {
@@ -228,37 +244,41 @@ class _UiSliderState extends State<UiSlider> {
         Semantics(
           slider: true,
           enabled: _interactive,
-          label: widget.semanticLabel ?? widget.label ?? 'slider',
+          label:
+              widget.semanticLabel ??
+              widget.label ??
+              UiLocalizations.of(context).slider,
           value: semanticValue,
           increasedValue: increasedValue,
           decreasedValue: decreasedValue,
           onIncrease: _interactive ? () => _handleAdjust(1) : null,
           onDecrease: _interactive ? () => _handleAdjust(-1) : null,
-          child: Focus(
-            focusNode: _focusNode,
-            autofocus: widget.autofocus,
-            canRequestFocus: _interactive,
-            onFocusChange: _setFocused,
-            child: Shortcuts(
-              shortcuts: const <ShortcutActivator, Intent>{
-                SingleActivator(LogicalKeyboardKey.arrowRight):
-                    _AdjustSliderIntent(1),
-                SingleActivator(LogicalKeyboardKey.arrowLeft):
-                    _AdjustSliderIntent(-1),
-                SingleActivator(LogicalKeyboardKey.arrowUp):
-                    _AdjustSliderIntent(1),
-                SingleActivator(LogicalKeyboardKey.arrowDown):
-                    _AdjustSliderIntent(-1),
+          child: Shortcuts(
+            shortcuts: <ShortcutActivator, Intent>{
+              SingleActivator(LogicalKeyboardKey.arrowRight):
+                  _AdjustSliderIntent(_rtl ? -1 : 1),
+              SingleActivator(LogicalKeyboardKey.arrowLeft):
+                  _AdjustSliderIntent(_rtl ? 1 : -1),
+              SingleActivator(LogicalKeyboardKey.arrowUp): _AdjustSliderIntent(
+                1,
+              ),
+              SingleActivator(LogicalKeyboardKey.arrowDown):
+                  _AdjustSliderIntent(-1),
+            },
+            child: Actions(
+              actions: <Type, Action<Intent>>{
+                _AdjustSliderIntent: CallbackAction<_AdjustSliderIntent>(
+                  onInvoke: (intent) {
+                    _handleAdjust(intent.direction);
+                    return null;
+                  },
+                ),
               },
-              child: Actions(
-                actions: <Type, Action<Intent>>{
-                  _AdjustSliderIntent: CallbackAction<_AdjustSliderIntent>(
-                    onInvoke: (intent) {
-                      _handleAdjust(intent.direction);
-                      return null;
-                    },
-                  ),
-                },
+              child: Focus(
+                focusNode: _focusNode,
+                autofocus: widget.autofocus,
+                canRequestFocus: _interactive,
+                onFocusChange: _setFocused,
                 child: MouseRegion(
                   cursor: disabled
                       ? SystemMouseCursors.basic
@@ -270,13 +290,14 @@ class _UiSliderState extends State<UiSlider> {
                       final width = constraints.maxWidth;
                       final thumbLeft = width <= _thumbSize
                           ? 0.0
-                          : fraction * (width - _thumbSize);
+                          : (_rtl ? 1 - fraction : fraction) *
+                                (width - _thumbSize);
 
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTapDown: disabled
+                        onTapUp: disabled
                             ? null
-                            : (d) => _handleTapDown(d, width),
+                            : (d) => _handleTapUp(d, width),
                         onHorizontalDragStart: disabled
                             ? null
                             : (d) => _handleDragStart(d, width),
@@ -284,12 +305,13 @@ class _UiSliderState extends State<UiSlider> {
                             ? null
                             : (d) => _handleDragUpdate(d, width),
                         onHorizontalDragEnd: disabled ? null : _handleDragEnd,
+                        onHorizontalDragCancel: _finishDrag,
                         excludeFromSemantics: true,
                         child: SizedBox(
                           height: 44,
                           width: double.infinity,
                           child: Stack(
-                            alignment: Alignment.centerLeft,
+                            alignment: AlignmentDirectional.centerStart,
                             clipBehavior: Clip.none,
                             children: [
                               // Base track.
@@ -303,7 +325,13 @@ class _UiSliderState extends State<UiSlider> {
                               // Filled portion up to the thumb.
                               Container(
                                 height: _trackHeight,
-                                width: thumbLeft + _thumbSize / 2,
+                                width:
+                                    fraction *
+                                        (width - _thumbSize).clamp(
+                                          0,
+                                          double.infinity,
+                                        ) +
+                                    _thumbSize / 2,
                                 decoration: BoxDecoration(
                                   color: fillColor,
                                   borderRadius: tokens.radius.pillAll,

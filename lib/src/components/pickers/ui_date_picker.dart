@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/icons/ui_directional_icons.dart';
+import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
@@ -80,35 +81,10 @@ class UiDatePicker extends StatefulWidget {
     this.onChanged,
     this.visibleMonth,
     this.onVisibleMonthChanged,
-    this.weekdayLabels = const ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
-    this.monthLabels = const [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ],
-    this.monthShortLabels = const [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ],
+    this._weekdayLabels,
+    this._monthLabels,
+    this._monthShortLabels,
+    this.today,
     this.firstDayOfWeek = DateTime.sunday,
     this.daySemanticsPrefix,
     this.showChrome = true,
@@ -119,6 +95,9 @@ class UiDatePicker extends StatefulWidget {
     this.enableHeaderModeSelection = true,
     this.showOutsideDays = true,
   });
+
+  /// Overrides the current day for deterministic previews and tests.
+  final DateTime? today;
 
   final DateTime? value;
   final DateTime? rangeStart;
@@ -135,13 +114,47 @@ class UiDatePicker extends StatefulWidget {
   final ValueChanged<DateTime>? onVisibleMonthChanged;
 
   /// 7 weekday labels, starting at [firstDayOfWeek].
-  final List<String> weekdayLabels;
+  final List<String>? _weekdayLabels;
+  List<String> get weekdayLabels =>
+      _weekdayLabels ?? const ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   /// Month names (January..December).
-  final List<String> monthLabels;
+  final List<String>? _monthLabels;
+  List<String> get monthLabels =>
+      _monthLabels ??
+      const [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
 
   /// Short month names (Jan..Dec) used in the month grid for density.
-  final List<String> monthShortLabels;
+  final List<String>? _monthShortLabels;
+  List<String> get monthShortLabels =>
+      _monthShortLabels ??
+      const [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
 
   /// `DateTime.monday` (1) or `DateTime.sunday` (7).
   final int firstDayOfWeek;
@@ -194,7 +207,8 @@ class _UiDatePickerState extends State<UiDatePicker> {
   @override
   void initState() {
     super.initState();
-    final seed = widget.visibleMonth ?? widget.value ?? DateTime.now();
+    final seed =
+        widget.visibleMonth ?? widget.value ?? widget.today ?? DateTime.now();
     _visibleMonth = DateTime(seed.year, seed.month);
     _yearPageAnchor = _pageAnchorFor(seed.year);
     _dayPageController = PageController(
@@ -359,7 +373,8 @@ class _UiDatePickerState extends State<UiDatePicker> {
     return d.isAfter(from) && d.isBefore(to);
   }
 
-  bool _isToday(DateTime day) => _dateOnly(day) == _dateOnly(DateTime.now());
+  bool _isToday(DateTime day) =>
+      _dateOnly(day) == _dateOnly(widget.today ?? DateTime.now());
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +465,7 @@ class _UiDatePickerState extends State<UiDatePicker> {
   String _headerLabelFor(_DateView view) {
     switch (view) {
       case _DateView.days:
-        return '${widget.monthLabels[_visibleMonth.month - 1]} '
+        return '${(widget._monthLabels ?? UiLocalizations.of(context).monthNames)[_visibleMonth.month - 1]} '
             '${_visibleMonth.year}';
       case _DateView.months:
         return '${_visibleMonth.year}';
@@ -473,7 +488,15 @@ class _UiDatePickerState extends State<UiDatePicker> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _WeekdayRow(labels: widget.weekdayLabels),
+        _WeekdayRow(
+          labels:
+              widget._weekdayLabels ??
+              List.generate(
+                7,
+                (index) => UiLocalizations.of(context)
+                    .shortWeekdayNames[(widget.firstDayOfWeek - 1 + index) % 7],
+              ),
+        ),
         SizedBox(height: tokens.spacing.x2),
         _DayGrid(
           key: current ? datePickerDayGridKey : null,
@@ -531,10 +554,14 @@ class _UiDatePickerState extends State<UiDatePicker> {
             selectedDate.year == year &&
             selectedDate.month == month;
         return _GridCell(
-          label: widget.monthShortLabels[index],
+          label:
+              (widget._monthShortLabels ??
+              UiLocalizations.of(context).shortMonthNames)[index],
           selected: isSelected,
           onTap: () => _pickMonth(month, year: year),
-          semanticsLabel: widget.monthLabels[index],
+          semanticsLabel:
+              (widget._monthLabels ??
+              UiLocalizations.of(context).monthNames)[index],
         );
       },
     );
@@ -845,7 +872,7 @@ class _DayCell extends StatelessWidget {
       button: true,
       enabled: !disabled,
       selected: selected,
-      label: _semanticLabel(),
+      label: _semanticLabel(context),
       onTap: disabled ? null : onTap,
       child: UiPressable(
         onPressed: onTap,
@@ -907,18 +934,19 @@ class _DayCell extends StatelessWidget {
     );
   }
 
-  String _semanticLabel() {
+  String _semanticLabel(BuildContext context) {
+    final strings = UiLocalizations.of(context);
     final parts = <String>[
       if (semanticsPrefix != null && semanticsPrefix!.trim().isNotEmpty)
         semanticsPrefix!.trim(),
-      _spokenDate(day),
-      if (_isSameDay(day, rangeStart)) 'range start',
-      if (_isSameDay(day, rangeEnd)) 'range end',
+      strings.dateLabel(day),
+      if (_isSameDay(day, rangeStart)) strings.rangeStart,
+      if (_isSameDay(day, rangeEnd)) strings.rangeEnd,
       if (inRange && !_isSameDay(day, rangeStart) && !_isSameDay(day, rangeEnd))
-        'inside range',
-      if (today) 'today',
-      if (disabled) 'disabled',
-      if (selected) 'selected',
+        strings.insideRange,
+      if (today) strings.today,
+      if (disabled) strings.disabled,
+      if (selected) strings.selected,
     ];
     return parts.join(', ');
   }
@@ -941,33 +969,6 @@ class _DayCell extends StatelessWidget {
       left: roundStart ? const Radius.circular(_kSelectedRadius) : Radius.zero,
       right: roundEnd ? const Radius.circular(_kSelectedRadius) : Radius.zero,
     );
-  }
-
-  String _spokenDate(DateTime d) {
-    const months = <String>[
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    const weekdays = <String>[
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return '${weekdays[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 }
 

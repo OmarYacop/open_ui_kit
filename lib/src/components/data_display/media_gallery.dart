@@ -52,9 +52,17 @@ class UiMediaGallery extends StatefulWidget {
     this.backgroundColor = UiPalette.black,
     this.minScale = 1,
     this.maxScale = 5,
-  }) : assert(items.length > 0),
-       assert(initialIndex >= 0 && initialIndex < items.length);
+  }) : assert(
+         initialIndex >= 0 &&
+             (items.length == 0
+                 ? initialIndex == 0
+                 : initialIndex < items.length),
+       ),
+       assert(minScale > 0 && minScale <= maxScale),
+       assert(minScale < double.infinity && maxScale < double.infinity);
 
+  /// May become empty after removal; the dismiss control remains available.
+  /// Reuse item instances or hero tags to preserve selection across reordering.
   final List<UiMediaGalleryItem> items;
   final String dismissLabel;
   final int initialIndex;
@@ -73,6 +81,7 @@ class UiMediaGallery extends StatefulWidget {
 class _UiMediaGalleryState extends State<UiMediaGallery> {
   late final PageController _pages;
   late int _index;
+  late List<UiMediaGalleryItem> _previousItems;
   bool _chromeVisible = true;
   bool _zoomed = false;
   double _verticalDrag = 0;
@@ -81,7 +90,43 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
   void initState() {
     super.initState();
     _index = widget.initialIndex;
+    _previousItems = List.of(widget.items);
     _pages = PageController(initialPage: _index);
+  }
+
+  @override
+  void didUpdateWidget(covariant UiMediaGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final previous = _previousItems.isEmpty
+        ? null
+        : _previousItems[_index.clamp(0, _previousItems.length - 1)];
+    final retainedIndex = previous == null
+        ? -1
+        : widget.items.indexWhere(
+            (item) =>
+                identical(item, previous) ||
+                (previous.heroTag != null && previous.heroTag == item.heroTag),
+          );
+    _index = widget.items.isEmpty
+        ? 0
+        : retainedIndex >= 0
+        ? retainedIndex
+        : _index.clamp(0, widget.items.length - 1);
+    _previousItems = List.of(widget.items);
+    if (retainedIndex < 0 ||
+        oldWidget.minScale != widget.minScale ||
+        oldWidget.maxScale != widget.maxScale) {
+      _zoomed = false;
+    }
+    if (widget.items.isEmpty) _chromeVisible = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          _pages.hasClients &&
+          widget.items.isNotEmpty &&
+          _pages.page != _index.toDouble()) {
+        _pages.jumpToPage(_index);
+      }
+    });
   }
 
   void _dismiss() {
@@ -94,10 +139,13 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
 
   @override
   Widget build(BuildContext context) {
-    final item = widget.items[_index];
-    final topActions = widget.actionsBuilder?.call(context, _index) ?? const [];
-    final bottomActions =
-        widget.bottomActionsBuilder?.call(context, _index) ?? const [];
+    final item = widget.items.isEmpty ? null : widget.items[_index];
+    final topActions = item == null
+        ? const <UiMediaGalleryAction>[]
+        : widget.actionsBuilder?.call(context, _index) ?? const [];
+    final bottomActions = item == null
+        ? const <UiMediaGalleryAction>[]
+        : widget.bottomActionsBuilder?.call(context, _index) ?? const [];
     final duration = UiThemeTokens.of(context).motion.fast;
 
     return ColoredBox(
@@ -126,6 +174,7 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
               physics: _zoomed ? const NeverScrollableScrollPhysics() : null,
               itemCount: widget.items.length,
               onPageChanged: (index) => setState(() {
+                if (index >= widget.items.length) return;
                 _index = index;
                 _zoomed = false;
               }),
@@ -137,6 +186,7 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
                 }
                 if (!entry.zoomable) return Center(child: content);
                 return _UiZoomableMedia(
+                  key: ValueKey(entry.heroTag ?? entry),
                   minScale: widget.minScale,
                   maxScale: widget.maxScale,
                   onZoomChanged: index == _index
@@ -175,7 +225,7 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (item.title case final title?)
+                            if (item?.title case final title?)
                               UiText(
                                 title,
                                 variant: UiTextVariant.label,
@@ -183,7 +233,7 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            if (item.subtitle case final subtitle?) ...[
+                            if (item?.subtitle case final subtitle?) ...[
                               const SizedBox(height: 2),
                               UiText(
                                 subtitle,
@@ -259,6 +309,7 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
 
 class _UiZoomableMedia extends StatefulWidget {
   const _UiZoomableMedia({
+    super.key,
     required this.child,
     required this.minScale,
     required this.maxScale,
@@ -278,14 +329,37 @@ class _UiZoomableMediaState extends State<_UiZoomableMedia> {
   final TransformationController _transform = TransformationController();
   TapDownDetails? _doubleTap;
 
+  double get _baseScale => 1.0.clamp(widget.minScale, widget.maxScale);
+
+  @override
+  void initState() {
+    super.initState();
+    _resetTransform();
+  }
+
+  void _resetTransform() {
+    final scale = _baseScale;
+    _transform.value = Matrix4.identity()
+      ..scaleByDouble(scale, scale, scale, 1);
+  }
+
+  @override
+  void didUpdateWidget(covariant _UiZoomableMedia oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.minScale != widget.minScale ||
+        oldWidget.maxScale != widget.maxScale) {
+      _resetTransform();
+    }
+  }
+
   void _toggleZoom() {
-    if (_transform.value.getMaxScaleOnAxis() > 1.01) {
-      _transform.value = Matrix4.identity();
+    if (_transform.value.getMaxScaleOnAxis() > _baseScale + .01) {
+      _resetTransform();
       widget.onZoomChanged?.call(false);
       return;
     }
     final point = _doubleTap?.localPosition ?? Offset.zero;
-    const scale = 2.5;
+    final scale = 2.5.clamp(_baseScale, widget.maxScale);
     _transform.value = Matrix4.identity()
       ..translateByDouble(
         -point.dx * (scale - 1),
@@ -294,7 +368,7 @@ class _UiZoomableMediaState extends State<_UiZoomableMedia> {
         1,
       )
       ..scaleByDouble(scale, scale, scale, 1);
-    widget.onZoomChanged?.call(true);
+    widget.onZoomChanged?.call(scale > _baseScale + .01);
   }
 
   @override
@@ -307,7 +381,7 @@ class _UiZoomableMediaState extends State<_UiZoomableMedia> {
         minScale: widget.minScale,
         maxScale: widget.maxScale,
         onInteractionEnd: (_) => widget.onZoomChanged?.call(
-          _transform.value.getMaxScaleOnAxis() > 1.01,
+          _transform.value.getMaxScaleOnAxis() > _baseScale + .01,
         ),
         child: SizedBox.expand(child: widget.child),
       ),

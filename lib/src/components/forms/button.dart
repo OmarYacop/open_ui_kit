@@ -139,7 +139,9 @@ class UiButton extends StatelessWidget {
       minTapSize: 44,
       builder: (context, state, _) {
         final style = _resolveStyle(tokens.colors, intent, state);
-        final scale = state.pressed ? 0.97 : 1.0;
+        final reduceMotion =
+            MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+        final scale = state.pressed && !reduceMotion ? 0.97 : 1.0;
 
         return UiFocusRing(
           visible: state.focused,

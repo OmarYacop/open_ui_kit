@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/intl/ui_localizations.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -73,12 +74,12 @@ class UiAlert extends StatelessWidget {
       ),
       UiAlertIntent.warning => (
         c.warning.withValues(alpha: 0.10),
-        c.warning,
+        c.warningForeground,
         c.warning.withValues(alpha: 0.35),
       ),
       UiAlertIntent.success => (
         c.success.withValues(alpha: 0.10),
-        c.success,
+        c.successForeground,
         c.success.withValues(alpha: 0.35),
       ),
       UiAlertIntent.info => (c.surfaceMuted, c.textPrimary, c.border),
@@ -98,7 +99,6 @@ class UiAlert extends StatelessWidget {
       liveRegion:
           intent == UiAlertIntent.destructive ||
           intent == UiAlertIntent.warning,
-      label: _semanticsLabel(),
       child: UiBox(
         background: bg,
         border: Border.all(color: borderColor),
@@ -122,29 +122,40 @@ class UiAlert extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (title != null)
-                    UiText(
-                      title!,
-                      variant: UiTextVariant.label,
-                      style: TextStyle(
-                        color: titleColor,
-                        fontWeight: FontWeight.w600,
+                  Semantics(
+                    label: _semanticsLabel(context),
+                    child: ExcludeSemantics(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (title != null)
+                            UiText(
+                              title!,
+                              variant: UiTextVariant.label,
+                              style: TextStyle(
+                                color: titleColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          if (title != null && description != null)
+                            SizedBox(height: tokens.spacing.x1),
+                          if (description != null)
+                            UiText(
+                              description!,
+                              variant: UiTextVariant.bodySm,
+                              style: TextStyle(
+                                color:
+                                    intent == UiAlertIntent.defaultIntent ||
+                                        intent == UiAlertIntent.info
+                                    ? c.textMuted
+                                    : fg,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  if (title != null && description != null)
-                    SizedBox(height: tokens.spacing.x1),
-                  if (description != null)
-                    UiText(
-                      description!,
-                      variant: UiTextVariant.bodySm,
-                      style: TextStyle(
-                        color:
-                            intent == UiAlertIntent.defaultIntent ||
-                                intent == UiAlertIntent.info
-                            ? c.textMuted
-                            : fg,
-                      ),
-                    ),
+                  ),
                   if (actions.isNotEmpty) ...[
                     SizedBox(height: tokens.spacing.x2),
                     Wrap(
@@ -162,13 +173,14 @@ class UiAlert extends StatelessWidget {
     );
   }
 
-  String? _semanticsLabel() {
+  String? _semanticsLabel(BuildContext context) {
+    final strings = UiLocalizations.of(context);
     if (title == null && description == null) return null;
     final prefix = switch (intent) {
-      UiAlertIntent.destructive => 'Error: ',
-      UiAlertIntent.warning => 'Warning: ',
-      UiAlertIntent.success => 'Success: ',
-      UiAlertIntent.info => 'Info: ',
+      UiAlertIntent.destructive => '${strings.alertError}: ',
+      UiAlertIntent.warning => '${strings.alertWarning}: ',
+      UiAlertIntent.success => '${strings.alertSuccess}: ',
+      UiAlertIntent.info => '${strings.alertInfo}: ',
       UiAlertIntent.defaultIntent => '',
     };
     final parts = [
