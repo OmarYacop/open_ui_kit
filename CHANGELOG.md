@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.1 - 2026-09-05
+
+### Added
+
+- Added light and dark visual overviews and component usage screenshots to the
+  README, captured from the package's public widgets.
+- Added a responsive example showcase, component previews, and documentation
+  capture tooling with guidance for maintaining the visual assets.
+- Added product and design system documentation for contributors.
+
+### Compatibility
+
+- No public API or dependency changes.
+
 ## 0.8.0 - 2026-08-20
 
 ### Added
