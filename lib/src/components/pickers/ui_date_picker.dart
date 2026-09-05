@@ -81,9 +81,9 @@ class UiDatePicker extends StatefulWidget {
     this.onChanged,
     this.visibleMonth,
     this.onVisibleMonthChanged,
-    List<String>? weekdayLabels,
-    List<String>? monthLabels,
-    List<String>? monthShortLabels,
+    this._weekdayLabels,
+    this._monthLabels,
+    this._monthShortLabels,
     this.today,
     this.firstDayOfWeek = DateTime.sunday,
     this.daySemanticsPrefix,
@@ -94,9 +94,7 @@ class UiDatePicker extends StatefulWidget {
     this.showNextMonthButton = true,
     this.enableHeaderModeSelection = true,
     this.showOutsideDays = true,
-  }) : _weekdayLabels = weekdayLabels,
-       _monthLabels = monthLabels,
-       _monthShortLabels = monthShortLabels;
+  });
 
   /// Overrides the current day for deterministic previews and tests.
   final DateTime? today;

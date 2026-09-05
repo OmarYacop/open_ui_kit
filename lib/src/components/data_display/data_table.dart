@@ -57,13 +57,12 @@ class UiDataTable extends StatelessWidget {
     this.loading = false,
     this.errorText,
     this.onRetry,
-    String? emptyText,
+    this._emptyText,
     this.lazyRowThreshold = 50,
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  }) : _emptyText = emptyText,
-       rowCount = null,
+  }) : rowCount = null,
        rowBuilder = null;
 
   const UiDataTable.lazy({
@@ -74,12 +73,11 @@ class UiDataTable extends StatelessWidget {
     this.loading = false,
     this.errorText,
     this.onRetry,
-    String? emptyText,
+    this._emptyText,
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  }) : _emptyText = emptyText,
-       rows = const [],
+  }) : rows = const [],
        lazyRowThreshold = 0;
 
   final List<UiDataColumn> columns;
@@ -202,9 +200,9 @@ class UiSliverDataTable extends StatelessWidget {
     this.loading = false,
     this.errorText,
     this.onRetry,
-    String? emptyText,
+    this._emptyText,
     this.rowExtent = 44,
-  }) : _emptyText = emptyText;
+  });
 
   final List<UiDataColumn> columns;
   final int rowCount;
