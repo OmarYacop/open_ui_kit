@@ -58,6 +58,8 @@ repo_policy() {
 }
 
 quality() {
+  log "refreshing dependency and language-version metadata"
+  flutter pub get
   log "checking Dart formatting"
   dart format --output=none --set-exit-if-changed lib test example
   log "running Flutter analyzer"

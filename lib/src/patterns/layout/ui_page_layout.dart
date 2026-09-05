@@ -172,32 +172,36 @@ class UiPageLayout extends StatelessWidget {
   Widget _buildBody(UiFormFactor formFactor) {
     if (filters == null && secondary == null) return body;
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final panesWidth = (filters == null ? 0 : filtersPaneWidth) +
-          (secondary == null ? 0 : secondaryPaneWidth);
-      final stacked = formFactor == UiFormFactor.phone ||
-          constraints.maxWidth < panesWidth + minBodyWidth;
-      if (stacked) {
-        return Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final panesWidth =
+            (filters == null ? 0 : filtersPaneWidth) +
+            (secondary == null ? 0 : secondaryPaneWidth);
+        final stacked =
+            formFactor == UiFormFactor.phone ||
+            constraints.maxWidth < panesWidth + minBodyWidth;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (filters != null) filters!,
+              Expanded(child: body),
+              if (secondary != null) secondary!,
+            ],
+          );
+        }
+        return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (filters != null) filters!,
+            if (filters != null)
+              SizedBox(width: filtersPaneWidth, child: filters!),
             Expanded(child: body),
-            if (secondary != null) secondary!,
+            if (secondary != null)
+              SizedBox(width: secondaryPaneWidth, child: secondary!),
           ],
         );
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (filters != null)
-            SizedBox(width: filtersPaneWidth, child: filters!),
-          Expanded(child: body),
-          if (secondary != null)
-            SizedBox(width: secondaryPaneWidth, child: secondary!),
-        ],
-      );
-    });
+      },
+    );
   }
 }
 
