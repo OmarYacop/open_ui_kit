@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:contour_example/main.dart' as app;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,22 +37,28 @@ void main() {
       final homeDockWidth = tester
           .getRect(find.byKey(const Key('ui_bottom_tab_dock')))
           .width;
-      await expectLater(
-        demoFinder,
-        matchesGoldenFile('goldens/accessory_switch_00_home_no_accessory.png'),
-      );
+      if (Platform.isMacOS) {
+        await expectLater(
+          demoFinder,
+          matchesGoldenFile(
+            'goldens/accessory_switch_00_home_no_accessory.png',
+          ),
+        );
+      }
 
       // Switch to Messages, which does have a search accessory.
       await tester.tap(
         find.descendant(of: demoFinder, matching: find.text('Messages')),
       );
       await tester.pump();
-      await expectLater(
-        demoFinder,
-        matchesGoldenFile(
-          'goldens/accessory_switch_01_messages_first_frame.png',
-        ),
-      );
+      if (Platform.isMacOS) {
+        await expectLater(
+          demoFinder,
+          matchesGoldenFile(
+            'goldens/accessory_switch_01_messages_first_frame.png',
+          ),
+        );
+      }
 
       // Sample frames across the nominal 200ms structural transition.
       final samples = <String, double>{};

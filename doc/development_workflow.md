@@ -31,11 +31,16 @@ The canonical validation entry point is:
 ```bash
 ./scripts/ci repo-policy  # governance, branch names, pinned Actions, artifact policy
 ./scripts/ci quality      # format check, analyzer, and non-golden Flutter tests
+./scripts/ci examples     # example widget and responsive showcase tests
 ./scripts/ci goldens      # all deterministic macOS golden suites
 ./scripts/ci package      # pub.dev dry-run validation
 ./scripts/ci changed      # suites affected by the branch and working tree
 ./scripts/ci all          # complete release-level validation
 ```
+
+Example behavior tests run on every quality host. The example screenshot comparisons run only
+on macOS, alongside the root golden job; their stored baselines require the same explicit approval
+for updates.
 
 GitHub Actions calls these same suites. Extend `scripts/ci` first, then orchestrate the suite from
 `ci-gate.yml`. Never commit `.dart_tool`, `build`, coverage, golden failure diagnostics, editor

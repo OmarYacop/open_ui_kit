@@ -58,6 +58,8 @@ repo_policy() {
 }
 
 quality() {
+  log "refreshing dependency and language-version metadata"
+  flutter pub get
   log "checking Dart formatting"
   dart format --output=none --set-exit-if-changed lib test example
   log "running Flutter analyzer"
@@ -68,6 +70,15 @@ quality() {
     tests+=("$file")
   done < <(find test -type f -name '*_test.dart' ! -path 'test/goldens/*' | sort)
   flutter test "${tests[@]}" --no-pub
+}
+
+examples() {
+  log "running example app tests"
+  (
+    cd example
+    flutter pub get
+    flutter test --no-pub
+  )
 }
 
 goldens() {
@@ -131,6 +142,7 @@ release_tag() {
 run_all() {
   repo_policy
   quality
+  examples
   goldens
   package_check
 }
@@ -181,11 +193,15 @@ EOF
   repo_policy
   if [ "$run_everything" -eq 1 ]; then
     quality
+    examples
     goldens
     package_check
     return
   fi
-  [ "$run_quality" -eq 0 ] || quality
+  if [ "$run_quality" -eq 1 ]; then
+    quality
+    examples
+  fi
   [ "$run_goldens" -eq 0 ] || goldens
   [ "$run_package" -eq 0 ] || package_check
 }
@@ -193,13 +209,14 @@ EOF
 case "${1:-}" in
   repo-policy) repo_policy ;;
   quality) quality ;;
+  examples) examples ;;
   goldens) goldens ;;
   package) package_check ;;
   release-tag) release_tag "${2:-}" ;;
   changed) run_changed ;;
   all) run_all ;;
   *)
-    printf 'usage: %s <repo-policy|quality|goldens|package|release-tag TAG|changed|all>\n' "$0" >&2
+    printf 'usage: %s <repo-policy|quality|examples|goldens|package|release-tag TAG|changed|all>\n' "$0" >&2
     exit 2
     ;;
 esac

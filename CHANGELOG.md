@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Fixed
+- Preserve the selected gallery item when media changes, keep empty galleries dismissible,
+  and constrain double-tap zoom to the configured range.
+- Report the final slider value consistently and support RTL pointer, paint, and keyboard input.
+- Suppress button press scaling when reduced motion is enabled.
+- Give alerts one spoken copy owner, localize alert/date/table defaults, and expose tooltips on focus.
+- Use 48-pixel rating targets and mirror partial star fills in RTL.
+- Stack optional page panes when they would crowd out the body; reflow showcase actions and schedule details at large text sizes.
+- Run example tests, including the light/dark responsive text-scale matrix, in the required CI gate.
+
+
 ### Compatibility
 
 - Correct the supported SDK floor to the verified Flutter 3.47.0 / Dart 3.13.0

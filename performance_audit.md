@@ -1,5 +1,11 @@
 # Open UI Kit Performance Audit
 
+> Historical investigation, superseded for release decisions by the September 2026 audit.
+> The tab natural-width caches are already implemented in `tabs.dart` and `bottom_tab_bar.dart`;
+> the claims below about measuring on every frame are no longer current. Blur and repaint
+> suggestions remain hypotheses requiring a profile trace, not verified bottlenecks.
+> Do not use the original priorities or effort estimate as the current backlog.
+
 ## Executive Summary
 
 The Open UI Kit package exhibits generally solid architecture with token-driven composition and minimal unnecessary nesting. However, three critical hot-path issues require immediate attention:

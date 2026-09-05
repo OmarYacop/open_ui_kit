@@ -61,6 +61,9 @@ jobs:
       - name: Run quality suite
         run: ./scripts/ci quality
 
+      - name: Run example suite
+        run: ./scripts/ci examples
+
   package:
     name: Package validation
     runs-on: ubuntu-latest
@@ -100,6 +103,9 @@ jobs:
 
       - name: Run golden suite
         run: ./scripts/ci goldens
+
+      - name: Run example macOS snapshots
+        run: ./scripts/ci examples
 
   gate:
     name: gate

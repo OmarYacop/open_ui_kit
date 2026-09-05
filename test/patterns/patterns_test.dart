@@ -314,6 +314,8 @@ void main() {
     });
 
     testWidgets('places semantic parts responsively', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1000, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         _host(
           const SizedBox(
