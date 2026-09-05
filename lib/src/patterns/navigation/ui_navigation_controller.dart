@@ -37,8 +37,8 @@ class UiNavigationController {
     required List<UiRouteSpec<dynamic, dynamic>> routes,
     UiRouteSpec<dynamic, dynamic>? initialRoute,
     Object? initialArgs,
-  })  : assert(routes.isNotEmpty, 'At least one route must be registered'),
-        _routes = {for (final r in routes) r.id: r} {
+  }) : assert(routes.isNotEmpty, 'At least one route must be registered'),
+       _routes = {for (final r in routes) r.id: r} {
     final seed = initialRoute ?? routes.first;
     final entry = UiRouteEntry(
       id: seed.id,
@@ -171,10 +171,7 @@ class UiNavigationController {
     final prior = stack.sublist(0, stack.length - 1).reversed;
     return [
       for (final e in prior)
-        UiNavigationBackHistoryItem(
-          title: e.displayTitle,
-          value: e,
-        ),
+        UiNavigationBackHistoryItem(title: e.displayTitle, value: e),
     ];
   }
 

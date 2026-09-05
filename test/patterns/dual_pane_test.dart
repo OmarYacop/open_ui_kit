@@ -31,9 +31,7 @@ Future<T> _runWithPlatform<T>(
 }
 
 void main() {
-  testWidgets('phone pushes detail above shell chrome', (
-    tester,
-  ) async {
+  testWidgets('phone pushes detail above shell chrome', (tester) async {
     final controller = UiDualPaneController<String>();
     addTearDown(controller.dispose);
 
@@ -168,9 +166,7 @@ void main() {
       findsOneWidget,
     );
     final initialPrimaryWidth = tester
-        .getSize(
-          find.byKey(const ValueKey('ui-dual-pane-wide-primary-only')),
-        )
+        .getSize(find.byKey(const ValueKey('ui-dual-pane-wide-primary-only')))
         .width;
 
     await tester.tap(find.text('Open detail'));
@@ -178,9 +174,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 80));
 
     final animatingPrimaryWidth = tester
-        .getSize(
-          find.byKey(const ValueKey('ui-dual-pane-wide-primary')),
-        )
+        .getSize(find.byKey(const ValueKey('ui-dual-pane-wide-primary')))
         .width;
     expect(animatingPrimaryWidth, lessThan(initialPrimaryWidth));
 
@@ -192,14 +186,10 @@ void main() {
       findsNothing,
     );
     final settledPrimaryWidth = tester
-        .getSize(
-          find.byKey(const ValueKey('ui-dual-pane-wide-primary')),
-        )
+        .getSize(find.byKey(const ValueKey('ui-dual-pane-wide-primary')))
         .width;
     final settledDetailWidth = tester
-        .getSize(
-          find.byKey(const ValueKey('ui-dual-pane-wide-detail')),
-        )
+        .getSize(find.byKey(const ValueKey('ui-dual-pane-wide-detail')))
         .width;
     expect(animatingPrimaryWidth, greaterThan(settledPrimaryWidth));
     expect(settledDetailWidth, greaterThan(settledPrimaryWidth));
@@ -276,99 +266,106 @@ void main() {
     }
 
     testWidgets(
-        'dragging past halfway from the left edge on iOS pops the pushed '
-        'detail route', (tester) async {
-      await _runWithPlatform(TargetPlatform.iOS, () async {
-        final controller = UiDualPaneController<String>();
-        addTearDown(controller.dispose);
+      'dragging past halfway from the left edge on iOS pops the pushed '
+      'detail route',
+      (tester) async {
+        await _runWithPlatform(TargetPlatform.iOS, () async {
+          final controller = UiDualPaneController<String>();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(_host(dualPane(controller)));
-        await tester.tap(find.text('Open detail'));
-        await tester.pumpAndSettle();
-        expect(find.text('detail:a'), findsOneWidget);
+          await tester.pumpWidget(_host(dualPane(controller)));
+          await tester.tap(find.text('Open detail'));
+          await tester.pumpAndSettle();
+          expect(find.text('detail:a'), findsOneWidget);
 
-        await dragFromEdge(tester, fraction: 0.6);
-        await tester.pumpAndSettle();
+          await dragFromEdge(tester, fraction: 0.6);
+          await tester.pumpAndSettle();
 
-        expect(find.text('Open detail'), findsOneWidget);
-        expect(find.text('shell bottom bar'), findsOneWidget);
-        expect(find.text('detail:a'), findsNothing);
-      });
-    });
-
-    testWidgets(
-        'a short drag that stays under halfway snaps back without popping',
-        (tester) async {
-      await _runWithPlatform(TargetPlatform.iOS, () async {
-        final controller = UiDualPaneController<String>();
-        addTearDown(controller.dispose);
-
-        await tester.pumpWidget(_host(dualPane(controller)));
-        await tester.tap(find.text('Open detail'));
-        await tester.pumpAndSettle();
-
-        await dragFromEdge(tester, fraction: 0.15);
-        await tester.pumpAndSettle();
-
-        expect(find.text('detail:a'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
-    });
+          expect(find.text('Open detail'), findsOneWidget);
+          expect(find.text('shell bottom bar'), findsOneWidget);
+          expect(find.text('detail:a'), findsNothing);
+        });
+      },
+    );
 
     testWidgets(
-        'mid-drag the outgoing page uses the same UiNavigationTransition a '
-        'tap-triggered pop uses, driven by the real route animation', (
-      tester,
-    ) async {
-      await _runWithPlatform(TargetPlatform.iOS, () async {
-        final controller = UiDualPaneController<String>();
-        addTearDown(controller.dispose);
+      'a short drag that stays under halfway snaps back without popping',
+      (tester) async {
+        await _runWithPlatform(TargetPlatform.iOS, () async {
+          final controller = UiDualPaneController<String>();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(_host(dualPane(controller)));
-        await tester.tap(find.text('Open detail'));
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(_host(dualPane(controller)));
+          await tester.tap(find.text('Open detail'));
+          await tester.pumpAndSettle();
 
-        final gesture = await startDragFromEdge(tester, fraction: 0.3);
+          await dragFromEdge(tester, fraction: 0.15);
+          await tester.pumpAndSettle();
 
-        expect(find.byType(UiNavigationTransition), findsWidgets);
-        // The real primary page underneath is genuinely present — Flutter's
-        // own Navigator paints both routes correctly mid-transition, no
-        // hand-built compositing needed.
-        expect(find.text('Open detail'), findsOneWidget);
-
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
-    });
+          expect(find.text('detail:a'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+      },
+    );
 
     testWidgets(
-        'a fade-styled pane does not horizontally track the drag — only '
-        'opacity changes', (tester) async {
-      await _runWithPlatform(TargetPlatform.iOS, () async {
-        final controller = UiDualPaneController<String>();
-        addTearDown(controller.dispose);
+      'mid-drag the outgoing page uses the same UiNavigationTransition a '
+      'tap-triggered pop uses, driven by the real route animation',
+      (tester) async {
+        await _runWithPlatform(TargetPlatform.iOS, () async {
+          final controller = UiDualPaneController<String>();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(
-          _host(
-            dualPane(controller, style: UiNavigationTransitionStyle.fade),
-          ),
-        );
-        await tester.tap(find.text('Open detail'));
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(_host(dualPane(controller)));
+          await tester.tap(find.text('Open detail'));
+          await tester.pumpAndSettle();
 
-        final restLeft =
-            tester.getRect(find.byKey(const Key('detail-text'))).left;
+          final gesture = await startDragFromEdge(tester, fraction: 0.3);
 
-        final gesture = await startDragFromEdge(tester, fraction: 0.3);
+          expect(find.byType(UiNavigationTransition), findsWidgets);
+          // The real primary page underneath is genuinely present — Flutter's
+          // own Navigator paints both routes correctly mid-transition, no
+          // hand-built compositing needed.
+          expect(find.text('Open detail'), findsOneWidget);
 
-        final draggedLeft =
-            tester.getRect(find.byKey(const Key('detail-text'))).left;
-        expect(draggedLeft, restLeft);
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+      },
+    );
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
-    });
+    testWidgets(
+      'a fade-styled pane does not horizontally track the drag — only '
+      'opacity changes',
+      (tester) async {
+        await _runWithPlatform(TargetPlatform.iOS, () async {
+          final controller = UiDualPaneController<String>();
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            _host(
+              dualPane(controller, style: UiNavigationTransitionStyle.fade),
+            ),
+          );
+          await tester.tap(find.text('Open detail'));
+          await tester.pumpAndSettle();
+
+          final restLeft = tester
+              .getRect(find.byKey(const Key('detail-text')))
+              .left;
+
+          final gesture = await startDragFromEdge(tester, fraction: 0.3);
+
+          final draggedLeft = tester
+              .getRect(find.byKey(const Key('detail-text')))
+              .left;
+          expect(draggedLeft, restLeft);
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+      },
+    );
 
     testWidgets('no edge-swipe gesture is installed on Android by default', (
       tester,
@@ -392,38 +389,40 @@ void main() {
     });
 
     testWidgets(
-        'phoneEdgeSwipePop: true is a no-op on Android — the gesture only '
-        'exists on iOS', (tester) async {
-      await _runWithPlatform(TargetPlatform.android, () async {
-        final controller = UiDualPaneController<String>();
-        addTearDown(controller.dispose);
+      'phoneEdgeSwipePop: true is a no-op on Android — the gesture only '
+      'exists on iOS',
+      (tester) async {
+        await _runWithPlatform(TargetPlatform.android, () async {
+          final controller = UiDualPaneController<String>();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(
-          _host(
-            UiDualPane<String>(
-              controller: controller,
-              phoneEdgeSwipePop: true,
-              primaryBuilder: (context, selected, select) {
-                return UiButton(
-                  label: 'Open detail',
-                  onPressed: () => select('a'),
-                );
-              },
-              detailBuilder: (context, selected, select) =>
-                  Text('detail:$selected'),
+          await tester.pumpWidget(
+            _host(
+              UiDualPane<String>(
+                controller: controller,
+                phoneEdgeSwipePop: true,
+                primaryBuilder: (context, selected, select) {
+                  return UiButton(
+                    label: 'Open detail',
+                    onPressed: () => select('a'),
+                  );
+                },
+                detailBuilder: (context, selected, select) =>
+                    Text('detail:$selected'),
+              ),
             ),
-          ),
-        );
-        await tester.tap(find.text('Open detail'));
-        await tester.pumpAndSettle();
+          );
+          await tester.tap(find.text('Open detail'));
+          await tester.pumpAndSettle();
 
-        await dragFromEdge(tester, fraction: 0.6);
-        await tester.pumpAndSettle();
+          await dragFromEdge(tester, fraction: 0.6);
+          await tester.pumpAndSettle();
 
-        expect(find.text('detail:a'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
-    });
+          expect(find.text('detail:a'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+      },
+    );
 
     testWidgets('phoneEdgeSwipePop: false disables the gesture on iOS', (
       tester,

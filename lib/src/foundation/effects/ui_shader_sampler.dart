@@ -116,10 +116,7 @@ class UiShaderSampler extends SingleChildRenderObjectWidget {
   }
 
   @override
-  void updateRenderObject(
-    BuildContext context,
-    RenderObject renderObject,
-  ) {
+  void updateRenderObject(BuildContext context, RenderObject renderObject) {
     (renderObject as _RenderUiShaderSampler)
       ..painter = painter
       ..devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
@@ -130,8 +127,8 @@ class _RenderUiShaderSampler extends RenderProxyBox {
   _RenderUiShaderSampler({
     required UiShaderSamplerPainter painter,
     required double devicePixelRatio,
-  })  : _painter = painter,
-        _devicePixelRatio = devicePixelRatio;
+  }) : _painter = painter,
+       _devicePixelRatio = devicePixelRatio;
 
   UiShaderSamplerPainter _painter;
   set painter(UiShaderSamplerPainter value) {
@@ -208,9 +205,9 @@ class _UiShaderSamplerLayer extends OffsetLayer {
     addChildrenToScene(childSceneBuilder);
     childSceneBuilder.pop();
     final childImage = childSceneBuilder.build().toImageSync(
-          (_logicalSize.width * _devicePixelRatio).ceil(),
-          (_logicalSize.height * _devicePixelRatio).ceil(),
-        );
+      (_logicalSize.width * _devicePixelRatio).ceil(),
+      (_logicalSize.height * _devicePixelRatio).ceil(),
+    );
 
     final recorder = ui.PictureRecorder();
     try {

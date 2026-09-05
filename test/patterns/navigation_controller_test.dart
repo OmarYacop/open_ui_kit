@@ -35,30 +35,34 @@ void main() {
     expect(spec.transitionStyle, UiNavigationTransitionStyle.softShift);
   });
 
-  test('push adds an entry and returns a future that resolves on pop',
-      () async {
-    final c = makeController();
-    final future = c.push(detail, args: 42);
-    expect(c.current?.id, 'detail');
-    expect(c.current?.args, 42);
-    expect(c.canPop, isTrue);
+  test(
+    'push adds an entry and returns a future that resolves on pop',
+    () async {
+      final c = makeController();
+      final future = c.push(detail, args: 42);
+      expect(c.current?.id, 'detail');
+      expect(c.current?.args, 42);
+      expect(c.canPop, isTrue);
 
-    c.pop<String>('ok');
-    final result = await future;
-    expect(result, 'ok');
-    expect(c.current?.id, 'home');
-    c.dispose();
-  });
+      c.pop<String>('ok');
+      final result = await future;
+      expect(result, 'ok');
+      expect(c.current?.id, 'home');
+      c.dispose();
+    },
+  );
 
-  test('replace swaps the top and resolves the replaced future with null',
-      () async {
-    final c = makeController();
-    final first = c.push(detail, args: 1);
-    c.replace(editor);
-    expect(await first, isNull);
-    expect(c.current?.id, 'editor');
-    c.dispose();
-  });
+  test(
+    'replace swaps the top and resolves the replaced future with null',
+    () async {
+      final c = makeController();
+      final first = c.push(detail, args: 1);
+      c.replace(editor);
+      expect(await first, isNull);
+      expect(c.current?.id, 'editor');
+      c.dispose();
+    },
+  );
 
   test('popUntil pops repeatedly to the named route', () {
     final c = makeController();

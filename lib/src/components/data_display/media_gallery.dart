@@ -52,15 +52,15 @@ class UiMediaGallery extends StatefulWidget {
     this.backgroundColor = UiPalette.black,
     this.minScale = 1,
     this.maxScale = 5,
-  })  : assert(items.length > 0),
-        assert(initialIndex >= 0 && initialIndex < items.length);
+  }) : assert(items.length > 0),
+       assert(initialIndex >= 0 && initialIndex < items.length);
 
   final List<UiMediaGalleryItem> items;
   final String dismissLabel;
   final int initialIndex;
   final List<UiMediaGalleryAction> Function(BuildContext, int)? actionsBuilder;
   final List<UiMediaGalleryAction> Function(BuildContext, int)?
-      bottomActionsBuilder;
+  bottomActionsBuilder;
   final VoidCallback? onDismiss;
   final Color backgroundColor;
   final double minScale;
@@ -109,8 +109,9 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _chromeVisible = !_chromeVisible),
             onVerticalDragStart: _zoomed ? null : (_) => _verticalDrag = 0,
-            onVerticalDragUpdate:
-                _zoomed ? null : (details) => _verticalDrag += details.delta.dy,
+            onVerticalDragUpdate: _zoomed
+                ? null
+                : (details) => _verticalDrag += details.delta.dy,
             onVerticalDragEnd: _zoomed
                 ? null
                 : (details) {

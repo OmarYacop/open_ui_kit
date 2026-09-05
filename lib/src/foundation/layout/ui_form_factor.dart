@@ -18,13 +18,11 @@ enum UiFormFactor { phone, tablet, desktop }
 /// - `>= 900dp` → desktop (iPad landscape / macOS / Android tablet L)
 @immutable
 class UiBreakpoints {
-  const UiBreakpoints({
-    this.phone = 600,
-    this.desktop = 900,
-  }) : assert(
-          phone < desktop,
-          'phone breakpoint must be strictly less than desktop',
-        );
+  const UiBreakpoints({this.phone = 600, this.desktop = 900})
+    : assert(
+        phone < desktop,
+        'phone breakpoint must be strictly less than desktop',
+      );
 
   /// Max width below which the layout is treated as a phone.
   final double phone;

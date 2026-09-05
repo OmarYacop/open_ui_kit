@@ -6,54 +6,58 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 Widget _host(Widget child) {
   return MaterialApp(
     home: Scaffold(
-        body: Padding(padding: const EdgeInsets.all(16), child: child)),
+      body: Padding(padding: const EdgeInsets.all(16), child: child),
+    ),
   );
 }
 
 void main() {
   group('selection primitives', () {
-    testWidgets('checkbox toggles, supports focus, and renders error/disabled',
-        (tester) async {
-      final focusNode = FocusNode();
-      addTearDown(focusNode.dispose);
+    testWidgets(
+      'checkbox toggles, supports focus, and renders error/disabled',
+      (tester) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
 
-      var value = false;
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                children: [
-                  UiCheckbox(
-                    label: 'Allow submissions',
-                    value: value,
-                    focusNode: focusNode,
-                    onChanged: (next) => setState(() => value = next),
-                  ),
-                  const UiCheckbox(
-                    label: 'Archived',
-                    value: true,
-                    enabled: false,
-                    errorText: 'Cannot change archived state',
-                  ),
-                ],
-              );
-            },
+        var value = false;
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  children: [
+                    UiCheckbox(
+                      label: 'Allow submissions',
+                      value: value,
+                      focusNode: focusNode,
+                      onChanged: (next) => setState(() => value = next),
+                    ),
+                    const UiCheckbox(
+                      label: 'Archived',
+                      value: true,
+                      enabled: false,
+                      errorText: 'Cannot change archived state',
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      focusNode.requestFocus();
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pump();
+        focusNode.requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
 
-      expect(value, isTrue);
-      expect(find.text('Cannot change archived state'), findsOneWidget);
-    });
+        expect(value, isTrue);
+        expect(find.text('Cannot change archived state'), findsOneWidget);
+      },
+    );
 
-    testWidgets('radio and switch change state; switch loading blocks input',
-        (tester) async {
+    testWidgets('radio and switch change state; switch loading blocks input', (
+      tester,
+    ) async {
       var selected = 'student';
       var notifications = false;
       await tester.pumpWidget(
@@ -109,63 +113,58 @@ void main() {
       final loadingNode = tester.getSemantics(find.text('Syncing'));
       expect(loadingNode.hint, contains('loading'));
       expect(find.text('Private semantic label'), findsNothing);
-      expect(
-        find.bySemanticsLabel('Private semantic label'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Private semantic label'), findsOneWidget);
     });
 
-    testWidgets('radio group selects options and exposes helper and error text',
-        (tester) async {
-      var selected = 'student';
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) {
-              return UiRadioGroup<String>(
-                label: 'Account type',
-                value: selected,
-                helper: 'Choose the closest role.',
-                errorText:
-                    selected == 'guardian' ? 'Guardian is unavailable' : null,
-                options: const [
-                  UiRadioGroupOption(
-                    value: 'student',
-                    label: 'Student',
-                    helper: 'Learner access',
-                  ),
-                  UiRadioGroupOption(
-                    value: 'teacher',
-                    label: 'Teacher',
-                  ),
-                  UiRadioGroupOption(
-                    value: 'guardian',
-                    label: 'Guardian',
-                  ),
-                ],
-                onChanged: (next) => setState(() => selected = next),
-              );
-            },
+    testWidgets(
+      'radio group selects options and exposes helper and error text',
+      (tester) async {
+        var selected = 'student';
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return UiRadioGroup<String>(
+                  label: 'Account type',
+                  value: selected,
+                  helper: 'Choose the closest role.',
+                  errorText: selected == 'guardian'
+                      ? 'Guardian is unavailable'
+                      : null,
+                  options: const [
+                    UiRadioGroupOption(
+                      value: 'student',
+                      label: 'Student',
+                      helper: 'Learner access',
+                    ),
+                    UiRadioGroupOption(value: 'teacher', label: 'Teacher'),
+                    UiRadioGroupOption(value: 'guardian', label: 'Guardian'),
+                  ],
+                  onChanged: (next) => setState(() => selected = next),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Choose the closest role.'), findsOneWidget);
-      expect(find.text('Learner access'), findsOneWidget);
+        expect(find.text('Choose the closest role.'), findsOneWidget);
+        expect(find.text('Learner access'), findsOneWidget);
 
-      await tester.tap(find.text('Teacher'));
-      await tester.pump();
-      expect(selected, 'teacher');
+        await tester.tap(find.text('Teacher'));
+        await tester.pump();
+        expect(selected, 'teacher');
 
-      await tester.tap(find.text('Guardian'));
-      await tester.pump();
-      expect(selected, 'guardian');
-      expect(find.text('Guardian is unavailable'), findsOneWidget);
-      expect(find.text('Choose the closest role.'), findsNothing);
-    });
+        await tester.tap(find.text('Guardian'));
+        await tester.pump();
+        expect(selected, 'guardian');
+        expect(find.text('Guardian is unavailable'), findsOneWidget);
+        expect(find.text('Choose the closest role.'), findsNothing);
+      },
+    );
 
-    testWidgets('radio group disables group and individual options',
-        (tester) async {
+    testWidgets('radio group disables group and individual options', (
+      tester,
+    ) async {
       var selected = 'student';
       await tester.pumpWidget(
         _host(
@@ -209,8 +208,9 @@ void main() {
   });
 
   group('pagination + data table', () {
-    testWidgets('skeleton components render card, bars, circles, and text',
-        (tester) async {
+    testWidgets('skeleton components render card, bars, circles, and text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiCardSkeleton(
@@ -224,10 +224,7 @@ void main() {
                     UiSkeletonBar.circle(size: 32),
                     SizedBox(width: 12),
                     Expanded(
-                      child: UiSkeletonText(
-                        lines: 2,
-                        widths: [120.0, 80.0],
-                      ),
+                      child: UiSkeletonText(lines: 2, widths: [120.0, 80.0]),
                     ),
                   ],
                 ),
@@ -244,8 +241,9 @@ void main() {
       expect(find.byType(UiSkeletonText), findsOneWidget);
     });
 
-    testWidgets('pagination navigates and exposes loading state',
-        (tester) async {
+    testWidgets('pagination navigates and exposes loading state', (
+      tester,
+    ) async {
       var page = 2;
       await tester.pumpWidget(
         _host(
@@ -277,72 +275,75 @@ void main() {
       expect(find.text('Loading…'), findsOneWidget);
     });
 
-    testWidgets('data table supports default, empty, loading, and error states',
-        (tester) async {
-      var retries = 0;
-      await tester.pumpWidget(
-        _host(
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                UiDataTable(
-                  columns: const [
-                    UiDataColumn(label: 'Learner'),
-                    UiDataColumn(label: 'Score', numeric: true),
-                  ],
-                  rows: [
-                    UiDataRow(
-                      cells: const [Text('Amina'), Text('96')],
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const UiDataTable(
-                  columns: [
-                    UiDataColumn(label: 'Learner'),
-                    UiDataColumn(label: 'Score', numeric: true),
-                  ],
-                  rows: [],
-                ),
-                const SizedBox(height: 12),
-                const UiDataTable(
-                  columns: [
-                    UiDataColumn(label: 'Learner'),
-                    UiDataColumn(label: 'Score', numeric: true),
-                  ],
-                  rows: [],
-                  loading: true,
-                ),
-                const SizedBox(height: 12),
-                UiDataTable(
-                  columns: const [
-                    UiDataColumn(label: 'Learner'),
-                    UiDataColumn(label: 'Score', numeric: true),
-                  ],
-                  rows: const [],
-                  errorText: 'Failed to load gradebook.',
-                  onRetry: () => retries++,
-                ),
-              ],
+    testWidgets(
+      'data table supports default, empty, loading, and error states',
+      (tester) async {
+        var retries = 0;
+        await tester.pumpWidget(
+          _host(
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  UiDataTable(
+                    columns: const [
+                      UiDataColumn(label: 'Learner'),
+                      UiDataColumn(label: 'Score', numeric: true),
+                    ],
+                    rows: [
+                      UiDataRow(
+                        cells: const [Text('Amina'), Text('96')],
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const UiDataTable(
+                    columns: [
+                      UiDataColumn(label: 'Learner'),
+                      UiDataColumn(label: 'Score', numeric: true),
+                    ],
+                    rows: [],
+                  ),
+                  const SizedBox(height: 12),
+                  const UiDataTable(
+                    columns: [
+                      UiDataColumn(label: 'Learner'),
+                      UiDataColumn(label: 'Score', numeric: true),
+                    ],
+                    rows: [],
+                    loading: true,
+                  ),
+                  const SizedBox(height: 12),
+                  UiDataTable(
+                    columns: const [
+                      UiDataColumn(label: 'Learner'),
+                      UiDataColumn(label: 'Score', numeric: true),
+                    ],
+                    rows: const [],
+                    errorText: 'Failed to load gradebook.',
+                    onRetry: () => retries++,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Amina'), findsOneWidget);
-      expect(find.text('No records yet.'), findsOneWidget);
-      expect(find.text('Loading table…'), findsOneWidget);
-      expect(find.text('Failed to load gradebook.'), findsOneWidget);
+        expect(find.text('Amina'), findsOneWidget);
+        expect(find.text('No records yet.'), findsOneWidget);
+        expect(find.text('Loading table…'), findsOneWidget);
+        expect(find.text('Failed to load gradebook.'), findsOneWidget);
 
-      await tester.tap(find.text('Retry'));
-      await tester.pump();
-      expect(retries, 1);
-    });
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
+        expect(retries, 1);
+      },
+    );
 
-    testWidgets('lazy data table does not build off-screen rows',
-        (tester) async {
+    testWidgets('lazy data table does not build off-screen rows', (
+      tester,
+    ) async {
       final built = <int>[];
 
       await tester.pumpWidget(
@@ -356,10 +357,7 @@ void main() {
             rowBuilder: (context, index) {
               built.add(index);
               return UiDataRow(
-                cells: [
-                  Text('Learner $index'),
-                  Text('${index + 1}'),
-                ],
+                cells: [Text('Learner $index'), Text('${index + 1}')],
               );
             },
           ),
@@ -371,61 +369,63 @@ void main() {
       expect(built.length, lessThan(200));
     });
 
-    testWidgets('sliver data table virtualizes rows in the parent scroll view',
-        (tester) async {
-      final built = <int>[];
+    testWidgets(
+      'sliver data table virtualizes rows in the parent scroll view',
+      (tester) async {
+        final built = <int>[];
 
-      await tester.pumpWidget(
-        _host(
-          CustomScrollView(
-            slivers: [
-              UiSliverDataTable.lazy(
-                columns: const [
-                  UiDataColumn(label: 'Learner'),
-                  UiDataColumn(label: 'Score', numeric: true),
-                ],
-                rowCount: 200,
-                rowExtent: 48,
-                rowBuilder: (context, index) {
-                  built.add(index);
-                  return UiDataRow(
-                    cells: [
-                      Text('Sliver learner $index'),
-                      Text('${index + 1}'),
-                    ],
-                  );
-                },
-              ),
-            ],
+        await tester.pumpWidget(
+          _host(
+            CustomScrollView(
+              slivers: [
+                UiSliverDataTable.lazy(
+                  columns: const [
+                    UiDataColumn(label: 'Learner'),
+                    UiDataColumn(label: 'Score', numeric: true),
+                  ],
+                  rowCount: 200,
+                  rowExtent: 48,
+                  rowBuilder: (context, index) {
+                    built.add(index);
+                    return UiDataRow(
+                      cells: [
+                        Text('Sliver learner $index'),
+                        Text('${index + 1}'),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Sliver learner 0'), findsOneWidget);
-      expect(find.text('Sliver learner 199'), findsNothing);
-      expect(built.length, lessThan(40));
+        expect(find.text('Sliver learner 0'), findsOneWidget);
+        expect(find.text('Sliver learner 199'), findsNothing);
+        expect(built.length, lessThan(40));
 
-      await tester.scrollUntilVisible(
-        find.text('Sliver learner 199'),
-        600,
-        scrollable: find.byType(Scrollable).first,
-        maxScrolls: 30,
-      );
+        await tester.scrollUntilVisible(
+          find.text('Sliver learner 199'),
+          600,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 30,
+        );
 
-      expect(find.text('Sliver learner 199'), findsOneWidget);
-    });
+        expect(find.text('Sliver learner 199'), findsOneWidget);
+      },
+    );
 
-    testWidgets('non-scrollable data table delegates scrolling to its parent',
-        (tester) async {
+    testWidgets('non-scrollable data table delegates scrolling to its parent', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiDataTable.lazy(
             columns: const [UiDataColumn(label: 'Learner')],
             rowCount: 3,
             scrollable: false,
-            rowBuilder: (context, index) => UiDataRow(
-              cells: [Text('Learner $index')],
-            ),
+            rowBuilder: (context, index) =>
+                UiDataRow(cells: [Text('Learner $index')]),
           ),
         ),
       );
@@ -441,8 +441,9 @@ void main() {
       expect(find.text('Learner 2'), findsOneWidget);
     });
 
-    testWidgets('data table clips rows inside its rounded border',
-        (tester) async {
+    testWidgets('data table clips rows inside its rounded border', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiDataTable(

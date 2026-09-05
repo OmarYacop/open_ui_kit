@@ -21,14 +21,8 @@ void _usePhonePortrait(WidgetTester tester) {
 void main() {
   group('UiDrawerSide resolution (PR-2)', () {
     test('left / right are absolute in both directions', () {
-      expect(
-        UiDrawer.isLeftEdge(UiDrawerSide.left, TextDirection.ltr),
-        isTrue,
-      );
-      expect(
-        UiDrawer.isLeftEdge(UiDrawerSide.left, TextDirection.rtl),
-        isTrue,
-      );
+      expect(UiDrawer.isLeftEdge(UiDrawerSide.left, TextDirection.ltr), isTrue);
+      expect(UiDrawer.isLeftEdge(UiDrawerSide.left, TextDirection.rtl), isTrue);
       expect(
         UiDrawer.isLeftEdge(UiDrawerSide.right, TextDirection.ltr),
         isFalse,
@@ -125,13 +119,10 @@ void main() {
       );
     });
 
-    testWidgets('absolute left-side drawer stays on the left even in RTL',
-        (tester) async {
-      await openDrawer(
-        tester,
-        side: UiDrawerSide.left,
-        dir: TextDirection.rtl,
-      );
+    testWidgets('absolute left-side drawer stays on the left even in RTL', (
+      tester,
+    ) async {
+      await openDrawer(tester, side: UiDrawerSide.left, dir: TextDirection.rtl);
       final drawerBox = tester.getRect(find.text('drawer-body'));
       final screenWidth =
           tester.view.physicalSize.width / tester.view.devicePixelRatio;

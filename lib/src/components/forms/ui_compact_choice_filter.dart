@@ -57,10 +57,7 @@ class _UiCompactChoiceFilterState<T> extends State<UiCompactChoiceFilter<T>>
   @override
   void initState() {
     super.initState();
-    _animation = AnimationController(
-      vsync: this,
-      duration: Duration.zero,
-    );
+    _animation = AnimationController(vsync: this, duration: Duration.zero);
   }
 
   @override
@@ -132,7 +129,7 @@ class _UiCompactChoiceFilterState<T> extends State<UiCompactChoiceFilter<T>>
     if (_overlayEntry != null) return;
     final overlay =
         UiLayeredOverlay.maybeOf(context, UiOverlayLayer.floating) ??
-            Overlay.maybeOf(context);
+        Overlay.maybeOf(context);
     if (overlay == null) return;
 
     _overlayEntry = OverlayEntry(
@@ -248,9 +245,7 @@ class _MorphOverlay<T> extends StatelessWidget {
                     scale: lift,
                     alignment: anchor,
                     child: _MorphSurface(
-                      debugKey: const Key(
-                        'compact_choice_expanded_surface',
-                      ),
+                      debugKey: const Key('compact_choice_expanded_surface'),
                       progress: progress,
                       child: _MorphContent<T>(
                         progress: progress,
@@ -501,8 +496,9 @@ class _ChoiceLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final foreground =
-        selected ? tokens.colors.primaryForeground : tokens.colors.foreground;
+    final foreground = selected
+        ? tokens.colors.primaryForeground
+        : tokens.colors.foreground;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x3),
       child: Row(
@@ -571,8 +567,8 @@ class _OverlayChoice<T> extends StatelessWidget {
               color: selected
                   ? tokens.colors.primary
                   : state.hovered || state.pressed
-                      ? tokens.colors.accent
-                      : const Color(0x00000000),
+                  ? tokens.colors.accent
+                  : const Color(0x00000000),
               borderRadius: tokens.radius.mdAll,
             ),
             child: _ChoiceLabel(

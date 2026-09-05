@@ -60,11 +60,7 @@ void main() {
               intent: UiIntent.primary,
               onPressed: () {},
             ),
-            UiButton(
-              label: 'Cancel',
-              intent: UiIntent.ghost,
-              onPressed: () {},
-            ),
+            UiButton(label: 'Cancel', intent: UiIntent.ghost, onPressed: () {}),
           ],
         ),
       );

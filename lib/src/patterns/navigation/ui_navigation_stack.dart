@@ -20,9 +20,9 @@ class UiNavigationStack extends StatelessWidget {
     this.duration = UiMotionDuration.standard,
     this.reverseDuration = UiMotionDuration.fast,
   }) : assert(
-          children.length > 0,
-          'UiNavigationStack requires at least one child',
-        );
+         children.length > 0,
+         'UiNavigationStack requires at least one child',
+       );
 
   final int index;
   final List<Widget> children;
@@ -56,10 +56,7 @@ class UiNavigationStack extends StatelessWidget {
       layoutBuilder: (currentChild, previousChildren) => Stack(
         children: [...previousChildren, if (currentChild != null) currentChild],
       ),
-      child: KeyedSubtree(
-        key: ValueKey<int>(i),
-        child: children[i],
-      ),
+      child: KeyedSubtree(key: ValueKey<int>(i), child: children[i]),
     );
   }
 }

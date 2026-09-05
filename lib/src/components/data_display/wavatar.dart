@@ -108,9 +108,11 @@ class UiWavatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.maybePlatformBrightnessOf(context) ??
+    final brightness =
+        MediaQuery.maybePlatformBrightnessOf(context) ??
         View.of(context).platformDispatcher.platformBrightness;
-    final isDark = themeMode == UiWavatarThemeMode.adaptive &&
+    final isDark =
+        themeMode == UiWavatarThemeMode.adaptive &&
         brightness == Brightness.dark;
     final recipe = _WavatarRecipe.fromSeed(
       seed,
@@ -214,7 +216,8 @@ class _WavatarRecipe {
     final hash = UiWavatar.hashSeed(seed);
     final random = _HashStream(hash);
     final baseHue = _softHues[random.nextInt(_softHues.length)];
-    final background = backgroundOverride ??
+    final background =
+        backgroundOverride ??
         HSVColor.fromAHSV(
           1,
           baseHue,
@@ -249,7 +252,8 @@ class _WavatarRecipe {
       UiWavatarAgeGroup.adult || null => (glyph: 1.0, eyes: 1.0),
       UiWavatarAgeGroup.olderAdult => (glyph: 1.04, eyes: 0.92),
     };
-    final characteristicsKey = characteristics.subject.index |
+    final characteristicsKey =
+        characteristics.subject.index |
         ((characteristics.gender?.index ?? 7) << 3) |
         ((characteristics.ageGroup?.index ?? 7) << 6);
 
@@ -258,9 +262,7 @@ class _WavatarRecipe {
       background: background,
       backgroundAccent: backgroundHsv
           .withHue((backgroundHsv.hue + 28) % 360)
-          .withSaturation(
-            (backgroundHsv.saturation - 0.10).clamp(0.18, 0.75),
-          )
+          .withSaturation((backgroundHsv.saturation - 0.10).clamp(0.18, 0.75))
           .withValue(
             (backgroundHsv.value + (isDark ? 0.10 : 0.12)).clamp(0.0, 1.0),
           )
@@ -349,8 +351,8 @@ class _WavatarPainter extends CustomPainter {
     final identities = participantRecipes.isNotEmpty
         ? participantRecipes
         : recipe.subject == UiWavatarSubject.team
-            ? [recipe, recipe, recipe]
-            : [recipe];
+        ? [recipe, recipe, recipe]
+        : [recipe];
 
     switch (identities.length) {
       case 1:
@@ -369,13 +371,7 @@ class _WavatarPainter extends CustomPainter {
           0.62,
           -0.05,
         );
-        _paintIdentity(
-          canvas,
-          identities[1],
-          const Offset(38, 59),
-          0.74,
-          0.04,
-        );
+        _paintIdentity(canvas, identities[1], const Offset(38, 59), 0.74, 0.04);
       case 3:
         _paintIdentity(
           canvas,
@@ -384,13 +380,7 @@ class _WavatarPainter extends CustomPainter {
           0.48,
           -0.05,
         );
-        _paintIdentity(
-          canvas,
-          identities[1],
-          const Offset(34, 43),
-          0.55,
-          0.04,
-        );
+        _paintIdentity(canvas, identities[1], const Offset(34, 43), 0.55, 0.04);
         _paintIdentity(canvas, identities[2], const Offset(53, 65), 0.68, 0);
       case 4:
         _paintIdentity(
@@ -400,20 +390,8 @@ class _WavatarPainter extends CustomPainter {
           0.44,
           -0.05,
         );
-        _paintIdentity(
-          canvas,
-          identities[1],
-          const Offset(31, 39),
-          0.47,
-          0.05,
-        );
-        _paintIdentity(
-          canvas,
-          identities[2],
-          const Offset(65, 66),
-          0.55,
-          0.03,
-        );
+        _paintIdentity(canvas, identities[1], const Offset(31, 39), 0.47, 0.05);
+        _paintIdentity(canvas, identities[2], const Offset(65, 66), 0.55, 0.03);
         _paintIdentity(
           canvas,
           identities[3],
@@ -576,11 +554,7 @@ class _WavatarPainter extends CustomPainter {
           stroke,
         );
       default:
-        canvas.drawLine(
-          Offset(left.dx - 3, y),
-          Offset(left.dx + 3, y),
-          stroke,
-        );
+        canvas.drawLine(Offset(left.dx - 3, y), Offset(left.dx + 3, y), stroke);
         canvas.drawLine(
           Offset(right.dx - 3, y),
           Offset(right.dx + 3, y),
@@ -655,10 +629,7 @@ class _WavatarPainter extends CustomPainter {
     return false;
   }
 
-  static bool _recipeChanged(
-    _WavatarRecipe previous,
-    _WavatarRecipe current,
-  ) {
+  static bool _recipeChanged(_WavatarRecipe previous, _WavatarRecipe current) {
     return previous.hash != current.hash ||
         previous.background != current.background ||
         previous.characteristicsKey != current.characteristicsKey ||

@@ -4,9 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
-  return MaterialApp(
-    home: Scaffold(body: child),
-  );
+  return MaterialApp(home: Scaffold(body: child));
 }
 
 // A stable, easy-to-measure body so we can compare rendered heights
@@ -23,29 +21,23 @@ Widget _body() {
 }
 
 Widget _header({String label = 'Trigger'}) {
-  return Container(
-    padding: const EdgeInsets.all(12),
-    child: Text(label),
-  );
+  return Container(padding: const EdgeInsets.all(12), child: Text(label));
 }
 
 void main() {
   group('UiCollapsible (uncontrolled)', () {
-    testWidgets('starts collapsed by default and drops body from the tree',
-        (tester) async {
+    testWidgets('starts collapsed by default and drops body from the tree', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(
-          UiCollapsible(
-            header: _header(),
-            child: _body(),
-          ),
-        ),
+        _host(UiCollapsible(header: _header(), child: _body())),
       );
       expect(find.byKey(_bodyKey), findsNothing);
     });
 
-    testWidgets('initiallyExpanded = true renders body at full height',
-        (tester) async {
+    testWidgets('initiallyExpanded = true renders body at full height', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiCollapsible(
@@ -86,49 +78,52 @@ void main() {
 
   group('UiCollapsible (controlled)', () {
     testWidgets(
-        'header tap fires callback but does NOT change render until the '
-        'parent updates `expanded`', (tester) async {
-      var expanded = false;
-      var calls = 0;
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (ctx, setState) => UiCollapsible(
+      'header tap fires callback but does NOT change render until the '
+      'parent updates `expanded`',
+      (tester) async {
+        var expanded = false;
+        var calls = 0;
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (ctx, setState) => UiCollapsible(
+                header: _header(),
+                expanded: expanded,
+                onExpandedChanged: (_) => calls++,
+                child: _body(),
+              ),
+            ),
+          ),
+        );
+
+        // Tap: callback fires but parent state still says collapsed, so
+        // body must remain absent.
+        await tester.tap(find.text('Trigger'));
+        await tester.pumpAndSettle();
+        expect(calls, 1);
+        expect(find.byKey(_bodyKey), findsNothing);
+
+        // Now the parent flips expanded → body must appear.
+        await tester.pumpWidget(
+          _host(
+            UiCollapsible(
               header: _header(),
-              expanded: expanded,
+              expanded: true,
               onExpandedChanged: (_) => calls++,
               child: _body(),
             ),
           ),
-        ),
-      );
-
-      // Tap: callback fires but parent state still says collapsed, so
-      // body must remain absent.
-      await tester.tap(find.text('Trigger'));
-      await tester.pumpAndSettle();
-      expect(calls, 1);
-      expect(find.byKey(_bodyKey), findsNothing);
-
-      // Now the parent flips expanded → body must appear.
-      await tester.pumpWidget(
-        _host(
-          UiCollapsible(
-            header: _header(),
-            expanded: true,
-            onExpandedChanged: (_) => calls++,
-            child: _body(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byKey(_bodyKey), findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(find.byKey(_bodyKey), findsOneWidget);
+      },
+    );
   });
 
   group('UiCollapsible (controller-driven)', () {
-    testWidgets('controller drives expand/collapse and notifies listeners',
-        (tester) async {
+    testWidgets('controller drives expand/collapse and notifies listeners', (
+      tester,
+    ) async {
       final controller = UiCollapsibleController();
       addTearDown(controller.dispose);
       var notifies = 0;
@@ -179,38 +174,40 @@ void main() {
 
   group('UiCollapsible (a11y + keyboard)', () {
     testWidgets(
-        'header semantics expose the `expanded` flag matching render state',
-        (tester) async {
-      final controller = UiCollapsibleController();
-      addTearDown(controller.dispose);
+      'header semantics expose the `expanded` flag matching render state',
+      (tester) async {
+        final controller = UiCollapsibleController();
+        addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _host(
-          UiCollapsible(
-            controller: controller,
-            header: _header(),
-            semanticsLabel: 'Show details',
-            child: _body(),
+        await tester.pumpWidget(
+          _host(
+            UiCollapsible(
+              controller: controller,
+              header: _header(),
+              semanticsLabel: 'Show details',
+              child: _body(),
+            ),
           ),
-        ),
-      );
+        );
 
-      bool? currentExpanded() {
-        final widgets = tester
-            .widgetList<Semantics>(find.byType(Semantics))
-            .where((s) => s.properties.label == 'Show details');
-        return widgets.isEmpty ? null : widgets.first.properties.expanded;
-      }
+        bool? currentExpanded() {
+          final widgets = tester
+              .widgetList<Semantics>(find.byType(Semantics))
+              .where((s) => s.properties.label == 'Show details');
+          return widgets.isEmpty ? null : widgets.first.properties.expanded;
+        }
 
-      expect(currentExpanded(), isFalse);
+        expect(currentExpanded(), isFalse);
 
-      controller.expand();
-      await tester.pumpAndSettle();
-      expect(currentExpanded(), isTrue);
-    });
+        controller.expand();
+        await tester.pumpAndSettle();
+        expect(currentExpanded(), isTrue);
+      },
+    );
 
-    testWidgets('Enter on a focused header toggles the collapsible',
-        (tester) async {
+    testWidgets('Enter on a focused header toggles the collapsible', (
+      tester,
+    ) async {
       final controller = UiCollapsibleController();
       addTearDown(controller.dispose);
       final node = FocusNode();
@@ -240,45 +237,47 @@ void main() {
 
   group('UiCollapsible (lifecycle)', () {
     testWidgets(
-        'internal controller is disposed with the widget without throwing',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiCollapsible(
-            initiallyExpanded: true,
-            header: _header(),
-            child: _body(),
+      'internal controller is disposed with the widget without throwing',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            UiCollapsible(
+              initiallyExpanded: true,
+              header: _header(),
+              child: _body(),
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pumpWidget(_host(const SizedBox.shrink()));
-      expect(tester.takeException(), isNull);
-    });
+        );
+        await tester.pump();
+        await tester.pumpWidget(_host(const SizedBox.shrink()));
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
-        'maintainState keeps child mounted while collapsed (state preserved)',
-        (tester) async {
-      final controller = UiCollapsibleController(initiallyExpanded: true);
-      addTearDown(controller.dispose);
+      'maintainState keeps child mounted while collapsed (state preserved)',
+      (tester) async {
+        final controller = UiCollapsibleController(initiallyExpanded: true);
+        addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _host(
-          UiCollapsible(
-            controller: controller,
-            maintainState: true,
-            header: _header(),
-            child: _body(),
+        await tester.pumpWidget(
+          _host(
+            UiCollapsible(
+              controller: controller,
+              maintainState: true,
+              header: _header(),
+              child: _body(),
+            ),
           ),
-        ),
-      );
-      expect(find.byKey(_bodyKey), findsOneWidget);
+        );
+        expect(find.byKey(_bodyKey), findsOneWidget);
 
-      controller.collapse();
-      await tester.pumpAndSettle();
-      // With maintainState the subtree still exists (hit-test height
-      // is zero via ClipRect/Align, but the widget is in the tree).
-      expect(find.byKey(_bodyKey), findsOneWidget);
-    });
+        controller.collapse();
+        await tester.pumpAndSettle();
+        // With maintainState the subtree still exists (hit-test height
+        // is zero via ClipRect/Align, but the widget is in the tree).
+        expect(find.byKey(_bodyKey), findsOneWidget);
+      },
+    );
   });
 }

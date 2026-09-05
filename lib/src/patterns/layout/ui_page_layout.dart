@@ -250,9 +250,6 @@ class _PageActions extends StatelessWidget {
       children.add(actions[i]);
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: children,
-    );
+    return Row(mainAxisSize: MainAxisSize.min, children: children);
   }
 }

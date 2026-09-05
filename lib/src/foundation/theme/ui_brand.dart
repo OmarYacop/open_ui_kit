@@ -141,14 +141,14 @@ class UiBrand {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        displayName,
-        primary,
-        onPrimary,
-        secondary,
-        onSecondary,
-        accent,
-        danger,
-        apiBaseUrl,
-      );
+    id,
+    displayName,
+    primary,
+    onPrimary,
+    secondary,
+    onSecondary,
+    accent,
+    danger,
+    apiBaseUrl,
+  );
 }

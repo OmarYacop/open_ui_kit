@@ -115,7 +115,8 @@ UiAnchoredOverlayGeometry? resolveUiAnchoredOverlayGeometry({
   final boundaryMargin = tokens.spacing.x1;
   final gap = tokens.spacing.x1;
   final topLimit = (media?.padding.top ?? 0) + boundaryMargin;
-  final bottomLimit = overlayBox.size.height -
+  final bottomLimit =
+      overlayBox.size.height -
       (media?.padding.bottom ?? 0) -
       UiKeyboardGeometry.currentInsetOf(overlay.context) -
       boundaryMargin;
@@ -136,8 +137,8 @@ UiAnchoredOverlayGeometry? resolveUiAnchoredOverlayGeometry({
   final available = openAbove ? spaceAbove : spaceBelow;
   final resolvedMaxHeight =
       allowOverflowWhenCramped && available <= crampedAvailableHeight
-          ? maxHeight
-          : math.max(0.0, math.min(maxHeight, available));
+      ? maxHeight
+      : math.max(0.0, math.min(maxHeight, available));
 
   final availableWidth = math.max(0.0, rightLimit - leftLimit);
   final width = math.min(

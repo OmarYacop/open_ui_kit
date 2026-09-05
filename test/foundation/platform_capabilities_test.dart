@@ -110,44 +110,46 @@ void main() {
     expect(response?['mode'], 'notApplicable');
   });
 
-  test('publishes native window-mode transitions and refreshes the cache',
-      () async {
-    messenger.setMockMethodCallHandler(channel, (call) async {
-      expect(call.method, 'getPlatformSnapshot');
-      return <String, Object?>{
-        'os': 'ios',
-        'window': <String, Object?>{
-          'mode': 'fullscreen',
-          'supportsWindowing': true,
-        },
-      };
-    });
-    expect((await client.snapshot()).windowMode, UiWindowMode.fullscreen);
+  test(
+    'publishes native window-mode transitions and refreshes the cache',
+    () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        expect(call.method, 'getPlatformSnapshot');
+        return <String, Object?>{
+          'os': 'ios',
+          'window': <String, Object?>{
+            'mode': 'fullscreen',
+            'supportsWindowing': true,
+          },
+        };
+      });
+      expect((await client.snapshot()).windowMode, UiWindowMode.fullscreen);
 
-    final modes = <UiWindowMode>[];
-    final subscription = client.windowModeChanges.listen(modes.add);
-    addTearDown(subscription.cancel);
+      final modes = <UiWindowMode>[];
+      final subscription = client.windowModeChanges.listen(modes.add);
+      addTearDown(subscription.cancel);
 
-    Future<void> pushMode(String mode) {
-      return messenger.handlePlatformMessage(
-        UiPlatformCapabilities.channelName,
-        const StandardMethodCodec().encodeMethodCall(
-          MethodCall('windowModeChanged', <String, Object?>{'mode': mode}),
-        ),
-        (_) {},
-      );
-    }
+      Future<void> pushMode(String mode) {
+        return messenger.handlePlatformMessage(
+          UiPlatformCapabilities.channelName,
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall('windowModeChanged', <String, Object?>{'mode': mode}),
+          ),
+          (_) {},
+        );
+      }
 
-    await pushMode('windowed');
-    await pushMode('windowed');
+      await pushMode('windowed');
+      await pushMode('windowed');
 
-    expect(modes, <UiWindowMode>[UiWindowMode.windowed]);
-    expect(await client.currentWindowMode(), UiWindowMode.windowed);
+      expect(modes, <UiWindowMode>[UiWindowMode.windowed]);
+      expect(await client.currentWindowMode(), UiWindowMode.windowed);
 
-    await pushMode('fullscreen');
-    expect(
-      modes,
-      <UiWindowMode>[UiWindowMode.windowed, UiWindowMode.fullscreen],
-    );
-  });
+      await pushMode('fullscreen');
+      expect(modes, <UiWindowMode>[
+        UiWindowMode.windowed,
+        UiWindowMode.fullscreen,
+      ]);
+    },
+  );
 }

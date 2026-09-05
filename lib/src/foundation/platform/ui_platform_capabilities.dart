@@ -72,8 +72,8 @@ class UiPlatformCapabilities {
   UiPlatformCapabilities({
     MethodChannel? channel,
     Duration cacheDuration = const Duration(milliseconds: 250),
-  })  : _channel = channel ?? const MethodChannel(channelName),
-        _cacheDuration = cacheDuration;
+  }) : _channel = channel ?? const MethodChannel(channelName),
+       _cacheDuration = cacheDuration;
 
   static const channelName = 'dev.open_ui_kit/platform_capabilities';
   static final shared = UiPlatformCapabilities();
@@ -177,14 +177,13 @@ class UiPlatformCapabilities {
   Future<Object?> _handlePlatformCall(MethodCall call) async {
     if (call.method != 'windowModeChanged') {
       throw MissingPluginException(
-          'Unsupported platform callback: ${call.method}');
+        'Unsupported platform callback: ${call.method}',
+      );
     }
 
     final mode = call.arguments is String
         ? UiWindowMode.fromWire(call.arguments as String)
-        : UiWindowMode.fromWire(
-            _asMap(call.arguments)['mode']?.toString(),
-          );
+        : UiWindowMode.fromWire(_asMap(call.arguments)['mode']?.toString());
     final previousMode = _cachedWindowMode;
     _cacheWindowMode(mode);
 

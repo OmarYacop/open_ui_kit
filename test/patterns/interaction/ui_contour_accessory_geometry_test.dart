@@ -29,9 +29,7 @@ void main() {
       expect(g.accessoryInteractive, isFalse);
     });
 
-    test(
-        'progress 1: bar recedes by exactly the accessory width; accessory reaches full size at the freed edge',
-        () {
+    test('progress 1: bar recedes by exactly the accessory width; accessory reaches full size at the freed edge', () {
       final g = UiContourAccessoryGeometrySolver.solve(_input(1));
       expect(g.barRect, const Rect.fromLTWH(0, 0, 180, 48));
       expect(g.accessoryRect, const Rect.fromLTWH(180, 4, 140, 40));
@@ -49,38 +47,44 @@ void main() {
     test('bar width is monotonically non-increasing across checkpoints', () {
       double? previous;
       for (final t in _checkpoints) {
-        final width =
-            UiContourAccessoryGeometrySolver.solve(_input(t)).barRect.width;
+        final width = UiContourAccessoryGeometrySolver.solve(_input(t))
+            .barRect
+            .width;
         if (previous != null) {
-          expect(width, lessThanOrEqualTo(previous + 0.001),
-              reason: 'bar regrew at t=$t');
+          expect(
+            width,
+            lessThanOrEqualTo(previous + 0.001),
+            reason: 'bar regrew at t=$t',
+          );
         }
         previous = width;
       }
     });
 
     test(
-        'accessory right edge is monotonically non-decreasing across checkpoints',
-        () {
-      double? previous;
-      for (final t in _checkpoints) {
-        final right = UiContourAccessoryGeometrySolver.solve(_input(t))
-            .accessoryRect
-            .right;
-        if (previous != null) {
-          expect(right, greaterThanOrEqualTo(previous - 0.001),
-              reason: 'at t=$t');
+      'accessory right edge is monotonically non-decreasing across checkpoints',
+      () {
+        double? previous;
+        for (final t in _checkpoints) {
+          final right = UiContourAccessoryGeometrySolver.solve(_input(t))
+              .accessoryRect
+              .right;
+          if (previous != null) {
+            expect(
+              right,
+              greaterThanOrEqualTo(previous - 0.001),
+              reason: 'at t=$t',
+            );
+          }
+          previous = right;
         }
-        previous = right;
-      }
-    });
+      },
+    );
 
-    test(
-        'reverse traversal mirrors forward traversal exactly (same function of t)',
-        () {
+    test('reverse traversal mirrors forward traversal exactly (same function of t)', () {
       final forward = [
         for (final t in _checkpoints)
-          UiContourAccessoryGeometrySolver.solve(_input(t))
+          UiContourAccessoryGeometrySolver.solve(_input(t)),
       ];
       final reversed = [
         for (final t in _checkpoints.reversed)
@@ -119,44 +123,55 @@ void main() {
     });
 
     test(
-        'bar width never goes negative even if accessory is wider than the bar',
-        () {
-      final g = UiContourAccessoryGeometrySolver.solve(
-        _input(1,
-            barSize: const Size(100, 48), accessorySize: const Size(140, 40)),
-      );
-      expect(g.barRect.width, 0);
-    });
+      'bar width never goes negative even if accessory is wider than the bar',
+      () {
+        final g = UiContourAccessoryGeometrySolver.solve(
+          _input(
+            1,
+            barSize: const Size(100, 48),
+            accessorySize: const Size(140, 40),
+          ),
+        );
+        expect(g.barRect.width, 0);
+      },
+    );
   });
 
   group('activation threshold', () {
     test('accessory becomes interactive only at/after 0.92', () {
       expect(
-          UiContourAccessoryGeometrySolver.solve(_input(0.91))
-              .accessoryInteractive,
-          isFalse);
+        UiContourAccessoryGeometrySolver.solve(_input(0.91))
+            .accessoryInteractive,
+        isFalse,
+      );
       expect(
-          UiContourAccessoryGeometrySolver.solve(_input(0.92))
-              .accessoryInteractive,
-          isTrue);
+        UiContourAccessoryGeometrySolver.solve(_input(0.92))
+            .accessoryInteractive,
+        isTrue,
+      );
     });
   });
 
   group('bar content visibility', () {
-    test('fades out over the first half of the transition and stays at 0 after',
-        () {
-      expect(
+    test(
+      'fades out over the first half of the transition and stays at 0 after',
+      () {
+        expect(
           UiContourAccessoryGeometrySolver.solve(_input(0))
               .barContentVisibility,
-          1);
-      expect(
+          1,
+        );
+        expect(
           UiContourAccessoryGeometrySolver.solve(_input(0.5))
               .barContentVisibility,
-          0);
-      expect(
+          0,
+        );
+        expect(
           UiContourAccessoryGeometrySolver.solve(_input(0.75))
               .barContentVisibility,
-          0);
-    });
+          0,
+        );
+      },
+    );
   });
 }

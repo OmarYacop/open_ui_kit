@@ -45,8 +45,9 @@ class UiTypingIndicator extends StatefulWidget {
     this.avatarSize = 28,
     this.showAvatars = true,
     this.showDots = true,
-    this.animationDuration =
-        const UiMotionDuration.custom(Duration(milliseconds: 1200)),
+    this.animationDuration = const UiMotionDuration.custom(
+      Duration(milliseconds: 1200),
+    ),
     this.padding = const EdgeInsetsDirectional.symmetric(
       horizontal: 4,
       vertical: 6,
@@ -235,9 +236,8 @@ class _UiTypingIndicatorState extends State<UiTypingIndicator>
   String _label(BuildContext context, List<UiTypingUser> users) {
     final builder = widget.labelBuilder;
     if (builder != null) return builder(List.unmodifiable(users));
-    return UiLocalizations.of(context).typingLabel(
-      users.map((user) => user.name).toList(growable: false),
-    );
+    return UiLocalizations.of(context)
+        .typingLabel(users.map((user) => user.name).toList(growable: false));
   }
 }
 

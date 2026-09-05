@@ -30,8 +30,9 @@ void main() {
     expect(dark.primary, const Color(0xFFFF5722));
   });
 
-  testWidgets('UiThemeData.fromBrand exposes brand tokens to descendants',
-      (tester) async {
+  testWidgets('UiThemeData.fromBrand exposes brand tokens to descendants', (
+    tester,
+  ) async {
     UiThemeTokens? tokens;
     await tester.pumpWidget(
       MaterialApp(
@@ -77,9 +78,6 @@ void main() {
       onPrimary: Color(0xFFFFFFFF),
     );
     expect(b1, equals(b2));
-    expect(
-      b1,
-      isNot(equals(b1.copyWith(primary: const Color(0xFF222222)))),
-    );
+    expect(b1, isNot(equals(b1.copyWith(primary: const Color(0xFF222222)))));
   });
 }

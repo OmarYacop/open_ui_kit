@@ -30,8 +30,8 @@ class UiColorTokens {
     required this.overlay,
     Color? successForeground,
     Color? warningForeground,
-  })  : successForeground = successForeground ?? success,
-        warningForeground = warningForeground ?? warning;
+  }) : successForeground = successForeground ?? success,
+       warningForeground = warningForeground ?? warning;
 
   final Color background;
   final Color surface;
@@ -194,10 +194,16 @@ class UiColorTokens {
       onDanger: Color.lerp(a.onDanger, b.onDanger, t)!,
       success: Color.lerp(a.success, b.success, t)!,
       warning: Color.lerp(a.warning, b.warning, t)!,
-      successForeground:
-          Color.lerp(a.successForeground, b.successForeground, t)!,
-      warningForeground:
-          Color.lerp(a.warningForeground, b.warningForeground, t)!,
+      successForeground: Color.lerp(
+        a.successForeground,
+        b.successForeground,
+        t,
+      )!,
+      warningForeground: Color.lerp(
+        a.warningForeground,
+        b.warningForeground,
+        t,
+      )!,
       focusRing: Color.lerp(a.focusRing, b.focusRing, t)!,
       overlay: Color.lerp(a.overlay, b.overlay, t)!,
     );

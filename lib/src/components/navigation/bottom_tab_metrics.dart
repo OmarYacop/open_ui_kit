@@ -24,9 +24,6 @@ double resolveBottomTabBarHeight(
     return math.max(height, painter.height);
   });
   return math
-      .max(
-        minimum,
-        iconSize + iconGap + captionHeight + tokens.spacing.x1,
-      )
+      .max(minimum, iconSize + iconGap + captionHeight + tokens.spacing.x1)
       .ceilToDouble();
 }

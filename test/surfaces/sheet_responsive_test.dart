@@ -12,9 +12,7 @@ void useViewSize(WidgetTester tester, Size size) {
 }
 
 Widget _host(Widget child) {
-  return MaterialApp(
-    home: Scaffold(body: child),
-  );
+  return MaterialApp(home: Scaffold(body: child));
 }
 
 void main() {
@@ -88,10 +86,7 @@ void main() {
                   snap: const UiSheetSnap.half(),
                   maxWidth: maxWidth,
                   builder: (_, controller) => const UiSheet(
-                    child: SizedBox(
-                      height: 200,
-                      child: Text('sheet-content'),
-                    ),
+                    child: SizedBox(height: 200, child: Text('sheet-content')),
                   ),
                 );
               },
@@ -103,41 +98,30 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets(
-        'maxWidth: null keeps the sheet edge-to-edge (legacy phone '
+    testWidgets('maxWidth: null keeps the sheet edge-to-edge (legacy phone '
         'behaviour preserved)', (tester) async {
-      await openSheet(
-        tester,
-        size: const Size(400, 800),
-        maxWidth: null,
-      );
+      await openSheet(tester, size: const Size(400, 800), maxWidth: null);
       final sheetRect = tester.getRect(find.byType(UiSheet));
       expect(sheetRect.width, closeTo(400, 0.5));
     });
 
     testWidgets(
-        'maxWidth: 560 on a tablet-size host caps and centers the sheet',
-        (tester) async {
-      await openSheet(
-        tester,
-        size: const Size(900, 1024),
-        maxWidth: 560,
-      );
-      final sheetRect = tester.getRect(find.byType(UiSheet));
-      expect(sheetRect.width, lessThanOrEqualTo(560.1));
-      expect(sheetRect.center.dx, closeTo(450, 1));
-    });
+      'maxWidth: 560 on a tablet-size host caps and centers the sheet',
+      (tester) async {
+        await openSheet(tester, size: const Size(900, 1024), maxWidth: 560);
+        final sheetRect = tester.getRect(find.byType(UiSheet));
+        expect(sheetRect.width, lessThanOrEqualTo(560.1));
+        expect(sheetRect.center.dx, closeTo(450, 1));
+      },
+    );
 
     testWidgets(
-        'maxWidth wider than the viewport falls back to the viewport width',
-        (tester) async {
-      await openSheet(
-        tester,
-        size: const Size(400, 800),
-        maxWidth: 2000,
-      );
-      final sheetRect = tester.getRect(find.byType(UiSheet));
-      expect(sheetRect.width, lessThanOrEqualTo(400.1));
-    });
+      'maxWidth wider than the viewport falls back to the viewport width',
+      (tester) async {
+        await openSheet(tester, size: const Size(400, 800), maxWidth: 2000);
+        final sheetRect = tester.getRect(find.byType(UiSheet));
+        expect(sheetRect.width, lessThanOrEqualTo(400.1));
+      },
+    );
   });
 }

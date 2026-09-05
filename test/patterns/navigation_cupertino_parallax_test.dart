@@ -30,9 +30,7 @@ class _PageScaffold extends StatelessWidget {
 }
 
 Widget _host(Widget child) {
-  return MaterialApp(
-    home: Scaffold(body: child),
-  );
+  return MaterialApp(home: Scaffold(body: child));
 }
 
 Future<T> _runWith<T>(
@@ -81,8 +79,9 @@ double _firstHorizontalTranslationAncestor(
 
 void main() {
   group('Cupertino parallax back transition (PR-7)', () {
-    testWidgets('gesture progress updates both `from` and `to` transforms',
-        (tester) async {
+    testWidgets('gesture progress updates both `from` and `to` transforms', (
+      tester,
+    ) async {
       await _runWith(TargetPlatform.iOS, () async {
         final controller = _controllerAtDetail();
         addTearDown(controller.dispose);
@@ -128,11 +127,18 @@ void main() {
 
         // Outgoing route translates rightward; incoming route
         // starts offset leftward (negative) and moves toward 0.
-        expect(fromDx, greaterThan(0),
-            reason: 'outgoing page should translate rightward with progress');
-        expect(toDx, lessThan(0),
-            reason: 'incoming page starts at negative offset and '
-                'approaches zero as progress grows');
+        expect(
+          fromDx,
+          greaterThan(0),
+          reason: 'outgoing page should translate rightward with progress',
+        );
+        expect(
+          toDx,
+          lessThan(0),
+          reason:
+              'incoming page starts at negative offset and '
+              'approaches zero as progress grows',
+        );
         // Parallax ratio keeps the incoming page travelling slower
         // than the outgoing one — |toDx| < fromDx at the same
         // progress.
@@ -145,48 +151,49 @@ void main() {
     });
 
     testWidgets(
-        'cancel under threshold returns both pages to their pre-gesture '
-        'positions', (tester) async {
-      await _runWith(TargetPlatform.iOS, () async {
-        final controller = _controllerAtDetail();
-        addTearDown(controller.dispose);
-        final progress = ValueNotifier<double>(0);
-        addTearDown(progress.dispose);
+      'cancel under threshold returns both pages to their pre-gesture '
+      'positions',
+      (tester) async {
+        await _runWith(TargetPlatform.iOS, () async {
+          final controller = _controllerAtDetail();
+          addTearDown(controller.dispose);
+          final progress = ValueNotifier<double>(0);
+          addTearDown(progress.dispose);
 
-        await tester.pumpWidget(
-          _host(
-            UiNavigationHost(
-              enableEdgeSwipePop: true,
-              controller: controller,
-              edgeSwipeProgress: progress,
-              backSwipeTransition: UiBackSwipeTransition.layered,
+          await tester.pumpWidget(
+            _host(
+              UiNavigationHost(
+                enableEdgeSwipePop: true,
+                controller: controller,
+                edgeSwipeProgress: progress,
+                backSwipeTransition: UiBackSwipeTransition.layered,
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // Small drag well under the 64pt distance threshold.
-        final rect = tester.getRect(find.byType(UiNavigationHost));
-        final gesture = await tester.startGesture(
-          Offset(rect.left + 6, rect.center.dy),
-        );
-        for (var i = 0; i < 3; i++) {
-          await gesture.moveBy(const Offset(6, 0));
-          await tester.pump(const Duration(milliseconds: 40));
-        }
-        await gesture.up();
-        await tester.pumpAndSettle();
+          // Small drag well under the 64pt distance threshold.
+          final rect = tester.getRect(find.byType(UiNavigationHost));
+          final gesture = await tester.startGesture(
+            Offset(rect.left + 6, rect.center.dy),
+          );
+          for (var i = 0; i < 3; i++) {
+            await gesture.moveBy(const Offset(6, 0));
+            await tester.pump(const Duration(milliseconds: 40));
+          }
+          await gesture.up();
+          await tester.pumpAndSettle();
 
-        // Detail page still mounted (stack unchanged); progress fully
-        // back to 0.
-        expect(controller.canPop, isTrue);
-        expect(find.text('detail-1'), findsOneWidget);
-        expect(progress.value, 0.0);
-      });
-    });
+          // Detail page still mounted (stack unchanged); progress fully
+          // back to 0.
+          expect(controller.canPop, isTrue);
+          expect(find.text('detail-1'), findsOneWidget);
+          expect(progress.value, 0.0);
+        });
+      },
+    );
 
-    testWidgets(
-        'complete past threshold pops the route and settles to the '
+    testWidgets('complete past threshold pops the route and settles to the '
         'previous page', (tester) async {
       await _runWith(TargetPlatform.iOS, () async {
         final controller = _controllerAtDetail();
@@ -217,17 +224,24 @@ void main() {
         await gesture.up();
         await tester.pumpAndSettle();
 
-        expect(controller.canPop, isFalse,
-            reason: 'threshold drag should commit the pop');
+        expect(
+          controller.canPop,
+          isFalse,
+          reason: 'threshold drag should commit the pop',
+        );
         expect(find.text('home'), findsOneWidget);
         expect(find.text('detail-1'), findsNothing);
-        expect(progress.value, 0.0,
-            reason: 'drive resets silently after the commit');
+        expect(
+          progress.value,
+          0.0,
+          reason: 'drive resets silently after the commit',
+        );
       });
     });
 
-    testWidgets('root stack does not install the edge region (no-op swipe)',
-        (tester) async {
+    testWidgets('root stack does not install the edge region (no-op swipe)', (
+      tester,
+    ) async {
       await _runWith(TargetPlatform.iOS, () async {
         final controller = UiNavigationController(routes: [_home, _detail]);
         addTearDown(controller.dispose);
@@ -266,44 +280,47 @@ void main() {
 
   group('Cupertino parallax platform gating (PR-7)', () {
     testWidgets(
-        'iOS: default auto resolution renders the previous page during drag',
-        (tester) async {
-      await _runWith(TargetPlatform.iOS, () async {
-        final controller = _controllerAtDetail();
-        addTearDown(controller.dispose);
+      'iOS: default auto resolution renders the previous page during drag',
+      (tester) async {
+        await _runWith(TargetPlatform.iOS, () async {
+          final controller = _controllerAtDetail();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(
-          _host(UiNavigationHost(
-            controller: controller,
-            enableEdgeSwipePop: true,
-            backSwipeTransition: UiBackSwipeTransition.layered,
-          )),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            _host(
+              UiNavigationHost(
+                controller: controller,
+                enableEdgeSwipePop: true,
+                backSwipeTransition: UiBackSwipeTransition.layered,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        final rect = tester.getRect(find.byType(UiNavigationHost));
-        final gesture = await tester.startGesture(
-          Offset(rect.left + 6, rect.center.dy),
-        );
-        for (var i = 0; i < 5; i++) {
-          await gesture.moveBy(const Offset(20, 0));
-          await tester.pump(const Duration(milliseconds: 8));
-        }
+          final rect = tester.getRect(find.byType(UiNavigationHost));
+          final gesture = await tester.startGesture(
+            Offset(rect.left + 6, rect.center.dy),
+          );
+          for (var i = 0; i < 5; i++) {
+            await gesture.moveBy(const Offset(20, 0));
+            await tester.pump(const Duration(milliseconds: 8));
+          }
 
-        // Both pages are mounted simultaneously during the drag —
-        // signature of the Cupertino parallax branch.
-        expect(find.text('home'), findsOneWidget);
-        expect(find.text('detail-1'), findsOneWidget);
+          // Both pages are mounted simultaneously during the drag —
+          // signature of the Cupertino parallax branch.
+          expect(find.text('home'), findsOneWidget);
+          expect(find.text('detail-1'), findsOneWidget);
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
-    });
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+      },
+    );
 
-    testWidgets(
-        'Android: default auto resolution does NOT render the previous '
-        'page (slide only; Android keeps non-Cupertino behaviour)',
-        (tester) async {
+    testWidgets('Android: default auto resolution does NOT render the previous '
+        'page (slide only; Android keeps non-Cupertino behaviour)', (
+      tester,
+    ) async {
       await _runWith(TargetPlatform.android, () async {
         final controller = _controllerAtDetail();
         addTearDown(controller.dispose);
@@ -341,158 +358,172 @@ void main() {
     });
 
     testWidgets(
-        'explicit `backSwipeTransition: cupertino` forces parallax on Android',
-        (tester) async {
-      await _runWith(TargetPlatform.android, () async {
-        final controller = _controllerAtDetail();
-        addTearDown(controller.dispose);
+      'explicit `backSwipeTransition: cupertino` forces parallax on Android',
+      (tester) async {
+        await _runWith(TargetPlatform.android, () async {
+          final controller = _controllerAtDetail();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(
-          _host(
-            UiNavigationHost(
-              enableEdgeSwipePop: true,
-              controller: controller,
-              backSwipeTransition: UiBackSwipeTransition.layered,
+          await tester.pumpWidget(
+            _host(
+              UiNavigationHost(
+                enableEdgeSwipePop: true,
+                controller: controller,
+                backSwipeTransition: UiBackSwipeTransition.layered,
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        final rect = tester.getRect(find.byType(UiNavigationHost));
-        final gesture = await tester.startGesture(
-          Offset(rect.left + 6, rect.center.dy),
-        );
-        for (var i = 0; i < 5; i++) {
-          await gesture.moveBy(const Offset(20, 0));
-          await tester.pump(const Duration(milliseconds: 8));
-        }
+          final rect = tester.getRect(find.byType(UiNavigationHost));
+          final gesture = await tester.startGesture(
+            Offset(rect.left + 6, rect.center.dy),
+          );
+          for (var i = 0; i < 5; i++) {
+            await gesture.moveBy(const Offset(20, 0));
+            await tester.pump(const Duration(milliseconds: 8));
+          }
 
-        // Forcing cupertino on Android mounts the previous page.
-        expect(find.text('home'), findsOneWidget);
-        expect(find.text('detail-1'), findsOneWidget);
+          // Forcing cupertino on Android mounts the previous page.
+          expect(find.text('home'), findsOneWidget);
+          expect(find.text('detail-1'), findsOneWidget);
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
-    });
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+      },
+    );
 
     testWidgets(
-        'outgoing page is painted on an opaque backdrop — pages that do '
-        'not install their own background still read as a slide, not a '
-        'cross-fade', (tester) async {
-      // Regression guard for the "top page looks transparent during
-      // swipe" bug. Builds the routes as RAW widget trees with no
-      // background paint of their own. During the parallax the
-      // outgoing page MUST still hide the incoming page completely
-      // (except for the 30 % reveal strip).
-      final bareHome = UiRouteSpec<void, void>(
-        id: 'bare-home',
-        title: 'Home',
-        builder: (_, __) => const Center(child: Text('bare-home')),
-      );
-      final bareDetail = UiRouteSpec<dynamic, void>(
-        id: 'bare-detail',
-        title: 'Detail',
-        builder: (_, __) => const Center(child: Text('bare-detail')),
-      );
-
-      await _runWith(TargetPlatform.iOS, () async {
-        final controller =
-            UiNavigationController(routes: [bareHome, bareDetail]);
-        addTearDown(controller.dispose);
-        controller.push(bareDetail);
-
-        await tester.pumpWidget(
-          _host(UiNavigationHost(
-            controller: controller,
-            enableEdgeSwipePop: true,
-            backSwipeTransition: UiBackSwipeTransition.layered,
-          )),
+      'outgoing page is painted on an opaque backdrop — pages that do '
+      'not install their own background still read as a slide, not a '
+      'cross-fade',
+      (tester) async {
+        // Regression guard for the "top page looks transparent during
+        // swipe" bug. Builds the routes as RAW widget trees with no
+        // background paint of their own. During the parallax the
+        // outgoing page MUST still hide the incoming page completely
+        // (except for the 30 % reveal strip).
+        final bareHome = UiRouteSpec<void, void>(
+          id: 'bare-home',
+          title: 'Home',
+          builder: (_, __) => const Center(child: Text('bare-home')),
         );
-        await tester.pumpAndSettle();
-
-        // Halfway through a drag.
-        final rect = tester.getRect(find.byType(UiNavigationHost));
-        final gesture = await tester.startGesture(
-          Offset(rect.left + 6, rect.center.dy),
+        final bareDetail = UiRouteSpec<dynamic, void>(
+          id: 'bare-detail',
+          title: 'Detail',
+          builder: (_, __) => const Center(child: Text('bare-detail')),
         );
-        for (var i = 0; i < 5; i++) {
-          await gesture.moveBy(const Offset(30, 0));
-          await tester.pump(const Duration(milliseconds: 8));
-        }
 
-        // Each route is wrapped with an opaque ColoredBox/DecoratedBox
-        // painted with the theme's page-background colour. Count the
-        // ancestor opaque wrappers — there should be exactly two
-        // (one per route) when the parallax is active.
-        final bg = UiColorTokens.light.background;
+        await _runWith(TargetPlatform.iOS, () async {
+          final controller = UiNavigationController(
+            routes: [bareHome, bareDetail],
+          );
+          addTearDown(controller.dispose);
+          controller.push(bareDetail);
 
-        bool hasOpaqueAncestor(Finder leaf) {
-          final element = tester.element(leaf);
-          var found = false;
-          element.visitAncestorElements((e) {
-            final w = e.widget;
-            if (w is ColoredBox && w.color == bg) {
-              found = true;
-              return false;
-            }
-            if (w is DecoratedBox) {
-              final d = w.decoration;
-              if (d is BoxDecoration && d.color == bg) {
+          await tester.pumpWidget(
+            _host(
+              UiNavigationHost(
+                controller: controller,
+                enableEdgeSwipePop: true,
+                backSwipeTransition: UiBackSwipeTransition.layered,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Halfway through a drag.
+          final rect = tester.getRect(find.byType(UiNavigationHost));
+          final gesture = await tester.startGesture(
+            Offset(rect.left + 6, rect.center.dy),
+          );
+          for (var i = 0; i < 5; i++) {
+            await gesture.moveBy(const Offset(30, 0));
+            await tester.pump(const Duration(milliseconds: 8));
+          }
+
+          // Each route is wrapped with an opaque ColoredBox/DecoratedBox
+          // painted with the theme's page-background colour. Count the
+          // ancestor opaque wrappers — there should be exactly two
+          // (one per route) when the parallax is active.
+          final bg = UiColorTokens.light.background;
+
+          bool hasOpaqueAncestor(Finder leaf) {
+            final element = tester.element(leaf);
+            var found = false;
+            element.visitAncestorElements((e) {
+              final w = e.widget;
+              if (w is ColoredBox && w.color == bg) {
                 found = true;
                 return false;
               }
-            }
-            return true;
-          });
-          return found;
-        }
+              if (w is DecoratedBox) {
+                final d = w.decoration;
+                if (d is BoxDecoration && d.color == bg) {
+                  found = true;
+                  return false;
+                }
+              }
+              return true;
+            });
+            return found;
+          }
 
-        expect(hasOpaqueAncestor(find.text('bare-detail')), isTrue,
-            reason: 'outgoing page must be wrapped in an opaque backdrop '
-                'so it does not read as transparent during the swipe');
-        expect(hasOpaqueAncestor(find.text('bare-home')), isTrue,
-            reason: 'incoming page also renders on an opaque backdrop');
+          expect(
+            hasOpaqueAncestor(find.text('bare-detail')),
+            isTrue,
+            reason:
+                'outgoing page must be wrapped in an opaque backdrop '
+                'so it does not read as transparent during the swipe',
+          );
+          expect(
+            hasOpaqueAncestor(find.text('bare-home')),
+            isTrue,
+            reason: 'incoming page also renders on an opaque backdrop',
+          );
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
-    });
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+      },
+    );
 
     testWidgets(
-        'explicit `backSwipeTransition: slide` forces slide-only on iOS',
-        (tester) async {
-      await _runWith(TargetPlatform.iOS, () async {
-        final controller = _controllerAtDetail();
-        addTearDown(controller.dispose);
+      'explicit `backSwipeTransition: slide` forces slide-only on iOS',
+      (tester) async {
+        await _runWith(TargetPlatform.iOS, () async {
+          final controller = _controllerAtDetail();
+          addTearDown(controller.dispose);
 
-        await tester.pumpWidget(
-          _host(
-            UiNavigationHost(
-              enableEdgeSwipePop: true,
-              controller: controller,
-              backSwipeTransition: UiBackSwipeTransition.slide,
+          await tester.pumpWidget(
+            _host(
+              UiNavigationHost(
+                enableEdgeSwipePop: true,
+                controller: controller,
+                backSwipeTransition: UiBackSwipeTransition.slide,
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        final rect = tester.getRect(find.byType(UiNavigationHost));
-        final gesture = await tester.startGesture(
-          Offset(rect.left + 6, rect.center.dy),
-        );
-        for (var i = 0; i < 5; i++) {
-          await gesture.moveBy(const Offset(20, 0));
-          await tester.pump(const Duration(milliseconds: 8));
-        }
+          final rect = tester.getRect(find.byType(UiNavigationHost));
+          final gesture = await tester.startGesture(
+            Offset(rect.left + 6, rect.center.dy),
+          );
+          for (var i = 0; i < 5; i++) {
+            await gesture.moveBy(const Offset(20, 0));
+            await tester.pump(const Duration(milliseconds: 8));
+          }
 
-        // Slide-only on iOS: previous page is NOT mounted underneath.
-        expect(find.text('detail-1'), findsOneWidget);
-        expect(find.text('home'), findsNothing);
+          // Slide-only on iOS: previous page is NOT mounted underneath.
+          expect(find.text('detail-1'), findsOneWidget);
+          expect(find.text('home'), findsNothing);
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
-    });
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+      },
+    );
   });
 }

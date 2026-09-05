@@ -153,10 +153,7 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final formFactor = uiFormFactorOf(
-      context,
-      breakpoints: widget.breakpoints,
-    );
+    final formFactor = uiFormFactorOf(context, breakpoints: widget.breakpoints);
 
     return UiDualPaneScope<T>(
       controller: widget.controller,
@@ -209,11 +206,15 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
             final separation = detailVisible || primaryFraction < 0.999
                 ? widget.gap + dividerWidth
                 : 0.0;
-            final usableWidth =
-                (constraints.maxWidth - separation).clamp(0.0, double.infinity);
+            final usableWidth = (constraints.maxWidth - separation).clamp(
+              0.0,
+              double.infinity,
+            );
             final primaryWidth = usableWidth * primaryFraction;
-            final detailWidth =
-                (usableWidth - primaryWidth).clamp(0.0, double.infinity);
+            final detailWidth = (usableWidth - primaryWidth).clamp(
+              0.0,
+              double.infinity,
+            );
             final settledDetailWidth = usableWidth * (1 - splitFraction);
 
             return Row(
@@ -250,8 +251,8 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
                         maxWidth: settledDetailWidth,
                         child: AnimatedSwitcher(
                           duration: widget.transitionDuration.resolve(context),
-                          reverseDuration:
-                              widget.reverseTransitionDuration.resolve(context),
+                          reverseDuration: widget.reverseTransitionDuration
+                              .resolve(context),
                           switchInCurve: tokens.motion.standardCurve,
                           switchOutCurve: tokens.motion.standardCurve,
                           child: selected == null
@@ -363,53 +364,54 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
     final pageDefaults = UiPageRouteDefaults.maybeOf(context);
     final swipeEnabled =
         widget.phoneEdgeSwipePop ?? pageDefaults?.swipeBackEnabled ?? true;
-    final transitionStyle = widget.phoneTransitionStyle ??
+    final transitionStyle =
+        widget.phoneTransitionStyle ??
         pageDefaults?.transitionStyle ??
         UiNavigationTransitionStyle.softShift;
 
     unawaited(
       navigator
           .push<void>(
-        // UiPageRoute is Open UI Kit's standard push/pop (see its own
-        // doc) — using it here, the same as UiApp uses for its default
-        // routes, is what makes this phone-pushed detail read as the
-        // same signature motion as every other push in the app rather
-        // than a bespoke one. Its edge-swipe gesture drives this route's
-        // own transition directly, so the interactive drag isn't a
-        // separately hand-built preview: nothing here needs to snapshot
-        // or composite the primary pane underneath, because Flutter's
-        // own Navigator already paints both routes correctly for any
-        // in-flight transition.
-        UiPageRoute<void>(
-          swipeBackEnabled: swipeEnabled,
-          transitionStyle: transitionStyle,
-          transitionDuration: widget.transitionDuration.resolve(context),
-          reverseTransitionDuration:
-              widget.reverseTransitionDuration.resolve(context),
-          builder: (routeContext) {
-            return UiDualPaneScope<T>(
-              controller: widget.controller,
-              child: AnimatedBuilder(
-                animation: widget.controller,
-                builder: (context, _) {
-                  return SizedBox.expand(
-                    child: widget.detailBuilder(
-                      context,
-                      widget.controller.selected,
-                      (next) => _selectPhoneRouteDetail(context, next),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      )
+            // UiPageRoute is Open UI Kit's standard push/pop (see its own
+            // doc) — using it here, the same as UiApp uses for its default
+            // routes, is what makes this phone-pushed detail read as the
+            // same signature motion as every other push in the app rather
+            // than a bespoke one. Its edge-swipe gesture drives this route's
+            // own transition directly, so the interactive drag isn't a
+            // separately hand-built preview: nothing here needs to snapshot
+            // or composite the primary pane underneath, because Flutter's
+            // own Navigator already paints both routes correctly for any
+            // in-flight transition.
+            UiPageRoute<void>(
+              swipeBackEnabled: swipeEnabled,
+              transitionStyle: transitionStyle,
+              transitionDuration: widget.transitionDuration.resolve(context),
+              reverseTransitionDuration: widget.reverseTransitionDuration
+                  .resolve(context),
+              builder: (routeContext) {
+                return UiDualPaneScope<T>(
+                  controller: widget.controller,
+                  child: AnimatedBuilder(
+                    animation: widget.controller,
+                    builder: (context, _) {
+                      return SizedBox.expand(
+                        child: widget.detailBuilder(
+                          context,
+                          widget.controller.selected,
+                          (next) => _selectPhoneRouteDetail(context, next),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          )
           .whenComplete(() {
-        if (!mounted) return;
-        _phoneRouteOpen = false;
-        widget.controller.clear();
-      }),
+            if (!mounted) return;
+            _phoneRouteOpen = false;
+            widget.controller.clear();
+          }),
     );
   }
 
@@ -424,11 +426,7 @@ class _UiDualPaneState<T> extends State<UiDualPane<T>> {
 }
 
 class _Pane<T> extends StatelessWidget {
-  const _Pane({
-    super.key,
-    required this.controller,
-    required this.builder,
-  });
+  const _Pane({super.key, required this.controller, required this.builder});
 
   final UiDualPaneController<T> controller;
   final UiDualPaneBuilder<T> builder;

@@ -43,9 +43,9 @@ class UiTimePicker extends StatefulWidget {
     this.hourDisabled,
     this.semanticsPrefix,
   }) : assert(
-          minuteStep > 0 && 60 % minuteStep == 0,
-          'minuteStep must divide 60',
-        );
+         minuteStep > 0 && 60 % minuteStep == 0,
+         'minuteStep must divide 60',
+       );
 
   final UiTimeValue? value;
   final ValueChanged<UiTimeValue>? onChanged;

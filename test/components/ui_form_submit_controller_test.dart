@@ -112,8 +112,7 @@ void main() {
       expect(controller.isFieldDirty('last'), isFalse);
     });
 
-    test(
-        'bindController seeds the baseline from the controller\'s text and '
+    test('bindController seeds the baseline from the controller\'s text and '
         'tracks edits', () {
       final controller = UiFormSubmitController();
       addTearDown(controller.dispose);

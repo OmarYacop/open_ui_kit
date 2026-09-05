@@ -23,14 +23,18 @@ enum _DateView { days, months, years }
 /// Test-only keys for the calendar sub-grids. `@visibleForTesting` is
 /// intentionally omitted so call sites in the test package don't need
 /// to import meta — the keys are harmless if read in production.
-const ValueKey<String> datePickerDayGridKey =
-    ValueKey('ui_date_picker_day_grid');
-const ValueKey<String> datePickerMonthGridKey =
-    ValueKey('ui_date_picker_month_grid');
-const ValueKey<String> datePickerYearGridKey =
-    ValueKey('ui_date_picker_year_grid');
-const ValueKey<String> datePickerHeaderTriggerKey =
-    ValueKey('ui_date_picker_header_trigger');
+const ValueKey<String> datePickerDayGridKey = ValueKey(
+  'ui_date_picker_day_grid',
+);
+const ValueKey<String> datePickerMonthGridKey = ValueKey(
+  'ui_date_picker_month_grid',
+);
+const ValueKey<String> datePickerYearGridKey = ValueKey(
+  'ui_date_picker_year_grid',
+);
+const ValueKey<String> datePickerHeaderTriggerKey = ValueKey(
+  'ui_date_picker_header_trigger',
+);
 
 const double _kDaySize = 32;
 const double _kDayButtonSize = 28;
@@ -197,9 +201,7 @@ class _UiDatePickerState extends State<UiDatePicker> {
       initialPage: _monthPageFor(_visibleMonth),
     );
     _monthPageController = PageController(initialPage: _visibleMonth.year);
-    _yearPageController = PageController(
-      initialPage: _yearPageAnchor ~/ 12,
-    );
+    _yearPageController = PageController(initialPage: _yearPageAnchor ~/ 12);
   }
 
   @override
@@ -254,10 +256,7 @@ class _UiDatePickerState extends State<UiDatePicker> {
   }
 
   void _shiftMonth(int delta) {
-    _animateToPage(
-      _dayPageController,
-      _monthPageFor(_visibleMonth) + delta,
-    );
+    _animateToPage(_dayPageController, _monthPageFor(_visibleMonth) + delta);
   }
 
   void _shiftYearPage(int delta) {
@@ -382,8 +381,8 @@ class _UiDatePickerState extends State<UiDatePicker> {
                 : null,
             onPrevMonth:
                 _view == _DateView.days && widget.showPreviousMonthButton
-                    ? () => _shiftMonth(-1)
-                    : null,
+                ? () => _shiftMonth(-1)
+                : null,
             onNextMonth: _view == _DateView.days && widget.showNextMonthButton
                 ? () => _shiftMonth(1)
                 : null,
@@ -396,41 +395,41 @@ class _UiDatePickerState extends State<UiDatePicker> {
             height: _kPickerPageHeight,
             child: switch (_view) {
               _DateView.days => PageView.builder(
-                  key: const ValueKey('ui_date_picker_day_pages'),
-                  controller: _dayPageController,
-                  onPageChanged: _onDayPageChanged,
-                  itemBuilder: (context, page) {
-                    final month = _monthForPage(page);
-                    return _buildDaysView(
-                      tokens,
-                      month,
-                      current: month == _visibleMonth,
-                    );
-                  },
-                ),
-              _DateView.months => PageView.builder(
-                  key: const ValueKey('ui_date_picker_month_pages'),
-                  controller: _monthPageController,
-                  onPageChanged: _onMonthPageChanged,
-                  itemBuilder: (context, year) => _buildMonthsView(
+                key: const ValueKey('ui_date_picker_day_pages'),
+                controller: _dayPageController,
+                onPageChanged: _onDayPageChanged,
+                itemBuilder: (context, page) {
+                  final month = _monthForPage(page);
+                  return _buildDaysView(
                     tokens,
-                    year,
-                    current: year == _visibleMonth.year,
-                  ),
+                    month,
+                    current: month == _visibleMonth,
+                  );
+                },
+              ),
+              _DateView.months => PageView.builder(
+                key: const ValueKey('ui_date_picker_month_pages'),
+                controller: _monthPageController,
+                onPageChanged: _onMonthPageChanged,
+                itemBuilder: (context, year) => _buildMonthsView(
+                  tokens,
+                  year,
+                  current: year == _visibleMonth.year,
                 ),
+              ),
               _DateView.years => PageView.builder(
-                  key: const ValueKey('ui_date_picker_year_pages'),
-                  controller: _yearPageController,
-                  onPageChanged: _onYearPageChanged,
-                  itemBuilder: (context, page) {
-                    final anchor = page * 12;
-                    return _buildYearsView(
-                      tokens,
-                      anchor,
-                      current: anchor == _yearPageAnchor,
-                    );
-                  },
-                ),
+                key: const ValueKey('ui_date_picker_year_pages'),
+                controller: _yearPageController,
+                onPageChanged: _onYearPageChanged,
+                itemBuilder: (context, page) {
+                  final anchor = page * 12;
+                  return _buildYearsView(
+                    tokens,
+                    anchor,
+                    current: anchor == _yearPageAnchor,
+                  );
+                },
+              ),
             },
           ),
         ],
@@ -527,7 +526,8 @@ class _UiDatePickerState extends State<UiDatePicker> {
       itemBuilder: (index) {
         final month = index + 1;
         final selectedDate = widget.value;
-        final isSelected = selectedDate != null &&
+        final isSelected =
+            selectedDate != null &&
             selectedDate.year == year &&
             selectedDate.month == month;
         return _GridCell(
@@ -574,7 +574,8 @@ class _UiDatePickerState extends State<UiDatePicker> {
 
 // Tiny ergonomic helper so the _Header wiring reads cleanly.
 extension _BindVoidCallback on void Function(int) {
-  VoidCallback bind(int v) => () => this(v);
+  VoidCallback bind(int v) =>
+      () => this(v);
 }
 
 class _Header extends StatelessWidget {
@@ -675,9 +676,7 @@ class _HeaderLabelTrigger extends StatelessWidget {
         builder: (context, state, _) => UiBox(
           background: state.hovered ? c.surfaceMuted : _kTransparent,
           borderRadius: tokens.radius.smAll,
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.x2,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x2),
           child: SizedBox(
             height: _kHeaderHeight,
             child: Center(
@@ -780,9 +779,7 @@ class _DayGrid extends StatelessWidget {
         children: [
           for (var row = 0; row < totalCells ~/ 7; row++)
             Padding(
-              padding: EdgeInsets.only(
-                top: row == 0 ? 0 : _kDayRowGap,
-              ),
+              padding: EdgeInsets.only(top: row == 0 ? 0 : _kDayRowGap),
               child: Row(
                 children: [
                   for (var col = 0; col < 7; col++) _buildCell(row * 7 + col),
@@ -857,18 +854,19 @@ class _DayCell extends StatelessWidget {
         minTapSize: _kDaySize,
         builder: (context, state, _) {
           final rangeActive = rangeStart != null && rangeEnd != null;
-          final rangeHighlighted = rangeActive &&
+          final rangeHighlighted =
+              rangeActive &&
               (inRange || rangeStartSelected || rangeEndSelected);
           final buttonBg = selected
               ? c.primary
               : state.hovered
-                  ? c.surfaceMuted
-                  : _kTransparent;
+              ? c.surfaceMuted
+              : _kTransparent;
           final fg = selected
               ? c.onPrimary
               : disabled || outsideMonth
-                  ? c.textMuted
-                  : c.textPrimary;
+              ? c.textMuted
+              : c.textPrimary;
           return Stack(
             alignment: Alignment.center,
             children: [
@@ -1038,8 +1036,8 @@ class _GridCell extends StatelessWidget {
           final bg = selected
               ? c.primary
               : state.hovered
-                  ? c.surfaceMuted
-                  : const Color(0x00000000);
+              ? c.surfaceMuted
+              : const Color(0x00000000);
           final fg = selected ? c.onPrimary : c.textPrimary;
           return Padding(
             padding: const EdgeInsets.all(2),

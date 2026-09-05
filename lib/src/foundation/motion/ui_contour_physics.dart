@@ -39,9 +39,9 @@ class UiContourPhysics {
     required this.maxCompression,
     required this.overshootPolicy,
     required this.settleThreshold,
-  })  : assert(maxStretch >= 0 && maxStretch <= 0.5),
-        assert(maxCompression >= 0 && maxCompression <= 0.5),
-        assert(settleThreshold >= 0 && settleThreshold <= 1);
+  }) : assert(maxStretch >= 0 && maxStretch <= 0.5),
+       assert(maxCompression >= 0 && maxCompression <= 0.5),
+       assert(settleThreshold >= 0 && settleThreshold <= 1);
 
   /// Small controls: buttons, chips, icon triggers. Low amplitude.
   static const control = UiContourPhysics(

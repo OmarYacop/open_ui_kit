@@ -43,8 +43,8 @@ class UiRating extends StatefulWidget {
     this.icon,
     this.focusNode,
     this.autofocus = false,
-  })  : assert(count > 0, 'count must be greater than zero'),
-        assert(value >= 0, 'value must not be negative');
+  }) : assert(count > 0, 'count must be greater than zero'),
+       assert(value >= 0, 'value must not be negative');
 
   /// Current rating value. Supports half-values (e.g. `3.5`) when
   /// [allowHalfRating] is `true`; otherwise callers should pass whole

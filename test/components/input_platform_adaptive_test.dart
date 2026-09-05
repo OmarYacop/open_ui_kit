@@ -4,10 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) => UiApp(
-      lightTokens: UiThemeTokens.light,
-      mode: UiThemeMode.light,
-      home: ColoredBox(color: const Color(0x00000000), child: child),
-    );
+  lightTokens: UiThemeTokens.light,
+  mode: UiThemeMode.light,
+  home: ColoredBox(color: const Color(0x00000000), child: child),
+);
 
 Future<void> _withPlatform(
   TargetPlatform platform,

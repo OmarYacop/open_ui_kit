@@ -30,8 +30,9 @@ void main() {
     expect(hiding.followerTranslation, 180);
   });
 
-  testWidgets('keyboard dock tracks current inset without relaying out child',
-      (tester) async {
+  testWidgets('keyboard dock tracks current inset without relaying out child', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -81,8 +82,9 @@ void main() {
     expect(tester.getSize(find.byKey(const Key('composer'))).height, 56);
   });
 
-  testWidgets('keyboard replacement holds composer while the IME retreats',
-      (tester) async {
+  testWidgets('keyboard replacement holds composer while the IME retreats', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -122,27 +124,28 @@ void main() {
     expect(tester.getSize(find.byKey(const Key('replacement'))).height, 300);
   });
 
-  testWidgets('keyboard replacement is clipped during its height transition',
-      (tester) async {
+  testWidgets('keyboard replacement is clipped during its height transition', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     Widget dock(bool visible) => Directionality(
-          textDirection: TextDirection.ltr,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: UiKeyboardDock(
-              replacementVisible: visible,
-              replacementExtent: 300,
-              replacement: const SizedBox(
-                key: Key('transitioning-replacement'),
-                height: 300,
-              ),
-              child: const SizedBox(width: 390, height: 56),
-            ),
+      textDirection: TextDirection.ltr,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: UiKeyboardDock(
+          replacementVisible: visible,
+          replacementExtent: 300,
+          replacement: const SizedBox(
+            key: Key('transitioning-replacement'),
+            height: 300,
           ),
-        );
+          child: const SizedBox(width: 390, height: 56),
+        ),
+      ),
+    );
 
     await tester.pumpWidget(dock(false));
     await tester.pumpWidget(dock(true));
@@ -158,8 +161,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('keyboard geometry accessors rebuild only for their aspect',
-      (tester) async {
+  testWidgets('keyboard geometry accessors rebuild only for their aspect', (
+    tester,
+  ) async {
     final geometry = ValueNotifier<UiKeyboardGeometry>(
       const UiKeyboardGeometry(
         currentInset: 120,
@@ -204,10 +208,7 @@ void main() {
           ],
         ),
         builder: (context, value, child) {
-          return UiKeyboardGeometryOverride(
-            geometry: value,
-            child: child!,
-          );
+          return UiKeyboardGeometryOverride(geometry: value, child: child!);
         },
       ),
     );
@@ -227,8 +228,9 @@ void main() {
     expect(visibilityBuilds, 1);
   });
 
-  testWidgets('page body inset accessors rebuild only for their edge',
-      (tester) async {
+  testWidgets('page body inset accessors rebuild only for their edge', (
+    tester,
+  ) async {
     final insets = ValueNotifier<EdgeInsets>(
       const EdgeInsets.fromLTRB(1, 2, 3, 4),
     );
@@ -270,8 +272,9 @@ void main() {
     expect(bottomBuilds, 1);
   });
 
-  testWidgets('page and keyboard dock consume the keyboard exactly once',
-      (tester) async {
+  testWidgets('page and keyboard dock consume the keyboard exactly once', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -293,10 +296,7 @@ void main() {
               children: [
                 const Expanded(child: SizedBox()),
                 UiKeyboardDock(
-                  child: SizedBox(
-                    key: const Key('page-composer'),
-                    height: 56,
-                  ),
+                  child: SizedBox(key: const Key('page-composer'), height: 56),
                 ),
               ],
             ),
@@ -311,8 +311,9 @@ void main() {
     );
   });
 
-  testWidgets('page can resize its body to the visible keyboard viewport',
-      (tester) async {
+  testWidgets('page can resize its body to the visible keyboard viewport', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -350,8 +351,9 @@ void main() {
     );
   });
 
-  testWidgets('iOS reduced motion settles immediately at the target inset',
-      (tester) async {
+  testWidgets('iOS reduced motion settles immediately at the target inset', (
+    tester,
+  ) async {
     final events = StreamController<dynamic>();
     addTearDown(events.close);
 

@@ -21,10 +21,7 @@ Widget _host(Size size) {
                   child: UiText('$item'),
                 ),
                 sectionBuilder: (_, item, __) => item.isEven
-                    ? UiText(
-                        'section-$item',
-                        key: ValueKey('section-$item'),
-                      )
+                    ? UiText('section-$item', key: ValueKey('section-$item'))
                     : null,
               ),
             ],

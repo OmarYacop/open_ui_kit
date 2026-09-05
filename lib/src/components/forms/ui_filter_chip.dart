@@ -92,7 +92,8 @@ class UiFilterChip extends StatelessWidget {
                           child: leading!,
                         ),
                         SizedBox(
-                            width: UiButtonMetrics.gap(size, tokens.spacing)),
+                          width: UiButtonMetrics.gap(size, tokens.spacing),
+                        ),
                       ],
                       Flexible(
                         child: UiText(
@@ -108,7 +109,8 @@ class UiFilterChip extends StatelessWidget {
                       ),
                       if (trailing != null) ...[
                         SizedBox(
-                            width: UiButtonMetrics.gap(size, tokens.spacing)),
+                          width: UiButtonMetrics.gap(size, tokens.spacing),
+                        ),
                         IconTheme.merge(
                           data: IconThemeData(
                             color: colors.foreground,
@@ -128,10 +130,7 @@ class UiFilterChip extends StatelessWidget {
     );
   }
 
-  _ChipColors _resolveColors(
-    UiThemeTokens tokens,
-    UiPressableState state,
-  ) {
+  _ChipColors _resolveColors(UiThemeTokens tokens, UiPressableState state) {
     final c = tokens.colors;
     final selectedBg = selectedBackgroundColor ?? c.primary;
     final selectedFg = selectedForegroundColor ?? c.onPrimary;
@@ -140,8 +139,9 @@ class UiFilterChip extends StatelessWidget {
 
     var background = selected ? selectedBg : unselectedBg;
     final foreground = selected ? selectedFg : unselectedFg;
-    final border =
-        selected ? selectedBorderColor ?? selectedBg : borderColor ?? c.border;
+    final border = selected
+        ? selectedBorderColor ?? selectedBg
+        : borderColor ?? c.border;
 
     if (!state.disabled) {
       if (state.pressed) {

@@ -126,9 +126,8 @@ class _UiDateRangePickerState extends State<UiDateRangePicker> {
                     _visibleMonth.year,
                     _visibleMonth.month + 1,
                   ),
-                  onVisibleMonthChanged: (month) => _setVisibleMonth(
-                    DateTime(month.year, month.month - 1),
-                  ),
+                  onVisibleMonthChanged: (month) =>
+                      _setVisibleMonth(DateTime(month.year, month.month - 1)),
                   rangeStart: _start,
                   rangeEnd: _end,
                   daySemanticsPrefix: _daySemanticsPrefix(),

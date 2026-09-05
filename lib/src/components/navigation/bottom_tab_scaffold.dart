@@ -81,15 +81,15 @@ class UiBottomTabScaffold extends StatelessWidget {
     this.moreLabel,
     this.overflowDrawerBuilder,
     this.bottomAccessory,
-  })  : assert(
-          items.length == pages.length,
-          'items and pages must have the same length',
-        ),
-        assert(maxVisibleBottomItems > 0),
-        assert(
-          !convertToRailOnWideScreens || railBuilder != null,
-          'railBuilder is required when convertToRailOnWideScreens is true',
-        );
+  }) : assert(
+         items.length == pages.length,
+         'items and pages must have the same length',
+       ),
+       assert(maxVisibleBottomItems > 0),
+       assert(
+         !convertToRailOnWideScreens || railBuilder != null,
+         'railBuilder is required when convertToRailOnWideScreens is true',
+       );
 
   final List<UiBottomTabItem> items;
   final int currentIndex;
@@ -149,9 +149,11 @@ class UiBottomTabScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final i = currentIndex.clamp(0, pages.length - 1);
-    final body =
-        preserveState ? _PreservedPageStack(index: i, pages: pages) : pages[i];
-    final hasManualBottomItems = bottomItems != null ||
+    final body = preserveState
+        ? _PreservedPageStack(index: i, pages: pages)
+        : pages[i];
+    final hasManualBottomItems =
+        bottomItems != null ||
         bottomCurrentIndex != null ||
         onBottomChanged != null;
     final effectiveBottomItems = bottomItems ?? items;
@@ -163,7 +165,8 @@ class UiBottomTabScaffold extends StatelessWidget {
     if (convertToRailOnWideScreens && railBuilder != null) {
       return LayoutBuilder(
         builder: (context, constraints) {
-          final useRail = constraints.maxWidth.isFinite &&
+          final useRail =
+              constraints.maxWidth.isFinite &&
               constraints.maxWidth >= railBreakpoint &&
               !_isCompactMobileDevice(context, railBreakpoint);
           if (useRail) {
@@ -369,7 +372,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   // no equivalent anywhere else in the kit, so every other "optional slot"
   // component would have had to re-invent it.
   late final UiContourPresenceController<UiBottomTabAccessory>
-      _accessoryPresence = UiContourPresenceController<UiBottomTabAccessory>(
+  _accessoryPresence = UiContourPresenceController<UiBottomTabAccessory>(
     vsync: this,
   )..addListener(_handleAccessoryTick);
 
@@ -382,8 +385,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   // because a fresh `UiBottomTabAccessory` is normally rebuilt every frame
   // even when it represents the same logical tab.
   late final UiContourCrossfadeController<UiBottomTabAccessory>
-      _accessoryContentFade =
-      UiContourCrossfadeController<UiBottomTabAccessory>(
+  _accessoryContentFade = UiContourCrossfadeController<UiBottomTabAccessory>(
     vsync: this,
   )..addListener(_handleAccessoryTick);
 
@@ -468,8 +470,8 @@ class _BottomTabBodyState extends State<_BottomTabBody>
         final resolvedCurrentIndex = overflow == null
             ? widget.currentIndex
             : _moreDrawerOpen
-                ? overflow.moreIndex
-                : overflow.currentIndex;
+            ? overflow.moreIndex
+            : overflow.currentIndex;
         final resolvedChanged = overflow == null
             ? widget.onChanged
             : (int index) => _handleOverflowTap(context, overflow, index);
@@ -548,7 +550,8 @@ class _BottomTabBodyState extends State<_BottomTabBody>
       1,
       widget.canonicalItems.length,
     );
-    final needsOverflow = widget.canonicalItems.length > directLimit ||
+    final needsOverflow =
+        widget.canonicalItems.length > directLimit ||
         widget.canonicalItems.length > capacity;
     if (!needsOverflow) return null;
 
@@ -582,16 +585,19 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     required double accessoryReservation,
   }) {
     final resolvedWidth = availableWidth.isFinite
-        ? (availableWidth - widget.floatingHorizontalMargin * 2)
-            .clamp(0.0, widget.floatingMaxWidth)
+        ? (availableWidth - widget.floatingHorizontalMargin * 2).clamp(
+            0.0,
+            widget.floatingMaxWidth,
+          )
         : widget.floatingMaxWidth;
     final mainDockWidth = (resolvedWidth - accessoryReservation).clamp(
       0.0,
       resolvedWidth,
     );
-    final capacity = ((mainDockWidth - _kBottomTabScaffoldDockPadding * 2) /
-            _kBottomTabScaffoldControlWidth)
-        .floor();
+    final capacity =
+        ((mainDockWidth - _kBottomTabScaffoldDockPadding * 2) /
+                _kBottomTabScaffoldControlWidth)
+            .floor();
     return capacity.clamp(2, widget.maxVisibleItems + 1);
   }
 
@@ -599,7 +605,8 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     final accessory = _accessoryPresence.value;
     if (accessory == null) return 0;
 
-    final isWide = constraints.maxWidth.isFinite &&
+    final isWide =
+        constraints.maxWidth.isFinite &&
         constraints.maxWidth >= widget.adaptiveBreakpoint;
     final floating = switch (widget.layout) {
       UiBottomTabBarLayout.edgeToEdge => false,
@@ -616,14 +623,16 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     BoxConstraints constraints,
     List<UiBottomTabItem> items,
   ) {
-    final isWide = constraints.maxWidth.isFinite &&
+    final isWide =
+        constraints.maxWidth.isFinite &&
         constraints.maxWidth >= widget.adaptiveBreakpoint;
     final resolvedLayout = switch (widget.layout) {
       UiBottomTabBarLayout.edgeToEdge => UiBottomTabBarLayout.edgeToEdge,
       UiBottomTabBarLayout.floatingDock => UiBottomTabBarLayout.floatingDock,
-      UiBottomTabBarLayout.adaptive => isWide
-          ? UiBottomTabBarLayout.floatingDock
-          : UiBottomTabBarLayout.edgeToEdge,
+      UiBottomTabBarLayout.adaptive =>
+        isWide
+            ? UiBottomTabBarLayout.floatingDock
+            : UiBottomTabBarLayout.edgeToEdge,
     };
 
     final barHeight = resolveBottomTabBarHeight(
@@ -706,7 +715,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
             label: widget.canonicalItems[index].label,
             icon: widget.canonicalCurrentIndex == index
                 ? widget.canonicalItems[index].activeIcon ??
-                    widget.canonicalItems[index].icon
+                      widget.canonicalItems[index].icon
                 : widget.canonicalItems[index].icon,
             badgeCount: widget.canonicalItems[index].badge,
             selected: widget.canonicalCurrentIndex == index,

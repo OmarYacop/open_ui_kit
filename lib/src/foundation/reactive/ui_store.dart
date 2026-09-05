@@ -75,10 +75,7 @@ class UiStoreScope<TState> extends InheritedNotifier<UiStore<TState>> {
     return store;
   }
 
-  static TState stateOf<TState>(
-    BuildContext context, {
-    bool listen = true,
-  }) {
+  static TState stateOf<TState>(BuildContext context, {bool listen = true}) {
     return of<TState>(context, listen: listen).state;
   }
 }

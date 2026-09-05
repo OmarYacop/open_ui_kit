@@ -95,8 +95,8 @@ class UiFormSubmitController extends ChangeNotifier
   UiFormSubmitController({
     Map<String, Object?> initialValues = const {},
     List<UiFormControllerField> controllers = const [],
-  })  : _initial = Map.of(initialValues),
-        _current = Map.of(initialValues) {
+  }) : _initial = Map.of(initialValues),
+       _current = Map.of(initialValues) {
     _dirty = _computeDirty();
     _canSubmit = _dirty && isValid;
     for (final f in controllers) {
@@ -131,8 +131,8 @@ class UiFormSubmitController extends ChangeNotifier
   bool get isValid => _externalValid && _validatorsPass;
 
   bool get _validatorsPass => _validators.entries.every(
-        (entry) => entry.value(_current[entry.key] as String? ?? '') == null,
-      );
+    (entry) => entry.value(_current[entry.key] as String? ?? '') == null,
+  );
 
   /// Whether the form should accept submission: dirty and valid.
   bool get canSubmit => _canSubmit;

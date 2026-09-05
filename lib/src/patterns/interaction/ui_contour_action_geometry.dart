@@ -137,8 +137,9 @@ abstract final class UiContourActionGeometrySolver {
       );
       final rect = Rect.lerp(source, destRects[i], t)!;
       actionRects.add(rect);
-      final visibility =
-          naturalWidth <= 0 ? 0.0 : (rect.width / naturalWidth).clamp(0.0, 1.0);
+      final visibility = naturalWidth <= 0
+          ? 0.0
+          : (rect.width / naturalWidth).clamp(0.0, 1.0);
       actionVisibility.add(visibility);
       actionInteractive.add(t >= input.activationThreshold);
     }

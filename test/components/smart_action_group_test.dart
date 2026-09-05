@@ -244,52 +244,52 @@ void main() {
     });
 
     testWidgets(
-        'keeps the mechanical renderer overflow-free during wide morphs', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(
-          UiSmartActionGroup(
-            duration: const UiMotionDuration.custom(
-              Duration(milliseconds: 320),
+      'keeps the mechanical renderer overflow-free during wide morphs',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            UiSmartActionGroup(
+              duration: const UiMotionDuration.custom(
+                Duration(milliseconds: 320),
+              ),
+              actions: [
+                UiSmartActionGroupAction(
+                  id: 'primary',
+                  label: 'Primary',
+                  onPressed: () {},
+                ),
+                UiSmartActionGroupAction(
+                  id: 'secondary',
+                  label: 'Secondary',
+                  onPressed: () {},
+                ),
+                UiSmartActionGroupAction(
+                  id: 'third',
+                  label: 'Third',
+                  onPressed: () {},
+                ),
+              ],
             ),
-            actions: [
-              UiSmartActionGroupAction(
-                id: 'primary',
-                label: 'Primary',
-                onPressed: () {},
-              ),
-              UiSmartActionGroupAction(
-                id: 'secondary',
-                label: 'Secondary',
-                onPressed: () {},
-              ),
-              UiSmartActionGroupAction(
-                id: 'third',
-                label: 'Third',
-                onPressed: () {},
-              ),
-            ],
+            width: 520,
           ),
-          width: 520,
-        ),
-      );
+        );
 
-      expect(find.text('Primary'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+        expect(find.text('Primary'), findsOneWidget);
+        expect(find.text('More'), findsOneWidget);
 
-      await tester.tap(find.text('More'));
-      await tester.pump(const Duration(milliseconds: 16));
+        await tester.tap(find.text('More'));
+        await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Primary'), findsWidgets);
-      expect(tester.takeException(), isNull);
+        expect(find.text('Primary'), findsWidgets);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Secondary'), findsOneWidget);
-      expect(find.text('Third'), findsOneWidget);
-      expect(find.text('Less'), findsOneWidget);
-    });
+        expect(find.text('Secondary'), findsOneWidget);
+        expect(find.text('Third'), findsOneWidget);
+        expect(find.text('Less'), findsOneWidget);
+      },
+    );
 
     testWidgets('uses equal expanded slots by default', (tester) async {
       await tester.pumpWidget(
@@ -404,8 +404,9 @@ void main() {
       final oneTop = tester.getTopLeft(find.text('One')).dy;
       final twoTop = tester.getTopLeft(find.text('Two')).dy;
       final threeTop = tester.getTopLeft(find.text('Three')).dy;
-      final groupHeight =
-          tester.getSize(find.byType(UiSmartActionGroup)).height;
+      final groupHeight = tester
+          .getSize(find.byType(UiSmartActionGroup))
+          .height;
 
       expect(twoTop, oneTop);
       expect(threeTop, oneTop);
@@ -435,8 +436,9 @@ void main() {
 
       final primaryTop = tester.getTopLeft(find.text('Primary')).dy;
       final moreTop = tester.getTopLeft(find.text('More')).dy;
-      final groupHeight =
-          tester.getSize(find.byType(UiSmartActionGroup)).height;
+      final groupHeight = tester
+          .getSize(find.byType(UiSmartActionGroup))
+          .height;
 
       expect(moreTop, primaryTop);
       expect(groupHeight, 44);

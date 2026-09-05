@@ -28,10 +28,7 @@ void main() {
                 label: 'Student view',
               ),
               SizedBox(height: 12),
-              UiSwitch(
-                label: 'Notifications',
-                value: true,
-              ),
+              UiSwitch(label: 'Notifications', value: true),
             ],
           ),
         ),
@@ -50,10 +47,7 @@ void main() {
         size: const Size(360, 120),
         child: const Padding(
           padding: EdgeInsets.all(16),
-          child: UiPagination(
-            currentPage: 3,
-            totalPages: 12,
-          ),
+          child: UiPagination(currentPage: 3, totalPages: 12),
         ),
       );
 

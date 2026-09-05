@@ -127,7 +127,8 @@ class _UiPressableState extends State<UiPressable> {
       );
     }
 
-    final cursor = widget.mouseCursor ??
+    final cursor =
+        widget.mouseCursor ??
         (disabled ? SystemMouseCursors.basic : SystemMouseCursors.click);
 
     content = MouseRegion(

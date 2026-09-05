@@ -29,18 +29,13 @@ class UiMessage extends StatelessWidget {
     final content = Flexible(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment:
-            atEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: atEnd
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
-          if (header != null) ...[
-            header!,
-            SizedBox(height: tokens.spacing.x1),
-          ],
+          if (header != null) ...[header!, SizedBox(height: tokens.spacing.x1)],
           child,
-          if (footer != null) ...[
-            SizedBox(height: tokens.spacing.x1),
-            footer!,
-          ],
+          if (footer != null) ...[SizedBox(height: tokens.spacing.x1), footer!],
         ],
       ),
     );
@@ -79,11 +74,7 @@ class UiMessage extends StatelessWidget {
 }
 
 class UiMessageGroup extends StatelessWidget {
-  const UiMessageGroup({
-    super.key,
-    required this.children,
-    this.spacing = 4,
-  });
+  const UiMessageGroup({super.key, required this.children, this.spacing = 4});
 
   final List<Widget> children;
   final double spacing;

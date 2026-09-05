@@ -32,7 +32,7 @@ import 'ui_motion_spec.dart';
 /// uses with `child.key`.
 class UiContourCrossfadeController<T> extends ChangeNotifier {
   UiContourCrossfadeController({required TickerProvider vsync})
-      : _animation = AnimationController(vsync: vsync, value: 1) {
+    : _animation = AnimationController(vsync: vsync, value: 1) {
     _animation.addListener(_handleTick);
   }
 
@@ -197,7 +197,8 @@ Widget buildUiContourCrossfade(
   if (!uiContourPrefersGlassTreatment()) return stack;
 
   final tokens = UiThemeTokens.effectsOf(context);
-  final sigma = tokens.scaleBlur(peakBlurSigma) *
+  final sigma =
+      tokens.scaleBlur(peakBlurSigma) *
       uiContourCrossfadeBlurFraction(progress);
   if (sigma <= 0) return stack;
 

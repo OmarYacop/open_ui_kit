@@ -84,10 +84,9 @@ class TabLayout {
     return TabLayout(
       widths: widths,
       lefts: lefts,
-      selectionCenters: selectionCenters ??
-          [
-            for (var i = 0; i < widths.length; i++) lefts[i] + widths[i] / 2,
-          ],
+      selectionCenters:
+          selectionCenters ??
+          [for (var i = 0; i < widths.length; i++) lefts[i] + widths[i] / 2],
       selectedIndex: selectedIndex,
     );
   }
@@ -112,8 +111,9 @@ class TabLayout {
     final selectedFloor = selectedNatural > policy.selectedAbsMin
         ? selectedNatural
         : policy.selectedAbsMin;
-    final selectedCap =
-        selectedFloor > policy.selectedMax ? selectedFloor : policy.selectedMax;
+    final selectedCap = selectedFloor > policy.selectedMax
+        ? selectedFloor
+        : policy.selectedMax;
     final selectedPreferred = (selectedNatural + policy.selectedExtraRoom)
         .clamp(selectedFloor, selectedCap)
         .toDouble();
@@ -400,10 +400,7 @@ TabDragEnd endTabDrag({
       nextIndex = i;
     }
   }
-  return TabDragEnd(
-    state: TabDragState.idle,
-    selectionIndex: nextIndex,
-  );
+  return TabDragEnd(state: TabDragState.idle, selectionIndex: nextIndex);
 }
 
 /// Cancels the drag, returning idle state.

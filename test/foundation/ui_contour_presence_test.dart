@@ -25,19 +25,18 @@ void main() {
     setUp(() => vsync = _Vsync());
 
     testWidgets(
-        'starts present without animating when constructed with a non-null initial value',
-        (
-      tester,
-    ) async {
-      final ctx = await _pumpContext(tester);
-      final presence = UiContourPresenceController<String>(vsync: vsync);
-      addTearDown(presence.dispose);
+      'starts present without animating when constructed with a non-null initial value',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final presence = UiContourPresenceController<String>(vsync: vsync);
+        addTearDown(presence.dispose);
 
-      presence.update(ctx, 'a');
-      expect(presence.value, 'a');
-      expect(presence.phase, UiContourPhase.expanded);
-      expect(presence.progress, 1);
-    });
+        presence.update(ctx, 'a');
+        expect(presence.value, 'a');
+        expect(presence.phase, UiContourPhase.expanded);
+        expect(presence.progress, 1);
+      },
+    );
 
     testWidgets('starts absent when constructed with a null initial value', (
       tester,
@@ -52,27 +51,26 @@ void main() {
     });
 
     testWidgets(
-        'retains the last value while animating out, then clears once settled',
-        (
-      tester,
-    ) async {
-      final ctx = await _pumpContext(tester);
-      final presence = UiContourPresenceController<String>(vsync: vsync);
-      addTearDown(presence.dispose);
+      'retains the last value while animating out, then clears once settled',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final presence = UiContourPresenceController<String>(vsync: vsync);
+        addTearDown(presence.dispose);
 
-      presence.update(ctx, 'a');
-      await tester.pump();
+        presence.update(ctx, 'a');
+        await tester.pump();
 
-      presence.update(ctx, null);
-      // Immediately after requesting removal, the value must still be the
-      // last one — this is the whole point of the abstraction.
-      expect(presence.value, 'a');
-      expect(presence.phase, UiContourPhase.closing);
+        presence.update(ctx, null);
+        // Immediately after requesting removal, the value must still be the
+        // last one — this is the whole point of the abstraction.
+        expect(presence.value, 'a');
+        expect(presence.phase, UiContourPhase.closing);
 
-      await tester.pumpAndSettle();
-      expect(presence.value, isNull);
-      expect(presence.phase, UiContourPhase.collapsed);
-    });
+        await tester.pumpAndSettle();
+        expect(presence.value, isNull);
+        expect(presence.phase, UiContourPhase.collapsed);
+      },
+    );
 
     testWidgets('progress animates smoothly (not a snap) across the removal', (
       tester,
@@ -94,74 +92,72 @@ void main() {
     });
 
     testWidgets(
-        'a value appearing for the first time (was null, now non-null) animates in',
-        (
-      tester,
-    ) async {
-      final ctx = await _pumpContext(tester);
-      final presence = UiContourPresenceController<String>(vsync: vsync);
-      addTearDown(presence.dispose);
+      'a value appearing for the first time (was null, now non-null) animates in',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final presence = UiContourPresenceController<String>(vsync: vsync);
+        addTearDown(presence.dispose);
 
-      presence.update(ctx, null);
-      await tester.pump();
+        presence.update(ctx, null);
+        await tester.pump();
 
-      presence.update(ctx, 'a');
-      expect(presence.value, 'a');
-      expect(presence.phase, UiContourPhase.opening);
-      expect(presence.progress, lessThan(1));
+        presence.update(ctx, 'a');
+        expect(presence.value, 'a');
+        expect(presence.phase, UiContourPhase.opening);
+        expect(presence.progress, lessThan(1));
 
-      // The tick that starts a ticker establishes its baseline (elapsed 0);
-      // a zero-duration warm-up pump consumes that baseline tick so the
-      // following timed pump reports real elapsed progress.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 60));
-      expect(presence.progress, greaterThan(0));
-      expect(presence.progress, lessThan(1));
+        // The tick that starts a ticker establishes its baseline (elapsed 0);
+        // a zero-duration warm-up pump consumes that baseline tick so the
+        // following timed pump reports real elapsed progress.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(presence.progress, greaterThan(0));
+        expect(presence.progress, lessThan(1));
 
-      await tester.pumpAndSettle();
-      expect(presence.progress, 1);
-      expect(presence.value, 'a');
-    });
-
-    testWidgets(
-        'switching directly from one non-null value to a different non-null value does not flicker null',
-        (
-      tester,
-    ) async {
-      final ctx = await _pumpContext(tester);
-      final presence = UiContourPresenceController<String>(vsync: vsync);
-      addTearDown(presence.dispose);
-
-      presence.update(ctx, 'a');
-      await tester.pumpAndSettle();
-
-      presence.update(ctx, 'b');
-      expect(presence.value, 'b');
-      await tester.pump(const Duration(milliseconds: 16));
-      expect(presence.value, 'b');
-      await tester.pumpAndSettle();
-      expect(presence.value, 'b');
-      expect(presence.phase, UiContourPhase.expanded);
-    });
+        await tester.pumpAndSettle();
+        expect(presence.progress, 1);
+        expect(presence.value, 'a');
+      },
+    );
 
     testWidgets(
-        'onRemove transforms the retained value before it starts fading out', (
-      tester,
-    ) async {
-      final ctx = await _pumpContext(tester);
-      final presence = UiContourPresenceController<List<String>>(
-        vsync: vsync,
-      );
-      addTearDown(presence.dispose);
+      'switching directly from one non-null value to a different non-null value does not flicker null',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final presence = UiContourPresenceController<String>(vsync: vsync);
+        addTearDown(presence.dispose);
 
-      presence.update(ctx, ['expanded']);
-      await tester.pump();
+        presence.update(ctx, 'a');
+        await tester.pumpAndSettle();
 
-      presence.update(ctx, null, onRemove: (v) => ['collapsed']);
-      expect(presence.value, ['collapsed']);
-      expect(presence.phase, UiContourPhase.closing);
-      await tester.pumpAndSettle();
-    });
+        presence.update(ctx, 'b');
+        expect(presence.value, 'b');
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(presence.value, 'b');
+        await tester.pumpAndSettle();
+        expect(presence.value, 'b');
+        expect(presence.phase, UiContourPhase.expanded);
+      },
+    );
+
+    testWidgets(
+      'onRemove transforms the retained value before it starts fading out',
+      (tester) async {
+        final ctx = await _pumpContext(tester);
+        final presence = UiContourPresenceController<List<String>>(
+          vsync: vsync,
+        );
+        addTearDown(presence.dispose);
+
+        presence.update(ctx, ['expanded']);
+        await tester.pump();
+
+        presence.update(ctx, null, onRemove: (v) => ['collapsed']);
+        expect(presence.value, ['collapsed']);
+        expect(presence.phase, UiContourPhase.closing);
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('rapid toggling does not corrupt state', (tester) async {
       final ctx = await _pumpContext(tester);
@@ -203,9 +199,7 @@ void main() {
       expect(presence.progress, 0);
     });
 
-    test(
-        'dispose is safe and use-after-dispose is inert on the underlying controller',
-        () {
+    test('dispose is safe and use-after-dispose is inert on the underlying controller', () {
       final presence = UiContourPresenceController<String>(vsync: _Vsync());
       presence.dispose();
       expect(presence.isDisposed, isTrue);

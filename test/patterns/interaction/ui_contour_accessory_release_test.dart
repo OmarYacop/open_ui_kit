@@ -34,96 +34,94 @@ Widget _host(
 }
 
 List<UiContourBarItem> _items() => [
-      UiContourBarItem(
-        icon: const Icon(Icons.home_rounded),
-        semanticsLabel: 'Home',
-        onPressed: () {},
-      ),
-      UiContourBarItem(
-        icon: const Icon(Icons.message_rounded),
-        semanticsLabel: 'Messages',
-        onPressed: () {},
-      ),
-    ];
+  UiContourBarItem(
+    icon: const Icon(Icons.home_rounded),
+    semanticsLabel: 'Home',
+    onPressed: () {},
+  ),
+  UiContourBarItem(
+    icon: const Icon(Icons.message_rounded),
+    semanticsLabel: 'Messages',
+    onPressed: () {},
+  ),
+];
 
 void main() {
   testWidgets(
-      'collapsed: bar items and search trigger are visible and tappable', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(UiContourAccessoryRelease(items: _items())),
-    );
-    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-    expect(find.bySemanticsLabel(_searchTriggerLabel), findsOneWidget);
-    expect(find.byKey(_accessoryKey), findsNothing);
-  });
+    'collapsed: bar items and search trigger are visible and tappable',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(UiContourAccessoryRelease(items: _items())),
+      );
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+      expect(find.bySemanticsLabel(_searchTriggerLabel), findsOneWidget);
+      expect(find.byKey(_accessoryKey), findsNothing);
+    },
+  );
 
   testWidgets(
-      'the bar and accessory each keep persistent identity across the transition',
-      (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(UiContourAccessoryRelease(items: _items())),
-    );
-    final barBefore = tester.element(find.byKey(_barKey));
+    'the bar and accessory each keep persistent identity across the transition',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(UiContourAccessoryRelease(items: _items())),
+      );
+      final barBefore = tester.element(find.byKey(_barKey));
 
-    await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
-    await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
+      await tester.pumpAndSettle();
 
-    final barAfter = tester.element(find.byKey(_barKey));
-    expect(identical(barBefore, barAfter), isTrue);
-    expect(find.byKey(_accessoryKey), findsOneWidget);
-  });
-
-  testWidgets(
-      'the bar recedes and its trailing items fade as the accessory expands', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(UiContourAccessoryRelease(items: _items())),
-    );
-    final collapsedBarWidth = tester.getRect(find.byKey(_barWindowKey)).width;
-
-    await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
-    await tester.pumpAndSettle();
-
-    final expandedBarWidth = tester.getRect(find.byKey(_barWindowKey)).width;
-    expect(expandedBarWidth, lessThan(collapsedBarWidth));
-
-    // Home/Messages are excluded from hit testing once fully faded.
-    var homeTaps = 0;
-    await tester.tap(find.byIcon(Icons.home_rounded), warnIfMissed: false);
-    await tester.pump();
-    expect(homeTaps, 0);
-  });
+      final barAfter = tester.element(find.byKey(_barKey));
+      expect(identical(barBefore, barAfter), isTrue);
+      expect(find.byKey(_accessoryKey), findsOneWidget);
+    },
+  );
 
   testWidgets(
-      'accessory becomes interactive and collapses back via its own close button',
-      (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        UiContourAccessoryRelease(
-          items: _items(),
-          accessoryChild: const Text('query'),
+    'the bar recedes and its trailing items fade as the accessory expands',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(UiContourAccessoryRelease(items: _items())),
+      );
+      final collapsedBarWidth = tester.getRect(find.byKey(_barWindowKey)).width;
+
+      await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
+      await tester.pumpAndSettle();
+
+      final expandedBarWidth = tester.getRect(find.byKey(_barWindowKey)).width;
+      expect(expandedBarWidth, lessThan(collapsedBarWidth));
+
+      // Home/Messages are excluded from hit testing once fully faded.
+      var homeTaps = 0;
+      await tester.tap(find.byIcon(Icons.home_rounded), warnIfMissed: false);
+      await tester.pump();
+      expect(homeTaps, 0);
+    },
+  );
+
+  testWidgets(
+    'accessory becomes interactive and collapses back via its own close button',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiContourAccessoryRelease(
+            items: _items(),
+            accessoryChild: const Text('query'),
+          ),
         ),
-      ),
-    );
-    await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
-    await tester.pumpAndSettle();
+      );
+      await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
+      await tester.pumpAndSettle();
 
-    expect(find.text('query'), findsOneWidget);
-    expect(find.bySemanticsLabel('Close search'), findsOneWidget);
+      expect(find.text('query'), findsOneWidget);
+      expect(find.bySemanticsLabel('Close search'), findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('Close search'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Close search'));
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(_accessoryKey), findsNothing);
-    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-  });
+      expect(find.byKey(_accessoryKey), findsNothing);
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+    },
+  );
 
   testWidgets('reduced motion reaches the final state immediately', (
     tester,
@@ -140,41 +138,37 @@ void main() {
   });
 
   testWidgets(
-      'reduced effects tier omits the backdrop blur but keeps the surface functional',
-      (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        UiContourAccessoryRelease(items: _items()),
-        effectsLevel: UiEffectsLevel.reduced,
-      ),
-    );
-    await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
-    await tester.pumpAndSettle();
+    'reduced effects tier omits the backdrop blur but keeps the surface functional',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          UiContourAccessoryRelease(items: _items()),
+          effectsLevel: UiEffectsLevel.reduced,
+        ),
+      );
+      await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(BackdropFilter), findsNothing);
-    expect(find.byKey(_accessoryKey), findsOneWidget);
-  });
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byKey(_accessoryKey), findsOneWidget);
+    },
+  );
 
   testWidgets(
-      'full effects tier applies a bounded backdrop blur to the accessory only',
-      (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(UiContourAccessoryRelease(items: _items())),
-    );
-    await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
-    await tester.pumpAndSettle();
+    'full effects tier applies a bounded backdrop blur to the accessory only',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(UiContourAccessoryRelease(items: _items())),
+      );
+      await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(BackdropFilter), findsOneWidget);
-  });
+      expect(find.byType(BackdropFilter), findsOneWidget);
+    },
+  );
 
   testWidgets('disposing mid-transition does not throw', (tester) async {
-    await tester.pumpWidget(
-      _host(UiContourAccessoryRelease(items: _items())),
-    );
+    await tester.pumpWidget(_host(UiContourAccessoryRelease(items: _items())));
     await tester.tap(find.bySemanticsLabel(_searchTriggerLabel));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -184,9 +178,7 @@ void main() {
   });
 
   testWidgets('rapid repeated taps do not corrupt state', (tester) async {
-    await tester.pumpWidget(
-      _host(UiContourAccessoryRelease(items: _items())),
-    );
+    await tester.pumpWidget(_host(UiContourAccessoryRelease(items: _items())));
     for (var i = 0; i < 6; i++) {
       // The trigger is excluded from hit testing once expanded (its role
       // shifts to the accessory's own close button) — expected no-ops on

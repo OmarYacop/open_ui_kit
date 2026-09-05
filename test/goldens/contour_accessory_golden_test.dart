@@ -13,22 +13,22 @@ void main() {
   if (!isSupportedGoldenHost) return;
 
   List<UiContourBarItem> items() => [
-        UiContourBarItem(
-          icon: const Icon(Icons.home_rounded),
-          semanticsLabel: 'Home',
-          onPressed: () {},
-        ),
-        UiContourBarItem(
-          icon: const Icon(Icons.message_rounded),
-          semanticsLabel: 'Messages',
-          onPressed: () {},
-        ),
-        UiContourBarItem(
-          icon: const Icon(Icons.person_rounded),
-          semanticsLabel: 'Profile',
-          onPressed: () {},
-        ),
-      ];
+    UiContourBarItem(
+      icon: const Icon(Icons.home_rounded),
+      semanticsLabel: 'Home',
+      onPressed: () {},
+    ),
+    UiContourBarItem(
+      icon: const Icon(Icons.message_rounded),
+      semanticsLabel: 'Messages',
+      onPressed: () {},
+    ),
+    UiContourBarItem(
+      icon: const Icon(Icons.person_rounded),
+      semanticsLabel: 'Profile',
+      onPressed: () {},
+    ),
+  ];
 
   Widget bar() {
     return Align(

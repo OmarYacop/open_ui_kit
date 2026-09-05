@@ -10,7 +10,8 @@ void main() {
         'reduced' => UiEffectsLevel.reduced,
         _ => UiEffectsLevel.full,
       };
-      final expectsBlur = expectedLevel == UiEffectsLevel.full &&
+      final expectsBlur =
+          expectedLevel == UiEffectsLevel.full &&
           UiEffectsBuildConfig.enableBackdropFilters;
 
       expect(effects.level, expectedLevel);
@@ -39,7 +40,8 @@ void main() {
         animateBlur: false,
       );
       final effects = custom.resolve();
-      final expectsBlur = UiEffectsBuildConfig.enableBackdropFilters &&
+      final expectsBlur =
+          UiEffectsBuildConfig.enableBackdropFilters &&
           UiEffectsBuildConfig.effectsLevel != 'reduced';
 
       expect(effects.level, UiEffectsLevel.reduced);

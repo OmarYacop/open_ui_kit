@@ -7,17 +7,9 @@ import '../motion/ui_motion_spec.dart';
 
 typedef UiNowProvider = DateTime Function();
 
-enum UiClockTickMode {
-  manual,
-  second,
-  minute,
-}
+enum UiClockTickMode { manual, second, minute }
 
-enum UiTimeGateTransition {
-  none,
-  fade,
-  fadeScale,
-}
+enum UiTimeGateTransition { none, fade, fadeScale }
 
 class UiClockController extends ChangeNotifier
     with WidgetsBindingObserver
@@ -27,10 +19,10 @@ class UiClockController extends ChangeNotifier
     UiClockTickMode tickMode = UiClockTickMode.minute,
     Duration? tickInterval,
     DateTime? initialNow,
-  })  : _nowProvider = nowProvider ?? DateTime.now,
-        _tickMode = tickMode,
-        _tickInterval = tickInterval,
-        _now = initialNow ?? (nowProvider ?? DateTime.now)() {
+  }) : _nowProvider = nowProvider ?? DateTime.now,
+       _tickMode = tickMode,
+       _tickInterval = tickInterval,
+       _now = initialNow ?? (nowProvider ?? DateTime.now)() {
     WidgetsBinding.instance.addObserver(this);
     _scheduleNext();
   }
@@ -50,10 +42,7 @@ class UiClockController extends ChangeNotifier
 
   UiClockTickMode get tickMode => _tickMode;
 
-  void configure({
-    UiClockTickMode? tickMode,
-    Duration? tickInterval,
-  }) {
+  void configure({UiClockTickMode? tickMode, Duration? tickInterval}) {
     var changed = false;
     if (tickMode != null && tickMode != _tickMode) {
       _tickMode = tickMode;
@@ -158,20 +147,20 @@ class UiClockController extends ChangeNotifier
     return switch (_tickMode) {
       UiClockTickMode.manual => null,
       UiClockTickMode.second => DateTime(
-          from.year,
-          from.month,
-          from.day,
-          from.hour,
-          from.minute,
-          from.second + 1,
-        ),
+        from.year,
+        from.month,
+        from.day,
+        from.hour,
+        from.minute,
+        from.second + 1,
+      ),
       UiClockTickMode.minute => DateTime(
-          from.year,
-          from.month,
-          from.day,
-          from.hour,
-          from.minute + 1,
-        ),
+        from.year,
+        from.month,
+        from.day,
+        from.hour,
+        from.minute + 1,
+      ),
     };
   }
 
@@ -196,8 +185,8 @@ class UiClockScope extends StatefulWidget {
   final UiNowProvider? nowProvider;
 
   static UiClockController of(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<_UiClockInherited>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_UiClockInherited>();
     return scope?.controller ?? _UiClockFallback.instance;
   }
 
@@ -243,10 +232,7 @@ class _UiClockScopeState extends State<UiClockScope> {
 
   @override
   Widget build(BuildContext context) {
-    return _UiClockInherited(
-      controller: _controller,
-      child: widget.child,
-    );
+    return _UiClockInherited(controller: _controller, child: widget.child);
   }
 }
 
@@ -254,8 +240,8 @@ class _UiClockInherited extends InheritedNotifier<UiClockController> {
   const _UiClockInherited({
     required UiClockController controller,
     required super.child,
-  })  : controller = controller,
-        super(notifier: controller);
+  }) : controller = controller,
+       super(notifier: controller);
 
   final UiClockController controller;
 }
@@ -355,7 +341,8 @@ class UiTimeGate extends StatelessWidget {
         if (visibleUntil != null) visibleUntil!,
       ],
       builder: (context, now) {
-        final visible = (visibleFrom == null || !now.isBefore(visibleFrom!)) &&
+        final visible =
+            (visibleFrom == null || !now.isBefore(visibleFrom!)) &&
             (visibleUntil == null || now.isBefore(visibleUntil!));
         final child = KeyedSubtree(
           key: ValueKey<bool>(visible),
@@ -366,20 +353,20 @@ class UiTimeGate extends StatelessWidget {
         return switch (transition) {
           UiTimeGateTransition.none => child,
           UiTimeGateTransition.fade => AnimatedSwitcher(
-              duration: duration.resolve(context),
-              child: child,
-            ),
+            duration: duration.resolve(context),
+            child: child,
+          ),
           UiTimeGateTransition.fadeScale => AnimatedSwitcher(
-              duration: duration.resolve(context),
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.98, end: 1).animate(animation),
-                  child: child,
-                ),
+            duration: duration.resolve(context),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.98, end: 1).animate(animation),
+                child: child,
               ),
-              child: child,
             ),
+            child: child,
+          ),
         };
       },
     );

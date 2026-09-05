@@ -39,11 +39,7 @@ class UiDataColumn {
 
 @immutable
 class UiDataRow {
-  const UiDataRow({
-    required this.cells,
-    this.selected = false,
-    this.onTap,
-  });
+  const UiDataRow({required this.cells, this.selected = false, this.onTap});
 
   final List<Widget> cells;
   final bool selected;
@@ -65,8 +61,8 @@ class UiDataTable extends StatelessWidget {
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  })  : rowCount = null,
-        rowBuilder = null;
+  }) : rowCount = null,
+       rowBuilder = null;
 
   const UiDataTable.lazy({
     super.key,
@@ -80,8 +76,8 @@ class UiDataTable extends StatelessWidget {
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  })  : rows = const [],
-        lazyRowThreshold = 0;
+  }) : rows = const [],
+       lazyRowThreshold = 0;
 
   final List<UiDataColumn> columns;
   final List<UiDataRow> rows;
@@ -165,11 +161,7 @@ class UiDataTable extends StatelessWidget {
         children: [
           _HeaderRow(columns: columns),
           for (var i = 0; i < rows.length; i++)
-            _DataRow(
-              columns: columns,
-              row: rows[i],
-              showTopBorder: i > 0,
-            ),
+            _DataRow(columns: columns, row: rows[i], showTopBorder: i > 0),
         ],
       );
     }
@@ -316,11 +308,7 @@ class _SliverTableRow extends StatelessWidget {
       child: ClipRRect(
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
-        child: _DataRow(
-          columns: columns,
-          row: row,
-          showTopBorder: index > 0,
-        ),
+        child: _DataRow(columns: columns, row: row, showTopBorder: index > 0),
       ),
     );
   }
@@ -357,11 +345,7 @@ class _LazyRowsTableBody extends StatelessWidget {
       itemCount: rowCount,
       itemBuilder: (context, i) {
         final row = rowBuilder?.call(context, i) ?? rows[i];
-        return _DataRow(
-          columns: columns,
-          row: row,
-          showTopBorder: i > 0,
-        );
+        return _DataRow(columns: columns, row: row, showTopBorder: i > 0);
       },
     );
     return Column(
@@ -445,13 +429,14 @@ class _DataRow extends StatelessWidget {
         final background = row.selected
             ? c.primary.withValues(alpha: 0.08)
             : state.hovered || state.pressed
-                ? c.accent
-                : c.card;
+            ? c.accent
+            : c.card;
 
         return UiBox(
           background: background,
-          border:
-              showTopBorder ? Border(top: BorderSide(color: c.border)) : null,
+          border: showTopBorder
+              ? Border(top: BorderSide(color: c.border))
+              : null,
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.x3,
             vertical: tokens.spacing.x2,

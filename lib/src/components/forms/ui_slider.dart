@@ -38,15 +38,12 @@ class UiSlider extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.semanticLabel,
-  })  : assert(min < max, 'min must be less than max'),
-        assert(
-          value >= min && value <= max,
-          'value must be within [min, max]',
-        ),
-        assert(
-          divisions == null || divisions > 0,
-          'divisions must be greater than zero',
-        );
+  }) : assert(min < max, 'min must be less than max'),
+       assert(value >= min && value <= max, 'value must be within [min, max]'),
+       assert(
+         divisions == null || divisions > 0,
+         'divisions must be greater than zero',
+       );
 
   /// The current value. Must be within [min]..[max].
   final double value;
@@ -205,8 +202,8 @@ class _UiSliderState extends State<UiSlider> {
     final thumbBorderColor = hasError
         ? c.destructive
         : disabled
-            ? c.mutedForeground
-            : c.primary;
+        ? c.mutedForeground
+        : c.primary;
 
     final fraction = _range == 0
         ? 0.0
@@ -277,10 +274,12 @@ class _UiSliderState extends State<UiSlider> {
 
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTapDown:
-                            disabled ? null : (d) => _handleTapDown(d, width),
-                        onHorizontalDragStart:
-                            disabled ? null : (d) => _handleDragStart(d, width),
+                        onTapDown: disabled
+                            ? null
+                            : (d) => _handleTapDown(d, width),
+                        onHorizontalDragStart: disabled
+                            ? null
+                            : (d) => _handleDragStart(d, width),
                         onHorizontalDragUpdate: disabled
                             ? null
                             : (d) => _handleDragUpdate(d, width),
@@ -329,8 +328,8 @@ class _UiSliderState extends State<UiSlider> {
                                       ),
                                       boxShadow:
                                           (_hovered || _dragging) && !disabled
-                                              ? tokens.shadows.sm
-                                              : null,
+                                          ? tokens.shadows.sm
+                                          : null,
                                     ),
                                     child: SizedBox(
                                       width: _thumbSize,

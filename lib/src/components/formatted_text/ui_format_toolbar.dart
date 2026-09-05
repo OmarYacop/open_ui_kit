@@ -25,16 +25,8 @@ class UiFormatAction {
       shortLabel: 'S',
     ),
     UiFormatAction(ruleId: 'code', label: 'Code', shortLabel: '</>'),
-    UiFormatAction(
-      ruleId: 'underline',
-      label: 'Underline',
-      shortLabel: 'U',
-    ),
-    UiFormatAction(
-      ruleId: 'highlight',
-      label: 'Highlight',
-      shortLabel: 'H',
-    ),
+    UiFormatAction(ruleId: 'underline', label: 'Underline', shortLabel: 'U'),
+    UiFormatAction(ruleId: 'highlight', label: 'Highlight', shortLabel: 'H'),
   ];
 }
 
@@ -116,11 +108,11 @@ class _FormatButton extends StatelessWidget {
               'bold' => const TextStyle(fontWeight: FontWeight.w700),
               'italic' => const TextStyle(fontStyle: FontStyle.italic),
               'strikethrough' => const TextStyle(
-                  decoration: TextDecoration.lineThrough,
-                ),
+                decoration: TextDecoration.lineThrough,
+              ),
               'underline' => const TextStyle(
-                  decoration: TextDecoration.underline,
-                ),
+                decoration: TextDecoration.underline,
+              ),
               _ => null,
             },
           ),

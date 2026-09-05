@@ -68,11 +68,11 @@ class UiContourRelease extends StatefulWidget {
     this.expanded,
     this.onExpandedChanged,
   }) : assert(
-          actions.isNotEmpty && actions.length <= maxInlineActions,
-          'UiContourRelease supports 1 to $maxInlineActions inline released '
-          'actions; route additional commands through a menu or sheet '
-          'instead of growing this list.',
-        );
+         actions.isNotEmpty && actions.length <= maxInlineActions,
+         'UiContourRelease supports 1 to $maxInlineActions inline released '
+         'actions; route additional commands through a menu or sheet '
+         'instead of growing this list.',
+       );
 
   /// Maximum number of actions this widget lays out inline. This is a
   /// deliberate compact-layout policy, not an arbitrary limit — an
@@ -130,9 +130,7 @@ class _UiContourReleaseState extends State<UiContourRelease>
   // painted.
   static const _activationThreshold = 0.92;
 
-  late final UiContourController _controller = UiContourController(
-    vsync: this,
-  );
+  late final UiContourController _controller = UiContourController(vsync: this);
   bool _uncontrolledExpanded = false;
   bool _initialized = false;
 
@@ -321,10 +319,10 @@ class _RenderContourActionRelease extends RenderBox
     required double spacing,
     required double activationThreshold,
     required TextDirection textDirection,
-  })  : _progress = progress,
-        _spacing = spacing,
-        _activationThreshold = activationThreshold,
-        _textDirection = textDirection;
+  }) : _progress = progress,
+       _spacing = spacing,
+       _activationThreshold = activationThreshold,
+       _textDirection = textDirection;
 
   double _progress;
   double _spacing;
@@ -442,20 +440,18 @@ class _RenderContourActionRelease extends RenderBox
         // shifts internally. Shifting it here too was the double-offset bug
         // that clipped released actions at the wrong screen position
         // whenever this component sat away from the global origin.
-        context.pushClipRect(
-          needsCompositing,
-          offset,
-          clipRect,
-          (context, clippedOffset) {
-            context.pushOpacity(
-              clippedOffset + data.offset,
-              (data.visibility.clamp(0.0, 1.0) * 255).round(),
-              (context, paintOffset) {
-                context.paintChild(capturedChild, paintOffset);
-              },
-            );
-          },
-        );
+        context.pushClipRect(needsCompositing, offset, clipRect, (
+          context,
+          clippedOffset,
+        ) {
+          context.pushOpacity(
+            clippedOffset + data.offset,
+            (data.visibility.clamp(0.0, 1.0) * 255).round(),
+            (context, paintOffset) {
+              context.paintChild(capturedChild, paintOffset);
+            },
+          );
+        });
       }
       child = childAfter(child);
     }

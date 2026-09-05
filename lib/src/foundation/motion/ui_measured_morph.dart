@@ -19,8 +19,8 @@ class UiMeasuredMorph extends StatelessWidget {
     this.alignment = Alignment.center,
     this.switchPoint = 0.5,
     this.clipBehavior = Clip.hardEdge,
-  })  : assert(progress >= 0 && progress <= 1),
-        assert(switchPoint >= 0 && switchPoint <= 1);
+  }) : assert(progress >= 0 && progress <= 1),
+       assert(switchPoint >= 0 && switchPoint <= 1);
 
   final double progress;
   final Widget collapsed;
@@ -97,10 +97,10 @@ class _RenderUiMeasuredMorph extends RenderBox
     required Alignment alignment,
     required double switchPoint,
     required Clip clipBehavior,
-  })  : _progress = progress,
-        _alignment = alignment,
-        _switchPoint = switchPoint,
-        _clipBehavior = clipBehavior;
+  }) : _progress = progress,
+       _alignment = alignment,
+       _switchPoint = switchPoint,
+       _clipBehavior = clipBehavior;
 
   double _progress;
   Alignment _alignment;

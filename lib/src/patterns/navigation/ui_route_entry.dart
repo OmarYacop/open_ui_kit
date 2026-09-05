@@ -11,12 +11,7 @@ import 'package:flutter/widgets.dart';
 /// `push` when the entry is popped with a result.
 @immutable
 class UiRouteEntry {
-  const UiRouteEntry({
-    required this.id,
-    this.args,
-    this.title,
-    this.completer,
-  });
+  const UiRouteEntry({required this.id, this.args, this.title, this.completer});
 
   /// Route identifier — matches the [UiRouteSpec.id] that built it.
   final String id;

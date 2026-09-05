@@ -60,15 +60,15 @@ class UiToast extends StatelessWidget {
     var (bg, fg, accent) = switch (intent) {
       UiIntent.primary => (c.primary, c.primaryForeground, c.primaryForeground),
       UiIntent.destructive => (
-          c.destructive,
-          c.destructiveForeground,
-          c.destructiveForeground,
-        ),
+        c.destructive,
+        c.destructiveForeground,
+        c.destructiveForeground,
+      ),
       UiIntent.danger => (
-          c.destructive,
-          c.destructiveForeground,
-          c.destructiveForeground,
-        ),
+        c.destructive,
+        c.destructiveForeground,
+        c.destructiveForeground,
+      ),
       UiIntent.secondary => (c.secondary, c.secondaryForeground, c.foreground),
       _ => (c.popover, c.popoverForeground, c.popoverForeground),
     };
@@ -105,7 +105,8 @@ class UiToast extends StatelessWidget {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, textConstraints) {
-                      final compactHeight = textConstraints.hasBoundedHeight &&
+                      final compactHeight =
+                          textConstraints.hasBoundedHeight &&
                           textConstraints.maxHeight <= 56;
                       return Column(
                         mainAxisSize: MainAxisSize.min,
@@ -124,10 +125,12 @@ class UiToast extends StatelessWidget {
                           UiText(
                             message,
                             variant: UiTextVariant.bodySm,
-                            maxLines:
-                                compactHeight ? (title == null ? 2 : 1) : null,
-                            overflow:
-                                compactHeight ? TextOverflow.ellipsis : null,
+                            maxLines: compactHeight
+                                ? (title == null ? 2 : 1)
+                                : null,
+                            overflow: compactHeight
+                                ? TextOverflow.ellipsis
+                                : null,
                             softWrap: true,
                             style: TextStyle(color: fg),
                           ),
@@ -148,15 +151,16 @@ class UiToast extends StatelessWidget {
                             intent == UiIntent.defaultIntent && isDarkTheme;
                         final actionBg = isDefaultDark
                             ? (state.pressed
-                                ? const Color(0xFFE4E4E7)
-                                : state.hovered
-                                    ? const Color(0xFFEDEDF0)
-                                    : const Color(0xFFF4F4F5))
+                                  ? const Color(0xFFE4E4E7)
+                                  : state.hovered
+                                  ? const Color(0xFFEDEDF0)
+                                  : const Color(0xFFF4F4F5))
                             : state.hovered || state.pressed
-                                ? c.accent
-                                : const Color(0x00000000);
-                        final actionFg =
-                            isDefaultDark ? const Color(0xFF18181B) : accent;
+                            ? c.accent
+                            : const Color(0x00000000);
+                        final actionFg = isDefaultDark
+                            ? const Color(0xFF18181B)
+                            : accent;
                         return UiBox(
                           padding: EdgeInsets.symmetric(
                             horizontal: tokens.spacing.x2,
@@ -315,8 +319,9 @@ class _ToastController {
     for (final entry in _timers.entries.toList()) {
       entry.value.cancel();
       final dismissAt = _dismissAt[entry.key];
-      _remaining[entry.key] =
-          dismissAt == null ? Duration.zero : dismissAt.difference(now);
+      _remaining[entry.key] = dismissAt == null
+          ? Duration.zero
+          : dismissAt.difference(now);
     }
     _timers.clear();
     _dismissAt.clear();
@@ -336,8 +341,9 @@ class _ToastController {
   }
 
   void _startTimer(int id, Duration duration) {
-    final effectiveDuration =
-        duration <= Duration.zero ? Duration.zero : duration;
+    final effectiveDuration = duration <= Duration.zero
+        ? Duration.zero
+        : duration;
     _remaining.remove(id);
     _dismissAt[id] = DateTime.now().add(effectiveDuration);
     _timers[id] = Timer(effectiveDuration, () => dismiss(id));
@@ -477,14 +483,14 @@ class _ToastHost extends StatelessWidget {
         if (specs.isEmpty) return const SizedBox.shrink();
         final mediaSize = MediaQuery.maybeSizeOf(context);
         final isCompact = mediaSize == null || mediaSize.shortestSide < 600;
-        final topSpecs =
-            specs.where((s) => _resolvesTop(s.position, isCompact)).toList();
-        final bottomSpecs =
-            specs.where((s) => s.position == UiToastPosition.bottom).toList();
+        final topSpecs = specs
+            .where((s) => _resolvesTop(s.position, isCompact))
+            .toList();
+        final bottomSpecs = specs
+            .where((s) => s.position == UiToastPosition.bottom)
+            .toList();
         final adaptiveBottomSpecs = specs
-            .where(
-              (s) => s.position == UiToastPosition.adaptive && !isCompact,
-            )
+            .where((s) => s.position == UiToastPosition.adaptive && !isCompact)
             .toList();
         return Stack(
           fit: StackFit.expand,
@@ -494,8 +500,10 @@ class _ToastHost extends StatelessWidget {
                 left: 0,
                 right: 0,
                 top: 0,
-                child:
-                    _ToastLane(specs: topSpecs, position: UiToastPosition.top),
+                child: _ToastLane(
+                  specs: topSpecs,
+                  position: UiToastPosition.top,
+                ),
               ),
             if (bottomSpecs.isNotEmpty)
               Positioned(
@@ -758,8 +766,9 @@ class _ToastSlotState extends State<_ToastSlot> {
   @override
   Widget build(BuildContext context) {
     _syncSize();
-    final slotAlignment =
-        widget.isBottom ? Alignment.bottomCenter : Alignment.topCenter;
+    final slotAlignment = widget.isBottom
+        ? Alignment.bottomCenter
+        : Alignment.topCenter;
 
     final entryOffset = _mountedInPlace
         ? 0.0
@@ -767,17 +776,20 @@ class _ToastSlotState extends State<_ToastSlot> {
     final removalOffset = widget.indexFromFront == 0 || widget.expanded
         ? (widget.isBottom ? widget.frontHeight : -widget.frontHeight)
         : (widget.isBottom ? -widget.frontHeight : widget.frontHeight) * 0.4;
-    final stackOffset =
-        widget.expanded ? widget.expandedOffset : widget.collapsedOffset;
-    final y =
-        widget.dismissing ? removalOffset : entryOffset + stackOffset + _swipeY;
+    final stackOffset = widget.expanded
+        ? widget.expandedOffset
+        : widget.collapsedOffset;
+    final y = widget.dismissing
+        ? removalOffset
+        : entryOffset + stackOffset + _swipeY;
     final scale = widget.expanded ? 1.0 : widget.collapsedScale;
     final opacity = widget.dismissing ? 0.0 : 1.0;
 
     return AnimatedOpacity(
       opacity: opacity,
-      duration:
-          widget.dismissing ? _ToastMetrics.exitDuration : widget.duration,
+      duration: widget.dismissing
+          ? _ToastMetrics.exitDuration
+          : widget.duration,
       curve: Curves.ease,
       child: AnimatedContainer(
         duration: _swiping ? Duration.zero : widget.duration,
@@ -845,7 +857,8 @@ class _ToastSlotState extends State<_ToastSlot> {
         ? 1
         : math.max(1, DateTime.now().difference(startedAt).inMilliseconds);
     final velocity = _swipeY.abs() / elapsed;
-    final shouldDismiss = _swipeY.abs() >= _ToastMetrics.swipeThreshold ||
+    final shouldDismiss =
+        _swipeY.abs() >= _ToastMetrics.swipeThreshold ||
         velocity > _ToastMetrics.swipeVelocityThreshold ||
         details.velocity.pixelsPerSecond.dx.abs() > 200;
 

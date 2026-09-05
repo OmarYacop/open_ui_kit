@@ -5,9 +5,9 @@ import 'package:open_ui_kit/foundation.dart';
 
 void main() {
   Widget host(Widget child) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: UiTheme(tokens: UiThemeTokens.light, child: child),
-      );
+    textDirection: TextDirection.ltr,
+    child: UiTheme(tokens: UiThemeTokens.light, child: child),
+  );
 
   testWidgets('lays overlapping events into separate columns', (tester) async {
     final day = DateTime(2026, 8, 2);

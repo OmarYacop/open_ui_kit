@@ -28,7 +28,8 @@ enum UiNavigationSurface {
   ///
   /// This now renders the same inexpensive gradient as [edgeFade].
   @Deprecated(
-      'Use UiNavigationSurface.edgeFade. Scheduled for removal in 1.0.0.')
+    'Use UiNavigationSurface.edgeFade. Scheduled for removal in 1.0.0.',
+  )
   blurred,
 
   /// Fully transparent; lets the page content paint through.
@@ -117,7 +118,8 @@ class UiNavigationSpec {
   /// resolves to [UiNavigationSurface.blurred] or
   /// [UiNavigationSurface.edgeFade].
   @Deprecated(
-      'Live navigation blur was replaced by UiNavigationSurface.edgeFade. Scheduled for removal in 1.0.0.')
+    'Live navigation blur was replaced by UiNavigationSurface.edgeFade. Scheduled for removal in 1.0.0.',
+  )
   final double blurSigma;
 
   /// Whether to paint a bottom divider under the bar once content scrolls
@@ -196,23 +198,23 @@ class UiNavigationSpec {
 
   @override
   int get hashCode => Object.hash(
-        title,
-        subtitle,
-        compactTitle,
-        showCompactTitle,
-        brand,
-        leading,
-        back,
-        Object.hashAll(actions),
-        actionsFollowTitleCollapse,
-        heroTag,
-        largeTitle,
-        surface,
-        blurSigma,
-        showDivider,
-        transitionStyle,
-        animationGroupId,
-      );
+    title,
+    subtitle,
+    compactTitle,
+    showCompactTitle,
+    brand,
+    leading,
+    back,
+    Object.hashAll(actions),
+    actionsFollowTitleCollapse,
+    heroTag,
+    largeTitle,
+    surface,
+    blurSigma,
+    showDivider,
+    transitionStyle,
+    animationGroupId,
+  );
 
   static bool _listEq<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;
@@ -263,10 +265,10 @@ class UiNavigationBackConfig {
 
   @override
   int get hashCode => Object.hash(
-        label,
-        showLabel,
-        onPressed,
-        Object.hashAll(history),
-        onHistorySelected,
-      );
+    label,
+    showLabel,
+    onPressed,
+    Object.hashAll(history),
+    onHistorySelected,
+  );
 }

@@ -124,7 +124,8 @@ class UiContourController extends ChangeNotifier {
     );
     motion.configure(_animation);
     _setPhase(
-        wasCollapsing ? UiContourPhase.reversing : UiContourPhase.opening);
+      wasCollapsing ? UiContourPhase.reversing : UiContourPhase.opening,
+    );
     return _animation.animateTo(1, curve: motion.curve);
   }
 

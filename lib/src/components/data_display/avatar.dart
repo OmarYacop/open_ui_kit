@@ -67,11 +67,7 @@ class UiAvatar extends StatelessWidget {
 
     final label = semanticLabel ?? name;
     if (label != null && label.trim().isNotEmpty) {
-      content = Semantics(
-        image: true,
-        label: label,
-        child: content,
-      );
+      content = Semantics(image: true, label: label, child: content);
     }
 
     return content;
@@ -111,8 +107,8 @@ class UiAvatar extends StatelessWidget {
     final seed = name?.trim().isNotEmpty == true
         ? name!.trim()
         : semanticLabel?.trim().isNotEmpty == true
-            ? semanticLabel!.trim()
-            : 'anonymous';
+        ? semanticLabel!.trim()
+        : 'anonymous';
     return ExcludeSemantics(
       child: UiWavatar(
         seed: seed,
@@ -186,8 +182,9 @@ class UiAvatarGroup extends StatelessWidget {
                     overflowSemanticLabel ?? '$overflowCount more people',
                 fallback: UiText(
                   '+$overflowCount',
-                  variant:
-                      size < 32 ? UiTextVariant.caption : UiTextVariant.label,
+                  variant: size < 32
+                      ? UiTextVariant.caption
+                      : UiTextVariant.label,
                   tone: UiTextTone.muted,
                   textAlign: TextAlign.center,
                 ),

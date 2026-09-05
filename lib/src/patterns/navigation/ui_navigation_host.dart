@@ -103,16 +103,16 @@ class UiNavigationHost extends StatelessWidget {
         final host = UiNavigationStack(
           index: stack.length - 1,
           transitionStyle: transitionStyle,
-          children: [
-            for (final entry in stack) _build(context, entry),
-          ],
+          children: [for (final entry in stack) _build(context, entry)],
         );
         if (!_shouldEnableSwipe(context, stack.length)) return host;
         final style = backSwipeTransition;
-        final parallaxCurrent =
-            stack.isNotEmpty ? _build(context, stack[stack.length - 1]) : null;
-        final parallaxPrevious =
-            stack.length >= 2 ? _build(context, stack[stack.length - 2]) : null;
+        final parallaxCurrent = stack.isNotEmpty
+            ? _build(context, stack[stack.length - 1])
+            : null;
+        final parallaxPrevious = stack.length >= 2
+            ? _build(context, stack[stack.length - 2])
+            : null;
         return UiEdgeSwipePopRegion(
           onTriggered: () => controller.pop(),
           edgeWidth: edgeSwipeWidth,
@@ -133,13 +133,10 @@ class UiNavigationHost extends StatelessWidget {
     final child = switch (builder) {
       final b? => b(context, entry),
       null => () {
-          final spec = controller.specFor(entry.id);
-          assert(
-            spec != null,
-            'No route registered for id "${entry.id}".',
-          );
-          return spec!.builder(context, entry.args);
-        }(),
+        final spec = controller.specFor(entry.id);
+        assert(spec != null, 'No route registered for id "${entry.id}".');
+        return spec!.builder(context, entry.args);
+      }(),
     };
     return UiNavigationControllerScope(
       controller: controller,

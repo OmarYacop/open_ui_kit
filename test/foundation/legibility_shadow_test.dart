@@ -32,8 +32,9 @@ void main() {
       isTrue,
     );
     expect(
-      renderObject.paintBounds
-          .contains(renderObject.semanticBounds.bottomRight),
+      renderObject.paintBounds.contains(
+        renderObject.semanticBounds.bottomRight,
+      ),
       isTrue,
     );
     expect(renderObject.paintBounds, isNot(renderObject.semanticBounds));
@@ -83,7 +84,9 @@ class _RenderPaintCountingBox extends RenderBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     paintCount += 1;
-    context.canvas
-        .drawRect(offset & size, Paint()..color = const Color(0xFFFFFFFF));
+    context.canvas.drawRect(
+      offset & size,
+      Paint()..color = const Color(0xFFFFFFFF),
+    );
   }
 }

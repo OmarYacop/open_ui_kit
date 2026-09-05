@@ -4,10 +4,8 @@ import 'ui_store.dart';
 /// A list-shaped store for feature resources such as sessions, invoices,
 /// notifications, or any other UI collection with stable ids.
 class UiResourceStore<T, TId> extends UiStore<List<T>> {
-  UiResourceStore({
-    required this.getId,
-    Iterable<T> initialItems = const [],
-  }) : super(List<T>.of(initialItems, growable: false));
+  UiResourceStore({required this.getId, Iterable<T> initialItems = const []})
+    : super(List<T>.of(initialItems, growable: false));
 
   final UiItemId<T, TId> getId;
 
@@ -44,23 +42,13 @@ class UiResourceStore<T, TId> extends UiStore<List<T>> {
 
   void upsert(T item, {bool append = true}) {
     setState(
-      UiCollectionPatch.upsertBy(
-        state,
-        item,
-        getId: getId,
-        append: append,
-      ),
+      UiCollectionPatch.upsertBy(state, item, getId: getId, append: append),
     );
   }
 
   void upsertAll(Iterable<T> items, {bool append = true}) {
     setState(
-      UiCollectionPatch.upsertAllBy(
-        state,
-        items,
-        getId: getId,
-        append: append,
-      ),
+      UiCollectionPatch.upsertAllBy(state, items, getId: getId, append: append),
     );
   }
 }

@@ -90,8 +90,9 @@ class _UiDrawerLayoutMetrics {
       double.infinity,
     );
     final resolvedMaxWidth = maxWidth ?? _kPhoneSideDrawerMaxWidth;
-    final sideMax =
-        sideAvailable < resolvedMaxWidth ? sideAvailable : resolvedMaxWidth;
+    final sideMax = sideAvailable < resolvedMaxWidth
+        ? sideAvailable
+        : resolvedMaxWidth;
     final sideWidth = requestedWidth.clamp(0.0, sideMax).toDouble();
     final bottomMaxHeight = isPhone
         ? (size.height * 0.86).clamp(240.0, 420.0)
@@ -132,18 +133,18 @@ class UiDrawer extends StatelessWidget {
     this.safeAreaMinimum = EdgeInsets.zero,
     this.backgroundColor,
     this.semanticsLabel,
-  })  : assert(
-          child != null || header != null || body != null || footer != null,
-          'Provide child or at least one structured drawer region.',
-        ),
-        assert(
-          child == null || (header == null && body == null && footer == null),
-          'child cannot be combined with header, body, or footer.',
-        ),
-        assert(
-          maxWidth == null || maxWidth > 0,
-          'maxWidth must be greater than zero.',
-        );
+  }) : assert(
+         child != null || header != null || body != null || footer != null,
+         'Provide child or at least one structured drawer region.',
+       ),
+       assert(
+         child == null || (header == null && body == null && footer == null),
+         'child cannot be combined with header, body, or footer.',
+       ),
+       assert(
+         maxWidth == null || maxWidth > 0,
+         'maxWidth must be greater than zero.',
+       );
 
   /// Legacy, fully custom drawer content.
   ///
@@ -210,8 +211,9 @@ class UiDrawer extends StatelessWidget {
     final direction = Directionality.of(context);
     final c = tokens.colors;
     final inherited = _UiDrawerPresentation.maybeOf(context);
-    final effectiveSide =
-        side == UiDrawerSide.start ? (inherited?.side ?? side) : side;
+    final effectiveSide = side == UiDrawerSide.start
+        ? (inherited?.side ?? side)
+        : side;
     final effectiveVariant = variant == UiDrawerVariant.standard
         ? (inherited?.variant ?? variant)
         : variant;
@@ -227,15 +229,12 @@ class UiDrawer extends StatelessWidget {
             placement: inheritedMetrics.placement,
             bottomMaxWidth:
                 inheritedMetrics.bottomMaxWidth < layoutMetrics.bottomMaxWidth
-                    ? inheritedMetrics.bottomMaxWidth
-                    : layoutMetrics.bottomMaxWidth,
+                ? inheritedMetrics.bottomMaxWidth
+                : layoutMetrics.bottomMaxWidth,
           );
     final placement = effectiveLayoutMetrics.placement;
     final isBottom = placement == _UiDrawerPlacement.bottom;
-    final resolvedLeft = _resolveIsLeft(
-      effectiveSide,
-      direction,
-    );
+    final resolvedLeft = _resolveIsLeft(effectiveSide, direction);
     final strings = UiLocalizations.of(context);
     final resolvedLabel = semanticsLabel ?? strings.drawer;
     final floating = effectiveVariant != UiDrawerVariant.standard;
@@ -253,7 +252,8 @@ class UiDrawer extends StatelessWidget {
             ),
           )
         : baseMargin;
-    final radius = borderRadius ??
+    final radius =
+        borderRadius ??
         _resolveAdaptiveRadius(
           context,
           floating: floating,
@@ -263,26 +263,24 @@ class UiDrawer extends StatelessWidget {
         );
     final resolvedRadius = radius.resolve(direction);
     final hasRadius = _hasVisibleRadius(resolvedRadius);
-    final isStackedBehind = effectiveVariant == UiDrawerVariant.stacked &&
+    final isStackedBehind =
+        effectiveVariant == UiDrawerVariant.stacked &&
         (inherited?.stackDepth ?? 0) > 0;
     final border = floating
         ? Border.all(color: c.border)
         : hasRadius
-            ? Border.all(color: c.border)
-            : isBottom
-                ? Border(top: BorderSide(color: c.border))
-                : Border(
-                    right: resolvedLeft
-                        ? BorderSide(color: c.border)
-                        : BorderSide.none,
-                    left: resolvedLeft
-                        ? BorderSide.none
-                        : BorderSide(color: c.border),
-                  );
+        ? Border.all(color: c.border)
+        : isBottom
+        ? Border(top: BorderSide(color: c.border))
+        : Border(
+            right: resolvedLeft ? BorderSide(color: c.border) : BorderSide.none,
+            left: resolvedLeft ? BorderSide.none : BorderSide(color: c.border),
+          );
     final content =
         child ?? _UiDrawerRegions(header: header, body: body, footer: footer);
-    final effectiveWidth =
-        isBottom ? double.infinity : effectiveLayoutMetrics.sideWidth;
+    final effectiveWidth = isBottom
+        ? double.infinity
+        : effectiveLayoutMetrics.sideWidth;
     final sizeBox = isBottom
         ? ConstrainedBox(
             constraints: BoxConstraints(
@@ -310,8 +308,8 @@ class UiDrawer extends StatelessWidget {
             boxShadow: isStackedBehind
                 ? tokens.shadows.none
                 : floating
-                    ? tokens.shadows.lg
-                    : tokens.shadows.md,
+                ? tokens.shadows.lg
+                : tokens.shadows.md,
             child: sizeBox,
           ),
         ),
@@ -377,9 +375,9 @@ class UiDrawer extends StatelessWidget {
     ).resolve(Directionality.of(context));
 
     Radius inner(Radius radius) => Radius.elliptical(
-          (radius.x - inset).clamp(0.0, double.infinity),
-          (radius.y - inset).clamp(0.0, double.infinity),
-        );
+      (radius.x - inset).clamp(0.0, double.infinity),
+      (radius.y - inset).clamp(0.0, double.infinity),
+    );
 
     return BorderRadius.only(
       topLeft: inner(outer.topLeft),
@@ -474,7 +472,8 @@ class UiDrawerSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     return Padding(
-      padding: padding ??
+      padding:
+          padding ??
           EdgeInsetsDirectional.fromSTEB(
             tokens.spacing.x3,
             tokens.spacing.x3,
@@ -575,8 +574,8 @@ BorderRadius _resolveAdaptiveRadius(
   final base = floating
       ? tokens.radius.xl.x + tokens.spacing.x3
       : placement == _UiDrawerPlacement.bottom
-          ? tokens.radius.xl.x
-          : 0.0;
+      ? tokens.radius.xl.x
+      : 0.0;
   final inferred = adaptive ? _inferDeviceCornerRadius(context) : 0.0;
   final value = inferred > base ? inferred : base;
   final radius = Radius.circular(value);
@@ -632,7 +631,9 @@ class UiDrawerController<T> {
 }
 
 typedef UiControlledDrawerBuilder<T> = Widget Function(
-    BuildContext context, UiDrawerController<T> controller);
+  BuildContext context,
+  UiDrawerController<T> controller,
+);
 
 UiControlledDrawerBuilder<dynamic>? _eraseControlledBuilder<T>(
   UiControlledDrawerBuilder<T>? builder,
@@ -850,10 +851,7 @@ class _DrawerStackDrag {
 }
 
 class _UiDrawerStackScope extends InheritedWidget {
-  const _UiDrawerStackScope({
-    required this.controller,
-    required super.child,
-  });
+  const _UiDrawerStackScope({required this.controller, required super.child});
 
   final UiDrawerStackController controller;
 
@@ -1125,8 +1123,9 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
     );
     final isBottom = layoutMetrics.placement == _UiDrawerPlacement.bottom;
     final isLeft = _resolveIsLeft(entry.side, entry.direction);
-    final closingDelta =
-        isBottom ? primaryDelta : (isLeft ? -primaryDelta : primaryDelta);
+    final closingDelta = isBottom
+        ? primaryDelta
+        : (isLeft ? -primaryDelta : primaryDelta);
     final drawerSize = entry.key.currentContext?.size;
     final drawerExtent = isBottom
         ? (drawerSize?.height ?? layoutMetrics.bottomMaxHeight)
@@ -1152,8 +1151,8 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
     final velocity = isBottom
         ? primaryVelocity
         : isLeft
-            ? -primaryVelocity
-            : primaryVelocity;
+        ? -primaryVelocity
+        : primaryVelocity;
     final shouldDismiss = velocity > 700 || _dragController.value > 0.35;
 
     if (shouldDismiss) {
@@ -1232,16 +1231,18 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
         final direction = isBottom
             ? AxisDirection.up
             : isLeft
-                ? AxisDirection.right
-                : AxisDirection.left;
-        final visibleFraction =
-            (curved.value * (1 - activeDragProgress)).clamp(0.0, 1.0);
+            ? AxisDirection.right
+            : AxisDirection.left;
+        final visibleFraction = (curved.value * (1 - activeDragProgress)).clamp(
+          0.0,
+          1.0,
+        );
         final depthValue = entry.variant == UiDrawerVariant.stacked
             ? (stackDepth - depthDragProgress).clamp(0.0, double.infinity)
             : 0.0;
         final depthOffsetStep = isBottom
             ? UiStackedMotion.drawerNestedOffsetStep +
-                layoutMetrics.bottomMaxHeight * UiStackedMotion.scaleStep
+                  layoutMetrics.bottomMaxHeight * UiStackedMotion.scaleStep
             : UiStackedMotion.drawerNestedOffsetStep;
         return UiStackedOverlaySurface(
           depth: depthValue,
@@ -1254,19 +1255,20 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
           scaleAlignment: isBottom
               ? Alignment.bottomCenter
               : isLeft
-                  ? Alignment.centerLeft
-                  : Alignment.centerRight,
+              ? Alignment.centerLeft
+              : Alignment.centerRight,
           applyOpacity: false,
           child: Align(
             alignment: isBottom
                 ? Alignment.bottomCenter
                 : isLeft
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
+                ? Alignment.centerLeft
+                : Alignment.centerRight,
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
-              onHorizontalDragStart:
-                  isBottom ? null : (_) => _handleDragStart(entry),
+              onHorizontalDragStart: isBottom
+                  ? null
+                  : (_) => _handleDragStart(entry),
               onHorizontalDragUpdate: isBottom
                   ? null
                   : (details) {
@@ -1277,10 +1279,12 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
                   : (details) {
                       _handleDragEnd(entry, details.primaryVelocity ?? 0);
                     },
-              onHorizontalDragCancel:
-                  isBottom ? null : () => _handleDragCancel(entry),
-              onVerticalDragStart:
-                  isBottom ? (_) => _handleDragStart(entry) : null,
+              onHorizontalDragCancel: isBottom
+                  ? null
+                  : () => _handleDragCancel(entry),
+              onVerticalDragStart: isBottom
+                  ? (_) => _handleDragStart(entry)
+                  : null,
               onVerticalDragUpdate: isBottom
                   ? (details) {
                       _handleDragUpdate(entry, details.primaryDelta ?? 0);
@@ -1291,15 +1295,16 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
                       _handleDragEnd(entry, details.primaryVelocity ?? 0);
                     }
                   : null,
-              onVerticalDragCancel:
-                  isBottom ? () => _handleDragCancel(entry) : null,
+              onVerticalDragCancel: isBottom
+                  ? () => _handleDragCancel(entry)
+                  : null,
               child: FractionalTranslation(
                 translation: Offset(
                   isBottom
                       ? 0
                       : isLeft
-                          ? -(1 - visibleFraction)
-                          : 1 - visibleFraction,
+                      ? -(1 - visibleFraction)
+                      : 1 - visibleFraction,
                   isBottom ? 1 - visibleFraction : 0,
                 ),
                 child: KeyedSubtree(
@@ -1344,8 +1349,8 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
             final drag = snapshot.drag;
             final rootDragProgress =
                 drag?.id == (_entries.isEmpty ? null : _entries.first.id)
-                    ? drag!.progress
-                    : 0.0;
+                ? drag!.progress
+                : 0.0;
             return Stack(
               fit: StackFit.expand,
               children: [
@@ -1369,17 +1374,13 @@ class _DrawerRouteHostState extends State<_DrawerRouteHost>
                           _popEntry<dynamic>(entry.id, r);
                         }
                       });
-                      final drawer = entry.controlledBuilder?.call(
+                      final drawer =
+                          entry.controlledBuilder?.call(
                             entryContext,
                             controller,
                           ) ??
                           entry.builder(entryContext);
-                      return _buildEntry(
-                        entryContext,
-                        snapshot,
-                        entry,
-                        drawer,
-                      );
+                      return _buildEntry(entryContext, snapshot, entry, drawer);
                     },
                   ),
               ],
@@ -1457,10 +1458,7 @@ class _DrawerBackdrop extends StatelessWidget {
           child: backdrop,
           builder: (context, child) {
             return Opacity(
-              opacity: (animation.value * (1 - dragProgress)).clamp(
-                0.0,
-                1.0,
-              ),
+              opacity: (animation.value * (1 - dragProgress)).clamp(0.0, 1.0),
               child: child,
             );
           },

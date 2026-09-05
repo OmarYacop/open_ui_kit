@@ -116,7 +116,8 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     final indexes = <int>[];
     for (var i = 0; i < widget.options.length; i++) {
       final option = widget.options[i];
-      final matches = filter?.call(option, query) ??
+      final matches =
+          filter?.call(option, query) ??
           option.label.toLowerCase().contains(folded) ||
               (option.subtitle?.toLowerCase().contains(folded) ?? false);
       if (matches) indexes.add(i);
@@ -334,10 +335,13 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
         final background = state.hovered || state.pressed
             ? c.accent
             : isSelected
-                ? c.accent.withValues(alpha: 0.68)
-                : const Color(0x00000000);
-        final fullOverride =
-            widget.optionBuilder?.call(context, option, isSelected);
+            ? c.accent.withValues(alpha: 0.68)
+            : const Color(0x00000000);
+        final fullOverride = widget.optionBuilder?.call(
+          context,
+          option,
+          isSelected,
+        );
         final labelSlot = option.labelBuilder != null
             ? option.labelBuilder!(context, option, isSelected)
             : UiText(
@@ -351,7 +355,8 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
                 overflow: TextOverflow.ellipsis,
               );
 
-        final content = fullOverride ??
+        final content =
+            fullOverride ??
             Row(
               children: [
                 if (option.leading != null) ...[
@@ -382,11 +387,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
                 ),
                 if (isSelected) ...[
                   SizedBox(width: tokens.spacing.x2),
-                  Icon(
-                    LucideIcons.check,
-                    size: 16,
-                    color: c.popoverForeground,
-                  ),
+                  Icon(LucideIcons.check, size: 16, color: c.popoverForeground),
                 ],
               ],
             );
@@ -417,8 +418,8 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     final indexes = _visibleIndexes;
     final preview =
         _queryController.text.trim().isNotEmpty && indexes.isNotEmpty
-            ? widget.options[indexes.first].leading
-            : selected?.leading;
+        ? widget.options[indexes.first].leading
+        : selected?.leading;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -442,8 +443,9 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
                 controller: _queryController,
                 focusNode: _searchFocusNode,
                 enabled: !_disabled,
-                hint:
-                    widget.searchHint.isEmpty ? widget.hint : widget.searchHint,
+                hint: widget.searchHint.isEmpty
+                    ? widget.hint
+                    : widget.searchHint,
                 size: widget.size,
                 leading: preview,
                 trailing: AnimatedRotation(
@@ -473,7 +475,8 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
     final tokens = UiThemeTokens.of(context);
     final rowHeight = _estimatedRowHeight();
     final visibleRows = math.min(widget.options.length, 7);
-    final desiredHeight = tokens.spacing.x1 * 2 +
+    final desiredHeight =
+        tokens.spacing.x1 * 2 +
         visibleRows * rowHeight +
         math.max(0, visibleRows - 1) * tokens.spacing.x1;
     final maxAllowed = math.min(360.0, desiredHeight);
@@ -549,10 +552,7 @@ class _ComboboxMenuRevealState extends State<_ComboboxMenuReveal>
 
   @override
   Widget build(BuildContext context) {
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
+    final curved = CurvedAnimation(parent: _controller, curve: widget.curve);
     return UiSlideFadeTransition(
       animation: curved,
       beginOffset: Offset(0, widget.openAbove ? 4 : -4),
@@ -562,8 +562,9 @@ class _ComboboxMenuRevealState extends State<_ComboboxMenuReveal>
         animation: curved,
         beginScale: 0.98,
         fade: false,
-        alignment:
-            widget.openAbove ? Alignment.bottomCenter : Alignment.topCenter,
+        alignment: widget.openAbove
+            ? Alignment.bottomCenter
+            : Alignment.topCenter,
         child: widget.child,
       ),
     );

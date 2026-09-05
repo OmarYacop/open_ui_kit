@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
-Widget _host(Widget child) => MaterialApp(
-      home: Scaffold(body: child),
-    );
+Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
   group('UiDropdownMenu semantics', () {
-    testWidgets('destructive items announce themselves as such',
-        (tester) async {
+    testWidgets('destructive items announce themselves as such', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiDropdownMenu(
@@ -19,11 +18,7 @@ void main() {
             ),
             items: [
               UiMenuItem(label: 'Share', onPressed: () {}),
-              UiMenuItem(
-                label: 'Delete',
-                destructive: true,
-                onPressed: () {},
-              ),
+              UiMenuItem(label: 'Delete', destructive: true, onPressed: () {}),
             ],
           ),
         ),
@@ -52,11 +47,7 @@ void main() {
               child: Text('Open'),
             ),
             items: [
-              UiMenuItem(
-                label: 'Archive',
-                enabled: false,
-                onPressed: () {},
-              ),
+              UiMenuItem(label: 'Archive', enabled: false, onPressed: () {}),
             ],
           ),
         ),
@@ -72,19 +63,12 @@ void main() {
   group('UiInput semantics', () {
     testWidgets('error text is published as a live region', (tester) async {
       await tester.pumpWidget(
-        _host(
-          const UiInput(
-            label: 'Email',
-            errorText: 'Must be an email',
-          ),
-        ),
+        _host(const UiInput(label: 'Email', errorText: 'Must be an email')),
       );
 
       // Find the error text semantic node and confirm it carries both
       // the explicit "Error: " prefix and the live-region flag.
-      final errorNode = tester.getSemantics(
-        find.text('Must be an email'),
-      );
+      final errorNode = tester.getSemantics(find.text('Must be an email'));
       expect(errorNode.label, contains('Error'));
       expect(errorNode.label, contains('Must be an email'));
     });

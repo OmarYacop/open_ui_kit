@@ -7,10 +7,7 @@ Widget _host(Widget child) {
   return MaterialApp(
     home: Scaffold(
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: child,
-        ),
+        child: Padding(padding: const EdgeInsets.all(16), child: child),
       ),
     ),
   );
@@ -18,29 +15,27 @@ Widget _host(Widget child) {
 
 void main() {
   group('UiDatePicker accessibility', () {
-    testWidgets('uses shadcn calendar structure with Sunday-first outside days',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 7, 23),
-            onChanged: (_) {},
-          ),
-        ),
-      );
+    testWidgets(
+      'uses shadcn calendar structure with Sunday-first outside days',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(UiDatePicker(value: DateTime(2026, 7, 23), onChanged: (_) {})),
+        );
 
-      final sunday = tester.getTopLeft(find.text('Su'));
-      final monday = tester.getTopLeft(find.text('Mo'));
-      expect(sunday.dx, lessThan(monday.dx));
+        final sunday = tester.getTopLeft(find.text('Su'));
+        final monday = tester.getTopLeft(find.text('Mo'));
+        expect(sunday.dx, lessThan(monday.dx));
 
-      final outsideJune28 = tester.getSemantics(
-        find.bySemanticsLabel(RegExp(r'June 28, 2026')),
-      );
-      expect(outsideJune28.label, contains('June 28, 2026'));
-    });
+        final outsideJune28 = tester.getSemantics(
+          find.bySemanticsLabel(RegExp(r'June 28, 2026')),
+        );
+        expect(outsideJune28.label, contains('June 28, 2026'));
+      },
+    );
 
-    testWidgets('day semantics include full spoken date and state',
-        (tester) async {
+    testWidgets('day semantics include full spoken date and state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiDatePicker(
@@ -97,16 +92,10 @@ void main() {
   });
 
   group('UiDatePicker month/year direct selection (PR-D)', () {
-    testWidgets(
-        'header trigger cycles days → months → years → days; '
+    testWidgets('header trigger cycles days → months → years → days; '
         'arrow visibility tracks view', (tester) async {
       await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            onChanged: (_) {},
-          ),
-        ),
+        _host(UiDatePicker(value: DateTime(2026, 4, 22), onChanged: (_) {})),
       );
 
       // Starts on days view.
@@ -130,87 +119,77 @@ void main() {
     });
 
     testWidgets(
-        'tapping a month in the month grid returns to days view on that month',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            onChanged: (_) {},
-          ),
-        ),
-      );
+      'tapping a month in the month grid returns to days view on that month',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(UiDatePicker(value: DateTime(2026, 4, 22), onChanged: (_) {})),
+        );
 
-      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+        await tester.pumpAndSettle();
 
-      // Pick September — short label "Sep" is rendered inside the
-      // month grid.
-      await tester.tap(find.text('Sep'));
-      await tester.pumpAndSettle();
+        // Pick September — short label "Sep" is rendered inside the
+        // month grid.
+        await tester.tap(find.text('Sep'));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(datePickerDayGridKey), findsOneWidget);
-      // Header label now includes "September 2026".
-      expect(find.text('September 2026'), findsOneWidget);
-    });
+        expect(find.byKey(datePickerDayGridKey), findsOneWidget);
+        // Header label now includes "September 2026".
+        expect(find.text('September 2026'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'tapping a year in the year grid returns to months view at that year',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            onChanged: (_) {},
-          ),
-        ),
-      );
+      'tapping a year in the year grid returns to months view at that year',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(UiDatePicker(value: DateTime(2026, 4, 22), onChanged: (_) {})),
+        );
 
-      // Days → months → years.
-      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
-      await tester.pumpAndSettle();
+        // Days → months → years.
+        await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+        await tester.pumpAndSettle();
 
-      // The current year page anchor is 2026 - (2026 % 12) = 2016.
-      // Pick 2020 — it will appear as a cell in the year grid.
-      await tester.tap(find.text('2020'));
-      await tester.pumpAndSettle();
+        // The current year page anchor is 2026 - (2026 % 12) = 2016.
+        // Pick 2020 — it will appear as a cell in the year grid.
+        await tester.tap(find.text('2020'));
+        await tester.pumpAndSettle();
 
-      // Back to months view, and header shows the new year.
-      expect(find.byKey(datePickerMonthGridKey), findsOneWidget);
-      expect(find.text('2020'), findsOneWidget);
-    });
+        // Back to months view, and header shows the new year.
+        expect(find.byKey(datePickerMonthGridKey), findsOneWidget);
+        expect(find.text('2020'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'month selection belongs only to the selected date year, not every '
-        'browsed year', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            visibleMonth: DateTime(2020, 4),
-            onChanged: (_) {},
+      'month selection belongs only to the selected date year, not every '
+      'browsed year',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            UiDatePicker(
+              value: DateTime(2026, 4, 22),
+              visibleMonth: DateTime(2020, 4),
+              onChanged: (_) {},
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byKey(datePickerHeaderTriggerKey));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(datePickerHeaderTriggerKey));
+        await tester.pumpAndSettle();
 
-      final april = find.bySemanticsLabel('April');
-      expect(tester.getSemantics(april).label, isNot(contains('selected')));
-    });
+        final april = find.bySemanticsLabel('April');
+        expect(tester.getSemantics(april).label, isNot(contains('selected')));
+      },
+    );
 
-    testWidgets('year grid arrows paginate forward/back by 12 years',
-        (tester) async {
+    testWidgets('year grid arrows paginate forward/back by 12 years', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            onChanged: (_) {},
-          ),
-        ),
+        _host(UiDatePicker(value: DateTime(2026, 4, 22), onChanged: (_) {})),
       );
 
       await tester.tap(find.byKey(datePickerHeaderTriggerKey));
@@ -230,16 +209,10 @@ void main() {
       expect(find.text('2016 – 2027'), findsOneWidget);
     });
 
-    testWidgets(
-        'header trigger publishes a button role with the current label '
+    testWidgets('header trigger publishes a button role with the current label '
         'and affordance hint', (tester) async {
       await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            onChanged: (_) {},
-          ),
-        ),
+        _host(UiDatePicker(value: DateTime(2026, 4, 22), onChanged: (_) {})),
       );
 
       // Look for the semantic node announcing the day-view label and
@@ -251,15 +224,11 @@ void main() {
       );
     });
 
-    testWidgets('month navigation uses icon buttons instead of text glyphs',
-        (tester) async {
+    testWidgets('month navigation uses icon buttons instead of text glyphs', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        _host(
-          UiDatePicker(
-            value: DateTime(2026, 4, 22),
-            onChanged: (_) {},
-          ),
-        ),
+        _host(UiDatePicker(value: DateTime(2026, 4, 22), onChanged: (_) {})),
       );
 
       expect(find.byType(UiIconButton), findsNWidgets(2));
@@ -269,8 +238,9 @@ void main() {
   });
 
   group('UiTimePicker accessibility', () {
-    testWidgets('hour and minute rows publish selected and disabled states',
-        (tester) async {
+    testWidgets('hour and minute rows publish selected and disabled states', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiTimePicker(
@@ -301,8 +271,9 @@ void main() {
   });
 
   group('UiTimeGridPicker', () {
-    testWidgets('selects hour, minute, and period from option columns',
-        (tester) async {
+    testWidgets('selects hour, minute, and period from option columns', (
+      tester,
+    ) async {
       var selected = const UiTimeValue(hour: 9, minute: 0);
 
       await tester.pumpWidget(
@@ -409,71 +380,74 @@ void main() {
     // load). It verifies the REBUILD-SHAPE — the structural property
     // that the PR-D change is designed to guarantee.
     testWidgets(
-        'parent subtree does not rebuild when the wheel selection changes',
-        (tester) async {
-      var outerBuilds = 0;
-      UiTimeValue? lastValue;
+      'parent subtree does not rebuild when the wheel selection changes',
+      (tester) async {
+        var outerBuilds = 0;
+        UiTimeValue? lastValue;
 
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, _) {
-              return Builder(
-                builder: (innerCtx) {
-                  outerBuilds++;
-                  return UiTimePicker(
-                    value: const UiTimeValue(hour: 9, minute: 0),
-                    minuteStep: 5,
-                    onChanged: (v) => lastValue = v,
-                  );
-                },
-              );
-            },
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, _) {
+                return Builder(
+                  builder: (innerCtx) {
+                    outerBuilds++;
+                    return UiTimePicker(
+                      value: const UiTimeValue(hour: 9, minute: 0),
+                      minuteStep: 5,
+                      onChanged: (v) => lastValue = v,
+                    );
+                  },
+                );
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final initialBuilds = outerBuilds;
-
-      // Drive the minute wheel programmatically (fling simulation).
-      // We target the ListWheelScrollView to call animateToItem.
-      final wheelState = tester.state<State>(
-        find.byType(ListWheelScrollView).last,
-      );
-      // Use the picker's own controller via reflection-free path:
-      // dispatching keyboard/drag events into a ListWheelScrollView is
-      // flaky in unit tests, so we settle for a controller round-trip
-      // by dragging the wheel region instead.
-      final wheelRect = tester.getRect(find.byType(ListWheelScrollView).last);
-      final center = wheelRect.center;
-      for (var step = 0; step < 3; step++) {
-        await tester.dragFrom(center, const Offset(0, -40));
+        );
         await tester.pumpAndSettle();
-      }
+        final initialBuilds = outerBuilds;
 
-      // The parent StatefulBuilder subtree must NOT have rebuilt in
-      // response to each snap — that's the whole point of the PR-D
-      // rework. (It is allowed to have rebuilt exactly zero times.)
-      expect(
-        outerBuilds,
-        initialBuilds,
-        reason: 'Wheel selection changes must not trigger parent subtree '
-            'rebuilds — the per-wheel ValueListenableBuilder is '
-            'supposed to isolate them.',
-      );
+        // Drive the minute wheel programmatically (fling simulation).
+        // We target the ListWheelScrollView to call animateToItem.
+        final wheelState = tester.state<State>(
+          find.byType(ListWheelScrollView).last,
+        );
+        // Use the picker's own controller via reflection-free path:
+        // dispatching keyboard/drag events into a ListWheelScrollView is
+        // flaky in unit tests, so we settle for a controller round-trip
+        // by dragging the wheel region instead.
+        final wheelRect = tester.getRect(find.byType(ListWheelScrollView).last);
+        final center = wheelRect.center;
+        for (var step = 0; step < 3; step++) {
+          await tester.dragFrom(center, const Offset(0, -40));
+          await tester.pumpAndSettle();
+        }
 
-      // onChanged still fires for the new snapped value — external
-      // listeners see the full event stream.
-      expect(lastValue, isNotNull);
-      // Touching wheelState just to silence unused-var lints in
-      // case of future refactors.
-      expect(wheelState.mounted, isTrue);
-    });
+        // The parent StatefulBuilder subtree must NOT have rebuilt in
+        // response to each snap — that's the whole point of the PR-D
+        // rework. (It is allowed to have rebuilt exactly zero times.)
+        expect(
+          outerBuilds,
+          initialBuilds,
+          reason:
+              'Wheel selection changes must not trigger parent subtree '
+              'rebuilds — the per-wheel ValueListenableBuilder is '
+              'supposed to isolate them.',
+        );
+
+        // onChanged still fires for the new snapped value — external
+        // listeners see the full event stream.
+        expect(lastValue, isNotNull);
+        // Touching wheelState just to silence unused-var lints in
+        // case of future refactors.
+        expect(wheelState.mounted, isTrue);
+      },
+    );
   });
 
   group('Range and date-time semantics context', () {
-    testWidgets('date range picker renders adjacent months in one surface',
-        (tester) async {
+    testWidgets('date range picker renders adjacent months in one surface', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiDateRangePicker(
@@ -495,28 +469,30 @@ void main() {
       expect((february.dy - january.dy).abs(), lessThan(1));
     });
 
-    testWidgets('date range picker collapses to one month when width is tight',
-        (tester) async {
-      await tester.pumpWidget(
-        _host(
-          SizedBox(
-            width: 320,
-            child: UiDateRangePicker(
-              value: UiDateRange(
-                start: DateTime(2026, 1, 13),
-                end: DateTime(2026, 2, 25),
+    testWidgets(
+      'date range picker collapses to one month when width is tight',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            SizedBox(
+              width: 320,
+              child: UiDateRangePicker(
+                value: UiDateRange(
+                  start: DateTime(2026, 1, 13),
+                  end: DateTime(2026, 2, 25),
+                ),
+                onChanged: (_) {},
               ),
-              onChanged: (_) {},
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('January 2026'), findsOneWidget);
-      expect(find.text('February 2026'), findsNothing);
-      expect(find.bySemanticsLabel('Previous'), findsOneWidget);
-      expect(find.bySemanticsLabel('Next'), findsOneWidget);
-    });
+        expect(find.text('January 2026'), findsOneWidget);
+        expect(find.text('February 2026'), findsNothing);
+        expect(find.bySemanticsLabel('Previous'), findsOneWidget);
+        expect(find.bySemanticsLabel('Next'), findsOneWidget);
+      },
+    );
 
     testWidgets('range header opens month and year quick selection', (
       tester,
@@ -651,8 +627,9 @@ void main() {
       expect(endDay.label, contains('range end'));
     });
 
-    testWidgets('date-time range exposes start/end time grid context',
-        (tester) async {
+    testWidgets('date-time range exposes start/end time grid context', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           UiDateTimeRangePicker(

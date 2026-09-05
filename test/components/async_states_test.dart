@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
-Widget _host(Widget child) => MaterialApp(
-      home: Scaffold(body: child),
-    );
+Widget _host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
   group('UiLoadingState', () {
-    testWidgets('renders title/description and advertises live region',
-        (tester) async {
+    testWidgets('renders title/description and advertises live region', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiLoadingState(
@@ -54,8 +53,9 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     });
 
-    testWidgets('static indicator mode renders without animated ticker',
-        (tester) async {
+    testWidgets('static indicator mode renders without animated ticker', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _host(
           const UiLoadingState(
@@ -89,7 +89,9 @@ void main() {
       );
       expect(find.text('Nothing here'), findsOneWidget);
       expect(
-          find.text('Create your first note to get started.'), findsOneWidget);
+        find.text('Create your first note to get started.'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('New note'));
       expect(tapped, 1);

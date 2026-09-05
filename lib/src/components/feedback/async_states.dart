@@ -54,8 +54,9 @@ class _AsyncStateSurface extends StatelessWidget {
 
     final body = Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment:
-          isCentered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: isCentered
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         RepaintBoundary(
           child: UiBox(
@@ -111,8 +112,8 @@ class _AsyncStateSurface extends StatelessWidget {
         vertical: isPage
             ? tokens.spacing.x8
             : mode == UiAsyncStateMode.section
-                ? tokens.spacing.x6
-                : tokens.spacing.x4,
+            ? tokens.spacing.x6
+            : tokens.spacing.x4,
       ),
       child: body,
     );
@@ -161,11 +162,14 @@ class UiLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedIcon = icon ??
+    final resolvedIcon =
+        icon ??
         switch (indicatorMode) {
           UiLoadingIndicatorMode.animated => const UiSpinner(size: 28),
-          UiLoadingIndicatorMode.staticFrame =>
-            const UiSpinner(size: 28, animated: false),
+          UiLoadingIndicatorMode.staticFrame => const UiSpinner(
+            size: 28,
+            animated: false,
+          ),
         };
 
     return _AsyncStateSurface(

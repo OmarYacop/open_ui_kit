@@ -44,10 +44,7 @@ class UiSystemBars extends StatelessWidget {
           backgroundColor ?? UiThemeTokens.maybeOf(context)?.colors.background;
       resolved = UiSystemBarsStyle.inferFromBackground(bg);
     }
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: resolved,
-      child: child,
-    );
+    return AnnotatedRegion<SystemUiOverlayStyle>(value: resolved, child: child);
   }
 }
 

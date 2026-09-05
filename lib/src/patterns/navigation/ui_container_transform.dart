@@ -34,41 +34,29 @@ _UiContentSwitchState _contentSwitchState(
   required Duration totalDuration,
 }) {
   if (totalDuration <= Duration.zero) {
-    return _UiContentSwitchState(
-      showExpanded: value >= 1,
-      coverOpacity: 0,
-    );
+    return _UiContentSwitchState(showExpanded: value >= 1, coverOpacity: 0);
   }
   final switchProgress =
       (switchTime.inMicroseconds / totalDuration.inMicroseconds).clamp(
-    0.0,
-    1.0,
-  );
+        0.0,
+        1.0,
+      );
   final showExpanded = value >= switchProgress;
   if (transitionDuration <= Duration.zero) {
-    return _UiContentSwitchState(
-      showExpanded: showExpanded,
-      coverOpacity: 0,
-    );
+    return _UiContentSwitchState(showExpanded: showExpanded, coverOpacity: 0);
   }
 
   final halfPhaseExtent =
       (transitionDuration.inMicroseconds / totalDuration.inMicroseconds).clamp(
-            0.0,
-            1.0,
-          ) /
-          2;
+        0.0,
+        1.0,
+      ) /
+      2;
   if (halfPhaseExtent <= 0) {
-    return _UiContentSwitchState(
-      showExpanded: showExpanded,
-      coverOpacity: 0,
-    );
+    return _UiContentSwitchState(showExpanded: showExpanded, coverOpacity: 0);
   }
-  final distanceFromSwitch =
-      ((value - switchProgress).abs() / halfPhaseExtent).clamp(
-    0.0,
-    1.0,
-  );
+  final distanceFromSwitch = ((value - switchProgress).abs() / halfPhaseExtent)
+      .clamp(0.0, 1.0);
   return _UiContentSwitchState(
     showExpanded: showExpanded,
     coverOpacity: curve.transform(1 - distanceFromSwitch),
@@ -98,9 +86,9 @@ class UiContentOcclusionSpec {
     this.curve = UiSharedMorphMotion.contentCurve,
     this.peakOpacity = 0.94,
     this.color,
-  })  : assert(switchTime >= Duration.zero),
-        assert(duration >= Duration.zero),
-        assert(peakOpacity >= 0 && peakOpacity <= 1);
+  }) : assert(switchTime >= Duration.zero),
+       assert(duration >= Duration.zero),
+       assert(peakOpacity >= 0 && peakOpacity <= 1);
 
   factory UiContentOcclusionSpec.resolve(
     BuildContext context, {
@@ -206,32 +194,32 @@ class UiContainerBackdropSpec {
     this.tintColor,
     this.tintOpacity = 0.14,
     this.curve,
-  })  : assert(blurSigma >= 0),
-        assert(tintOpacity >= 0 && tintOpacity <= 1);
+  }) : assert(blurSigma >= 0),
+       assert(tintOpacity >= 0 && tintOpacity <= 1);
 
   const UiContainerBackdropSpec.blur({
     this.blurSigma = 8,
     this.tintColor,
     this.tintOpacity = 0.14,
     this.curve,
-  })  : style = UiContainerBackdropStyle.blur,
-        assert(blurSigma >= 0),
-        assert(tintOpacity >= 0 && tintOpacity <= 1);
+  }) : style = UiContainerBackdropStyle.blur,
+       assert(blurSigma >= 0),
+       assert(tintOpacity >= 0 && tintOpacity <= 1);
 
   const UiContainerBackdropSpec.tint({
     this.tintColor,
     this.tintOpacity = 0.14,
     this.curve,
-  })  : style = UiContainerBackdropStyle.tint,
-        blurSigma = 0,
-        assert(tintOpacity >= 0 && tintOpacity <= 1);
+  }) : style = UiContainerBackdropStyle.tint,
+       blurSigma = 0,
+       assert(tintOpacity >= 0 && tintOpacity <= 1);
 
   const UiContainerBackdropSpec.none()
-      : style = UiContainerBackdropStyle.none,
-        blurSigma = 0,
-        tintColor = null,
-        tintOpacity = 0,
-        curve = null;
+    : style = UiContainerBackdropStyle.none,
+      blurSigma = 0,
+      tintColor = null,
+      tintOpacity = 0,
+      curve = null;
 
   final UiContainerBackdropStyle style;
   final double blurSigma;
@@ -324,8 +312,8 @@ class UiContainerFlightReveal extends StatelessWidget {
     this.revealStart = 0.55,
     this.maxBlurSigma = 8,
     this.curve = Curves.easeOut,
-  })  : assert(revealStart >= 0 && revealStart < 1),
-        assert(maxBlurSigma >= 0);
+  }) : assert(revealStart >= 0 && revealStart < 1),
+       assert(maxBlurSigma >= 0);
 
   final Widget child;
 
@@ -453,11 +441,11 @@ class UiOpenContainer extends StatefulWidget {
     this.iosZoomSourceRadiusFraction =
         UiContainerTransformGeometry.iosSourceCornerFraction,
     this.useRootNavigator = false,
-  })  : assert(
-          iosZoomSourceRadiusFraction > 0 && iosZoomSourceRadiusFraction <= 0.5,
-        ),
-        assert(centerPullStrength >= 0 && centerPullStrength <= 1),
-        assert(backdropBlurSigma == null || backdropBlurSigma >= 0);
+  }) : assert(
+         iosZoomSourceRadiusFraction > 0 && iosZoomSourceRadiusFraction <= 0.5,
+       ),
+       assert(centerPullStrength >= 0 && centerPullStrength <= 1),
+       assert(backdropBlurSigma == null || backdropBlurSigma >= 0);
 
   final UiOpenContainerBuilder closedBuilder;
   final UiContainerPageBuilder pageBuilder;
@@ -475,7 +463,8 @@ class UiOpenContainer extends StatefulWidget {
   ///
   /// Prefer [backdrop], which provides adaptive tint and no-effect fallbacks.
   @Deprecated(
-      'Use backdrop with UiContainerBackdropSpec instead. Scheduled for removal in 1.0.0.')
+    'Use backdrop with UiContainerBackdropSpec instead. Scheduled for removal in 1.0.0.',
+  )
   final double? backdropBlurSigma;
 
   final UiMotionSpec? motion;
@@ -545,14 +534,16 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
     final sourceRect = origin & source.size;
     final tokens = UiThemeTokens.of(context);
     final usesIosZoom = widget.style == UiContainerTransformStyle.iosZoom;
-    final sourceBorderRadius = widget.sourceBorderRadius ??
+    final sourceBorderRadius =
+        widget.sourceBorderRadius ??
         (usesIosZoom
             ? UiContainerTransformGeometry.iosSourceBorderRadius(
                 source.size,
                 cornerFraction: widget.iosZoomSourceRadiusFraction,
               )
             : tokens.radius.xlAll);
-    final destinationBorderRadius = widget.destinationBorderRadius ??
+    final destinationBorderRadius =
+        widget.destinationBorderRadius ??
         (usesIosZoom
             ? UiContainerTransformGeometry.iosScreenBorderRadius(context)
             : BorderRadius.zero);
@@ -663,15 +654,16 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
             constraints.maxWidth.isFinite
                 ? constraints.maxWidth
                 : constraints.minWidth > 0
-                    ? constraints.minWidth
-                    : 300,
+                ? constraints.minWidth
+                : 300,
             constraints.maxHeight.isFinite
                 ? constraints.maxHeight
                 : constraints.minHeight > 0
-                    ? constraints.minHeight
-                    : 360,
+                ? constraints.minHeight
+                : 360,
           );
-          final sourceBorderRadius = widget.sourceBorderRadius ??
+          final sourceBorderRadius =
+              widget.sourceBorderRadius ??
               UiContainerTransformGeometry.iosSourceBorderRadius(
                 sourceSize,
                 cornerFraction: widget.iosZoomSourceRadiusFraction,
@@ -794,7 +786,7 @@ class _UiContainerPreviewMarker extends StatelessWidget {
 /// to the same registered element across frames.
 class _UiContainerPreviewGlobalKey extends GlobalKey<State<StatefulWidget>> {
   const _UiContainerPreviewGlobalKey(this.containerTag, this.role)
-      : super.constructor();
+    : super.constructor();
 
   final Object containerTag;
   final _UiSharedContainerRole role;
@@ -1038,7 +1030,8 @@ class _UiSharedContainerFlight extends StatelessWidget {
               : reverseDuration,
         );
         final showExpanded = contentSwitch.showExpanded;
-        final contentCoverColor = contentOcclusion.color ??
+        final contentCoverColor =
+            contentOcclusion.color ??
             (direction == HeroFlightDirection.push
                 ? expanded.backgroundColor
                 : compact.backgroundColor);
@@ -1075,7 +1068,7 @@ class _UiSharedContainerFlight extends StatelessWidget {
         );
         final hasPreviewPairLive =
             previewCompactKey.currentWidget is _UiContainerPreviewMarker &&
-                previewExpandedKey.currentWidget is _UiContainerPreviewMarker;
+            previewExpandedKey.currentWidget is _UiContainerPreviewMarker;
         if (hasPreviewPairLive) previewFlightActivated = true;
 
         return LayoutBuilder(
@@ -1086,7 +1079,8 @@ class _UiSharedContainerFlight extends StatelessWidget {
                 containerTag: containerTag,
                 role: _UiSharedContainerRole.compact,
                 hidden: previewFlightActivated,
-                child: sourceFlightLayout ==
+                child:
+                    sourceFlightLayout ==
                         UiContainerSourceFlightLayout.responsive
                     ? SizedBox.expand(
                         key: const Key('ui_ios_zoom_source_content'),
@@ -1109,9 +1103,8 @@ class _UiSharedContainerFlight extends StatelessWidget {
                   boxShadow: [
                     ...?shadows,
                     BoxShadow(
-                      color: const Color(0x26000000).withValues(
-                        alpha: 0.15 * shadowProgress,
-                      ),
+                      color: const Color(0x26000000)
+                          .withValues(alpha: 0.15 * shadowProgress),
                       blurRadius: 28 * shadowProgress,
                       offset: Offset(0, 10 * shadowProgress),
                     ),
@@ -1168,9 +1161,7 @@ class _UiSharedContainerFlight extends StatelessWidget {
                             IgnorePointer(
                               child: ExcludeSemantics(
                                 child: Opacity(
-                                  key: const Key(
-                                    'ui_ios_zoom_source_opacity',
-                                  ),
+                                  key: const Key('ui_ios_zoom_source_opacity'),
                                   opacity: 1,
                                   child: compactContent,
                                 ),
@@ -1189,10 +1180,9 @@ class _UiSharedContainerFlight extends StatelessWidget {
                             IgnorePointer(
                               child: ExcludeSemantics(
                                 child: Opacity(
-                                  key: const Key(
-                                    'ui_ios_zoom_content_cover',
-                                  ),
-                                  opacity: contentSwitch.coverOpacity *
+                                  key: const Key('ui_ios_zoom_content_cover'),
+                                  opacity:
+                                      contentSwitch.coverOpacity *
                                       contentOcclusion.peakOpacity,
                                   child: ColoredBox(color: contentCoverColor),
                                 ),
@@ -1246,10 +1236,10 @@ class _UiSharedContainerFlight extends StatelessWidget {
           _localPreviewRect(expandedKey, boundaryObject) ?? cache.expandedRect;
       cache.compactWidget =
           (compactKey.currentWidget as _UiContainerPreviewMarker?)?.child ??
-              cache.compactWidget;
+          cache.compactWidget;
       cache.expandedWidget =
           (expandedKey.currentWidget as _UiContainerPreviewMarker?)?.child ??
-              cache.expandedWidget;
+          cache.expandedWidget;
     }
 
     final compactRect = cache.compactRect;
@@ -1355,11 +1345,7 @@ class _UiSharedContainerRectTween extends RectTween {
         ),
     };
     final size = Size.lerp(begin!.size, end!.size, geometryProgress)!;
-    final center = Offset.lerp(
-      begin!.center,
-      end!.center,
-      positionProgress,
-    )!;
+    final center = Offset.lerp(begin!.center, end!.center, positionProgress)!;
     return Rect.fromCenter(
       center: center,
       width: size.width,
@@ -1378,10 +1364,10 @@ class _ResolvedContainerBackdrop {
   });
 
   const _ResolvedContainerBackdrop.none()
-      : blurSigma = 0,
-        tintColor = const Color(0x00000000),
-        tintOpacity = 0,
-        curve = Curves.linear;
+    : blurSigma = 0,
+      tintColor = const Color(0x00000000),
+      tintOpacity = 0,
+      curve = Curves.linear;
 
   final double blurSigma;
   final Color tintColor;
@@ -1492,10 +1478,7 @@ class _UiSharedContainerRoute<T> extends PageRoute<T> {
             if (blurSigma > 0.001)
               BackdropFilter(
                 key: const Key('ui_container_backdrop_blur'),
-                filter: ImageFilter.blur(
-                  sigmaX: blurSigma,
-                  sigmaY: blurSigma,
-                ),
+                filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
                 child: const SizedBox.expand(),
               ),
             if (tintOpacity > 0.001)
@@ -1616,8 +1599,8 @@ class UiContainerTransformTransition extends StatelessWidget {
     this.destinationBorderRadius = BorderRadius.zero,
     this.contentRevealStart = 0.20,
     this.contentRevealEnd = 0.42,
-  })  : assert(contentRevealStart >= 0 && contentRevealStart <= 1),
-        assert(contentRevealEnd >= contentRevealStart && contentRevealEnd <= 1);
+  }) : assert(contentRevealStart >= 0 && contentRevealStart <= 1),
+       assert(contentRevealEnd >= contentRevealStart && contentRevealEnd <= 1);
 
   final Animation<double> animation;
   final Animation<double>? phaseAnimation;
@@ -1645,10 +1628,13 @@ class UiContainerTransformTransition extends StatelessWidget {
           child: RepaintBoundary(child: child),
           builder: (context, child) {
             final geometryProgress = animation.value.clamp(0.0, 1.0);
-            final phaseProgress =
-                (phaseAnimation?.value ?? geometryProgress).clamp(0.0, 1.0);
-            final rect =
-                Rect.lerp(sourceRect, destinationRect, geometryProgress)!;
+            final phaseProgress = (phaseAnimation?.value ?? geometryProgress)
+                .clamp(0.0, 1.0);
+            final rect = Rect.lerp(
+              sourceRect,
+              destinationRect,
+              geometryProgress,
+            )!;
             final elevationProgress = math.sin(phaseProgress * math.pi);
 
             final radius = BorderRadius.lerp(
@@ -1683,9 +1669,8 @@ class UiContainerTransformTransition extends StatelessWidget {
                       borderRadius: radius,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0x33000000).withValues(
-                            alpha: 0.2 * elevationProgress,
-                          ),
+                          color: const Color(0x33000000)
+                              .withValues(alpha: 0.2 * elevationProgress),
                           blurRadius: 28 * elevationProgress,
                           offset: Offset(0, 10 * elevationProgress),
                         ),

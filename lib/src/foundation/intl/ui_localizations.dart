@@ -58,46 +58,53 @@ abstract class UiLocalizations {
   String ratingLabel(String value, int count) =>
       'Rating: $value out of $count stars';
   List<String> get monthNames => const [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
-      ];
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
   List<String> get shortMonthNames => const [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
-      ];
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
 
   /// Monday first, matching DateTime.weekday.
   List<String> get weekdayNames => const [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday'
-      ];
-  List<String> get shortWeekdayNames =>
-      const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  List<String> get shortWeekdayNames => const [
+    'Mo',
+    'Tu',
+    'We',
+    'Th',
+    'Fr',
+    'Sa',
+    'Su',
+  ];
   String dateLabel(DateTime date) =>
       '${weekdayNames[date.weekday - 1]}, ${monthNames[date.month - 1]} ${date.day}, ${date.year}';
 
@@ -211,8 +218,10 @@ abstract class UiLocalizations {
   /// is installed, [UiLocalizationsEn] is returned so components keep
   /// working during test and bring-up.
   static UiLocalizations of(BuildContext context) {
-    final fromWidget =
-        Localizations.of<UiLocalizations>(context, UiLocalizations);
+    final fromWidget = Localizations.of<UiLocalizations>(
+      context,
+      UiLocalizations,
+    );
     return fromWidget ?? const UiLocalizationsEn();
   }
 
@@ -341,31 +350,31 @@ class UiLocalizationsAr extends UiLocalizations {
       'التقييم: $value من $count نجوم';
   @override
   List<String> get monthNames => const [
-        'يناير',
-        'فبراير',
-        'مارس',
-        'أبريل',
-        'مايو',
-        'يونيو',
-        'يوليو',
-        'أغسطس',
-        'سبتمبر',
-        'أكتوبر',
-        'نوفمبر',
-        'ديسمبر'
-      ];
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
   @override
   List<String> get shortMonthNames => monthNames;
   @override
   List<String> get weekdayNames => const [
-        'الاثنين',
-        'الثلاثاء',
-        'الأربعاء',
-        'الخميس',
-        'الجمعة',
-        'السبت',
-        'الأحد'
-      ];
+    'الاثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+    'السبت',
+    'الأحد',
+  ];
   @override
   List<String> get shortWeekdayNames => weekdayNames;
   @override

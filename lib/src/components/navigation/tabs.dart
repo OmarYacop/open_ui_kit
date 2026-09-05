@@ -16,11 +16,7 @@ class UiTab {
   final Widget? icon;
 }
 
-enum UiTabsLayout {
-  fill,
-  intrinsic,
-  adaptive,
-}
+enum UiTabsLayout { fill, intrinsic, adaptive }
 
 const _kLiquidTabWidth = 72.0;
 const _kLiquidTabHeight = 36.0;
@@ -74,7 +70,8 @@ class UiTabs extends StatelessWidget {
       padding: const EdgeInsets.all(_kLiquidTabPadding),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth.isFinite &&
+          final isWide =
+              constraints.maxWidth.isFinite &&
               constraints.maxWidth >= adaptiveBreakpoint;
           final resolvedLayout = switch (layout) {
             UiTabsLayout.fill => UiTabsLayout.fill,
@@ -86,10 +83,14 @@ class UiTabs extends StatelessWidget {
           final useExpanded = expand;
           if (resolvedLayout == UiTabsLayout.intrinsic &&
               constraints.maxWidth.isFinite) {
-            final intrinsicWidthCap =
-                (tabs.length * _kLiquidTabWidth).clamp(0.0, intrinsicMaxWidth);
-            final targetWidth =
-                constraints.maxWidth.clamp(0.0, intrinsicWidthCap);
+            final intrinsicWidthCap = (tabs.length * _kLiquidTabWidth).clamp(
+              0.0,
+              intrinsicMaxWidth,
+            );
+            final targetWidth = constraints.maxWidth.clamp(
+              0.0,
+              intrinsicWidthCap,
+            );
             return Align(
               alignment: Alignment.centerLeft,
               child: SizedBox(
@@ -362,8 +363,9 @@ class _TabStackState extends State<_TabStack> {
       textDirection: textDirection,
       textScaler: textScaler,
     )..layout();
-    final iconWidth =
-        tab.icon == null ? 0.0 : _kLiquidTabIconSize + _kLiquidTabIconGap;
+    final iconWidth = tab.icon == null
+        ? 0.0
+        : _kLiquidTabIconSize + _kLiquidTabIconGap;
     return painter.width + iconWidth + _kLiquidTabHorizontalPadding * 2;
   }
 }
@@ -395,9 +397,7 @@ class _TabButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: tokens.motion.fast,
             curve: tokens.motion.standardCurve,
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.x3,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x3),
             alignment: Alignment.center,
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -416,8 +416,9 @@ class _TabButton extends StatelessWidget {
                 );
                 final boundedWidth = constraints.hasBoundedWidth;
                 return Row(
-                  mainAxisSize:
-                      boundedWidth ? MainAxisSize.max : MainAxisSize.min,
+                  mainAxisSize: boundedWidth
+                      ? MainAxisSize.max
+                      : MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (tab.icon != null) ...[
@@ -446,11 +447,8 @@ class _TabButton extends StatelessWidget {
 ///
 /// Useful pair for [UiTabs] when the body below changes with selection.
 class UiTabViews extends StatelessWidget {
-  const UiTabViews({
-    super.key,
-    required this.index,
-    required this.children,
-  }) : assert(children.length > 0, 'UiTabViews requires at least one view');
+  const UiTabViews({super.key, required this.index, required this.children})
+    : assert(children.length > 0, 'UiTabViews requires at least one view');
 
   final int index;
   final List<Widget> children;
@@ -474,10 +472,7 @@ class UiTabViews extends StatelessWidget {
         alignment: Alignment.topCenter,
         children: [...previous, if (current != null) current],
       ),
-      child: KeyedSubtree(
-        key: ValueKey<int>(idx),
-        child: children[idx],
-      ),
+      child: KeyedSubtree(key: ValueKey<int>(idx), child: children[idx]),
     );
   }
 }

@@ -13,14 +13,7 @@ import '../../foundation/primitives/ui_progress.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Lifecycle states shared by [UiRefresher] and [UiSliverRefresher].
-enum UiRefreshStatus {
-  idle,
-  dragging,
-  armed,
-  refreshing,
-  completed,
-  failed,
-}
+enum UiRefreshStatus { idle, dragging, armed, refreshing, completed, failed }
 
 /// Immutable input passed to a [UiRefreshIndicatorBuilder].
 @immutable
@@ -144,11 +137,11 @@ class UiRefresher extends StatefulWidget {
     this.settleDuration = UiMotionDuration.fast,
     this.feedbackDuration,
     this.dismissDuration = UiMotionDuration.standard,
-  })  : assert(triggerDistance > 0),
-        assert(indicatorExtent > 0),
-        assert(edgeOffset >= 0),
-        assert(maxDragExtent == null || maxDragExtent >= triggerDistance),
-        assert(dragResistance > 0 && dragResistance <= 1);
+  }) : assert(triggerDistance > 0),
+       assert(indicatorExtent > 0),
+       assert(edgeOffset >= 0),
+       assert(maxDragExtent == null || maxDragExtent >= triggerDistance),
+       assert(dragResistance > 0 && dragResistance <= 1);
 
   final Future<void> Function() onRefresh;
   final Widget child;
@@ -369,9 +362,7 @@ class _UiRefresherState extends State<UiRefresher>
     _setStatus(UiRefreshStatus.refreshing);
 
     final settle = widget.settleDuration.resolve(context);
-    unawaited(
-      _animateExtentTo(widget.triggerDistance, settle),
-    );
+    unawaited(_animateExtentTo(widget.triggerDistance, settle));
 
     Object? caughtError;
     StackTrace? caughtStack;
@@ -474,8 +465,7 @@ class _UiRefresherState extends State<UiRefresher>
     final progress = switch (_status) {
       UiRefreshStatus.refreshing ||
       UiRefreshStatus.completed ||
-      UiRefreshStatus.failed =>
-        1.0,
+      UiRefreshStatus.failed => 1.0,
       _ => (_pulledExtent / widget.triggerDistance).clamp(0.0, 1.0),
     };
     final details = UiRefreshIndicatorDetails(
@@ -526,10 +516,10 @@ class UiSliverRefresher extends StatefulWidget {
     this.triggerDistance = 96,
     this.indicatorExtent = 64,
     this.edgeOffset = 0,
-  })  : assert(triggerDistance > 0),
-        assert(indicatorExtent > 0),
-        assert(edgeOffset >= 0),
-        assert(triggerDistance >= indicatorExtent);
+  }) : assert(triggerDistance > 0),
+       assert(indicatorExtent > 0),
+       assert(edgeOffset >= 0),
+       assert(triggerDistance >= indicatorExtent);
 
   final Future<void> Function() onRefresh;
   final UiRefreshIndicatorBuilder? indicatorBuilder;
@@ -593,20 +583,13 @@ class _UiSliverRefresherState extends State<UiSliverRefresher> {
       refreshTriggerPullDistance: widget.triggerDistance,
       refreshIndicatorExtent: widget.indicatorExtent,
       onRefresh: _refresh,
-      builder: (
-        context,
-        mode,
-        pulledExtent,
-        triggerDistance,
-        indicatorExtent,
-      ) {
+      builder: (context, mode, pulledExtent, triggerDistance, indicatorExtent) {
         final status = _statusFor(mode);
         _reportStatus(status);
         final progress = switch (status) {
           UiRefreshStatus.refreshing ||
           UiRefreshStatus.completed ||
-          UiRefreshStatus.failed =>
-            1.0,
+          UiRefreshStatus.failed => 1.0,
           _ => (pulledExtent / triggerDistance).clamp(0.0, 1.0),
         };
         final details = UiRefreshIndicatorDetails(
@@ -647,7 +630,8 @@ class _UiRefreshOverlay extends StatelessWidget {
     final animationsDisabled =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final reveal = Curves.easeOutCubic.transform(details.progress);
-    final translateY = -indicatorExtent +
+    final translateY =
+        -indicatorExtent +
         edgeOffset +
         reveal * (indicatorExtent + tokens.spacing.x2);
 
@@ -665,8 +649,9 @@ class _UiRefreshOverlay extends StatelessWidget {
               alignment: Alignment.topCenter,
               child: AnimatedOpacity(
                 opacity: visible ? 1 : 0,
-                duration:
-                    animationsDisabled ? Duration.zero : tokens.motion.fast,
+                duration: animationsDisabled
+                    ? Duration.zero
+                    : tokens.motion.fast,
                 curve: tokens.motion.standardCurve,
                 child: _RefreshSemantics(
                   details: details,
@@ -719,7 +704,8 @@ class _RefreshSemantics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = _refreshLabel(context, details.status);
-    final reportsProgress = details.status == UiRefreshStatus.dragging ||
+    final reportsProgress =
+        details.status == UiRefreshStatus.dragging ||
         details.status == UiRefreshStatus.armed;
     return Semantics(
       container: true,
@@ -759,23 +745,23 @@ class UiRefreshIndicator extends StatelessWidget {
   /// Use this when another flow is waiting on work but should share the
   /// refresher's compact visual language, such as awaiting a permission.
   const UiRefreshIndicator.refreshing({super.key})
-      : details = const UiRefreshIndicatorDetails(
-          status: UiRefreshStatus.refreshing,
-          progress: 1,
-          pulledExtent: 0,
-          triggerDistance: 1,
-        ),
-        showLabel = false;
+    : details = const UiRefreshIndicatorDetails(
+        status: UiRefreshStatus.refreshing,
+        progress: 1,
+        pulledExtent: 0,
+        triggerDistance: 1,
+      ),
+      showLabel = false;
 
   /// A standalone instance of the stock completion visual.
   const UiRefreshIndicator.completed({super.key})
-      : details = const UiRefreshIndicatorDetails(
-          status: UiRefreshStatus.completed,
-          progress: 1,
-          pulledExtent: 0,
-          triggerDistance: 1,
-        ),
-        showLabel = false;
+    : details = const UiRefreshIndicatorDetails(
+        status: UiRefreshStatus.completed,
+        progress: 1,
+        pulledExtent: 0,
+        triggerDistance: 1,
+      ),
+      showLabel = false;
 
   /// A standalone instance of the stock failure visual.
   factory UiRefreshIndicator.failed({Key? key, Object? error}) {
@@ -1008,10 +994,12 @@ class _RefreshGlyphPainter extends CustomPainter {
       canvas.drawCircle(center, 2.4 + p * 1.2, _fillPaint(color, 0.3));
     }
 
-    final ringProgress =
-        Curves.easeOutCubic.transform((p / 0.58).clamp(0.0, 1.0));
-    final checkProgress =
-        Curves.easeOutCubic.transform(((p - 0.28) / 0.72).clamp(0.0, 1.0));
+    final ringProgress = Curves.easeOutCubic.transform(
+      (p / 0.58).clamp(0.0, 1.0),
+    );
+    final checkProgress = Curves.easeOutCubic.transform(
+      ((p - 0.28) / 0.72).clamp(0.0, 1.0),
+    );
     final paint = _strokePaint(color)
       ..strokeWidth = 1.9
       ..color = color.withValues(alpha: p.clamp(0.0, 1.0));
@@ -1192,8 +1180,8 @@ class _RenderUiRefreshSliver extends RenderSliver
   _RenderUiRefreshSliver({
     required double refreshIndicatorExtent,
     required bool hasLayoutExtent,
-  })  : _refreshIndicatorExtent = refreshIndicatorExtent,
-        _hasLayoutExtent = hasLayoutExtent;
+  }) : _refreshIndicatorExtent = refreshIndicatorExtent,
+       _hasLayoutExtent = hasLayoutExtent;
 
   double _refreshIndicatorExtent;
   double get refreshIndicatorLayoutExtent => _refreshIndicatorExtent;

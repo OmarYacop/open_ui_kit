@@ -9,13 +9,7 @@ const _keyboardGeometryChannel = EventChannel(
 );
 const _iosKeyboardDurationFactor = 0.65;
 
-enum UiKeyboardAnimationCurve {
-  platform,
-  easeInOut,
-  easeIn,
-  easeOut,
-  linear,
-}
+enum UiKeyboardAnimationCurve { platform, easeInOut, easeIn, easeOut, linear }
 
 /// Independently tracked parts of [UiKeyboardGeometry].
 enum UiKeyboardGeometryAspect {
@@ -161,9 +155,10 @@ class _UiKeyboardGeometryScopeState extends State<UiKeyboardGeometryScope>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _readWindowMetrics();
-    _nativeSubscription = (widget.eventStream ??
-            _keyboardGeometryChannel.receiveBroadcastStream())
-        .listen(_handleNativeEvent, onError: (_) {});
+    _nativeSubscription =
+        (widget.eventStream ??
+                _keyboardGeometryChannel.receiveBroadcastStream())
+            .listen(_handleNativeEvent, onError: (_) {});
   }
 
   @override
@@ -220,12 +215,10 @@ class _UiKeyboardGeometryScopeState extends State<UiKeyboardGeometryScope>
     final transitMs = startedAtEpochMs <= 0
         ? 0.0
         : math
-            .max(
-              0,
-              DateTime.now().millisecondsSinceEpoch - startedAtEpochMs,
-            )
-            .toDouble();
-    final reduceMotion = widget.reduceMotionOverride ??
+              .max(0, DateTime.now().millisecondsSinceEpoch - startedAtEpochMs)
+              .toDouble();
+    final reduceMotion =
+        widget.reduceMotionOverride ??
         MediaQuery.maybeDisableAnimationsOf(context) ??
         false;
 
@@ -236,8 +229,8 @@ class _UiKeyboardGeometryScopeState extends State<UiKeyboardGeometryScope>
       _nativeAnimationActive = true;
       _animationSource = source;
       _animationTarget = target;
-      final elapsedProgress =
-          (progress + transitMs / duration.inMilliseconds).clamp(0.0, 1.0);
+      final elapsedProgress = (progress + transitMs / duration.inMilliseconds)
+          .clamp(0.0, 1.0);
       _controller
         ..stop()
         ..duration = duration
@@ -253,10 +246,7 @@ class _UiKeyboardGeometryScopeState extends State<UiKeyboardGeometryScope>
         isAnimating: true,
         isVisible: visible,
       );
-      _controller.animateTo(
-        1,
-        curve: Curves.linear,
-      );
+      _controller.animateTo(1, curve: Curves.linear);
       if (mounted) setState(() {});
       return;
     }
@@ -365,18 +355,12 @@ class _UiKeyboardGeometryScopeState extends State<UiKeyboardGeometryScope>
 
   @override
   Widget build(BuildContext context) {
-    return _UiKeyboardGeometryData(
-      geometry: _geometry,
-      child: widget.child,
-    );
+    return _UiKeyboardGeometryData(geometry: _geometry, child: widget.child);
   }
 }
 
 class _UiKeyboardGeometryData extends InheritedModel<UiKeyboardGeometryAspect> {
-  const _UiKeyboardGeometryData({
-    required this.geometry,
-    required super.child,
-  });
+  const _UiKeyboardGeometryData({required this.geometry, required super.child});
 
   final UiKeyboardGeometry geometry;
 
@@ -435,8 +419,9 @@ class UiKeyboardDock extends StatelessWidget {
     final followerTranslation = enabled && !replacementVisible
         ? UiKeyboardGeometry.followerTranslationOf(context)
         : 0.0;
-    final keyboardReservedInset =
-        enabled ? UiKeyboardGeometry.reservedInsetOf(context) : 0.0;
+    final keyboardReservedInset = enabled
+        ? UiKeyboardGeometry.reservedInsetOf(context)
+        : 0.0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -445,9 +430,7 @@ class UiKeyboardDock extends StatelessWidget {
           child: child,
         ),
         TweenAnimationBuilder<double>(
-          tween: Tween(
-            end: replacementVisible ? replacementExtent : 0,
-          ),
+          tween: Tween(end: replacementVisible ? replacementExtent : 0),
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
           builder: (context, animatedReplacementInset, child) {

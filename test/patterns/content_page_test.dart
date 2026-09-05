@@ -5,10 +5,10 @@ import 'package:open_ui_kit/foundation.dart';
 import 'package:open_ui_kit/patterns/layout.dart';
 
 Widget _host(Widget child) => UiApp(
-      lightTokens: UiThemeTokens.light,
-      mode: UiThemeMode.light,
-      home: Align(alignment: Alignment.topLeft, child: child),
-    );
+  lightTokens: UiThemeTokens.light,
+  mode: UiThemeMode.light,
+  home: Align(alignment: Alignment.topLeft, child: child),
+);
 
 void main() {
   testWidgets('UiContentPage lays out titled, spaced content', (tester) async {

@@ -14,9 +14,9 @@ class UiPagination extends StatelessWidget {
     this.onPageChanged,
     this.maxVisiblePages = 5,
     this.loading = false,
-  })  : assert(currentPage >= 1),
-        assert(totalPages >= 1),
-        assert(maxVisiblePages >= 3);
+  }) : assert(currentPage >= 1),
+       assert(totalPages >= 1),
+       assert(maxVisiblePages >= 3);
 
   final int currentPage;
   final int totalPages;
@@ -121,8 +121,8 @@ class _PaginationChip extends StatelessWidget {
         final background = selected
             ? c.primary
             : state.hovered || state.pressed
-                ? c.surfaceMuted
-                : c.surface;
+            ? c.surfaceMuted
+            : c.surface;
         final fg = selected ? c.onPrimary : c.textPrimary;
 
         return Semantics(

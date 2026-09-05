@@ -43,13 +43,9 @@ class _UiDateTimePickerState extends State<UiDateTimePicker> {
   }
 
   void _emit() {
-    widget.onChanged?.call(DateTime(
-      _date.year,
-      _date.month,
-      _date.day,
-      _time.hour,
-      _time.minute,
-    ));
+    widget.onChanged?.call(
+      DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute),
+    );
   }
 
   @override

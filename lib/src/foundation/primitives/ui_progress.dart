@@ -143,10 +143,7 @@ class _UiSpinnerPainter extends CustomPainter {
         canvas.drawCircle(
           point,
           dotRadius * (0.72 + fill * 0.28),
-          Paint()
-            ..color = color.withValues(
-              alpha: fill * (0.28 + trail * 0.5),
-            ),
+          Paint()..color = color.withValues(alpha: fill * (0.28 + trail * 0.5)),
         );
       }
     }
@@ -155,10 +152,7 @@ class _UiSpinnerPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       dotRadius * (0.9 + centerProgress * 0.55),
-      Paint()
-        ..color = color.withValues(
-          alpha: 0.28 + centerProgress * 0.38,
-        ),
+      Paint()..color = color.withValues(alpha: 0.28 + centerProgress * 0.38),
     );
   }
 

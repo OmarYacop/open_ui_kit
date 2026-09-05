@@ -196,12 +196,13 @@ class UiPageScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final bg = backgroundColor ?? tokens.colors.background;
-    final hasPersistentRail =
-        UiNavigationChromeScope.hasPersistentRailOf(context);
+    final hasPersistentRail = UiNavigationChromeScope.hasPersistentRailOf(
+      context,
+    );
     final effectiveTopFadeExtent =
         MediaQuery.sizeOf(context).shortestSide >= 600
-            ? scrollFadeWideExtent
-            : scrollFadeExtent;
+        ? scrollFadeWideExtent
+        : scrollFadeExtent;
 
     // The background is painted full-bleed under system hardware. When scroll
     // fade is enabled, safe insets belong to the faded body layer instead of a
@@ -212,12 +213,14 @@ class UiPageScaffold extends StatelessWidget {
     var effectiveSafeMode = paintTopInsetWithTopBar
         ? _withoutTopInset(safeViewportMode)
         : safeViewportMode;
-    final consumeFadeTopInset = scrollFade &&
+    final consumeFadeTopInset =
+        scrollFade &&
         scrollFadeUsesSafeArea &&
         topBar == null &&
         !paintTopInsetWithTopBar &&
         _usesTopInset(effectiveSafeMode);
-    final consumeFadeBottomInset = scrollFade &&
+    final consumeFadeBottomInset =
+        scrollFade &&
         scrollFadeUsesSafeArea &&
         bottomBar == null &&
         _usesBottomInset(effectiveSafeMode);
@@ -227,9 +230,11 @@ class UiPageScaffold extends StatelessWidget {
     if (consumeFadeBottomInset) {
       effectiveSafeMode = _withoutBottomInset(effectiveSafeMode);
     }
-    final safeTopBodyInset =
-        consumeFadeTopInset ? _effectiveTopSafeInset(media) : 0.0;
-    final railFadeTopBodyInset = hasPersistentRail &&
+    final safeTopBodyInset = consumeFadeTopInset
+        ? _effectiveTopSafeInset(media)
+        : 0.0;
+    final railFadeTopBodyInset =
+        hasPersistentRail &&
             scrollFade &&
             scrollFadeUsesSafeArea &&
             scrollFadeTop
@@ -301,8 +306,8 @@ class UiPageScaffold extends StatelessWidget {
     // horizontal contract so landscape notches remain protected.
     final needsHorizontalSafeViewport =
         effectiveSafeMode == UiSafeViewportMode.none &&
-            safeViewportMode != UiSafeViewportMode.none &&
-            (leftSafeInset || rightSafeInset);
+        safeViewportMode != UiSafeViewportMode.none &&
+        (leftSafeInset || rightSafeInset);
     if (needsHorizontalSafeViewport) {
       content = SafeArea(
         top: false,
@@ -353,8 +358,8 @@ class UiPageScaffold extends StatelessWidget {
       final barsColor = paintTopInsetWithTopBar
           ? insetColor
           : bg.a < 0.5
-              ? scrollFadeBackgroundColor
-              : bg;
+          ? scrollFadeBackgroundColor
+          : bg;
       content = UiSystemBars(
         style: systemOverlayStyle,
         backgroundColor: barsColor,
@@ -428,15 +433,16 @@ class UiPageScaffold extends StatelessWidget {
 
   double _effectiveTopSafeInset(MediaQueryData media) =>
       media.padding.top > safeAreaMinimum.top
-          ? media.padding.top
-          : safeAreaMinimum.top;
+      ? media.padding.top
+      : safeAreaMinimum.top;
 
   double _effectiveBottomSafeInset(
     BuildContext context,
     MediaQueryData media,
     UiSafeViewportMode mode,
   ) {
-    final keyboardAware = mode == UiSafeViewportMode.keyboardAware ||
+    final keyboardAware =
+        mode == UiSafeViewportMode.keyboardAware ||
         mode == UiSafeViewportMode.keyboardAwareNoTop;
     final keyboardInset = UiKeyboardGeometry.currentInsetOf(context);
     final systemInset = keyboardAware && keyboardInset > 0
@@ -483,10 +489,7 @@ class UiPageBodyInsets extends InheritedModel<UiPageBodyInsetsAspect> {
   static double leftOf(BuildContext context) =>
       _of(context, UiPageBodyInsetsAspect.left).left;
 
-  static EdgeInsets _of(
-    BuildContext context,
-    UiPageBodyInsetsAspect aspect,
-  ) {
+  static EdgeInsets _of(BuildContext context, UiPageBodyInsetsAspect aspect) {
     return InheritedModel.inheritFrom<UiPageBodyInsets>(
           context,
           aspect: aspect,

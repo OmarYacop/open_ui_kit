@@ -12,17 +12,23 @@ void main() {
         (colors.success, colors.successForeground),
         (colors.warning, colors.warningForeground),
       ]) {
-        final background =
-            Color.alphaBlend(pair.$1.withValues(alpha: .1), colors.surface);
+        final background = Color.alphaBlend(
+          pair.$1.withValues(alpha: .1),
+          colors.surface,
+        );
         final x = background.computeLuminance();
         final y = pair.$2.computeLuminance();
-        expect(((x > y ? x : y) + .05) / ((x < y ? x : y) + .05),
-            greaterThanOrEqualTo(4.5));
+        expect(
+          ((x > y ? x : y) + .05) / ((x < y ? x : y) + .05),
+          greaterThanOrEqualTo(4.5),
+        );
       }
     }
     final custom = light.copyWith(successForeground: const Color(0xff123456));
-    expect(UiColorTokens.lerp(light, custom, 1).successForeground,
-        custom.successForeground);
+    expect(
+      UiColorTokens.lerp(light, custom, 1).successForeground,
+      custom.successForeground,
+    );
     expect(custom.warningForeground, light.warningForeground);
   });
 

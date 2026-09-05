@@ -56,10 +56,20 @@ class _UiDateTimeRangePickerState extends State<UiDateTimeRangePicker> {
   void _emit() {
     final d = _dates;
     if (d == null) return;
-    final start = DateTime(d.start.year, d.start.month, d.start.day,
-        _times.start.hour, _times.start.minute);
+    final start = DateTime(
+      d.start.year,
+      d.start.month,
+      d.start.day,
+      _times.start.hour,
+      _times.start.minute,
+    );
     final end = DateTime(
-        d.end.year, d.end.month, d.end.day, _times.end.hour, _times.end.minute);
+      d.end.year,
+      d.end.month,
+      d.end.day,
+      _times.end.hour,
+      _times.end.minute,
+    );
     widget.onChanged?.call(UiDateTimeRange(start: start, end: end));
   }
 

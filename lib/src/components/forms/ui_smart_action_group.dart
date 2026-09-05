@@ -31,11 +31,11 @@ class UiSmartActionGroupAction {
     this.semanticsLabel,
     this.flex = 1,
     this.expandedFlex,
-  })  : assert(flex > 0, 'flex must be greater than zero'),
-        assert(
-          expandedFlex == null || expandedFlex > 0,
-          'expandedFlex must be greater than zero',
-        );
+  }) : assert(flex > 0, 'flex must be greater than zero'),
+       assert(
+         expandedFlex == null || expandedFlex > 0,
+         'expandedFlex must be greater than zero',
+       );
 
   /// Stable identity used for animated transitions.
   final Object id;
@@ -116,19 +116,19 @@ class UiSmartActionGroup extends StatefulWidget {
     this.duration = UiMotionDuration.slow,
     this.curve,
     this.semanticLabel,
-  })  : assert(collapsedCount > 0, 'collapsedCount must be greater than zero'),
-        assert(
-          compactBreakpoint > 0,
-          'compactBreakpoint must be greater than zero',
-        ),
-        assert(
-          moreButtonWidth == null || moreButtonWidth > 0,
-          'moreButtonWidth must be greater than zero',
-        ),
-        assert(
-          collapseButtonWidth == null || collapseButtonWidth > 0,
-          'collapseButtonWidth must be greater than zero',
-        );
+  }) : assert(collapsedCount > 0, 'collapsedCount must be greater than zero'),
+       assert(
+         compactBreakpoint > 0,
+         'compactBreakpoint must be greater than zero',
+       ),
+       assert(
+         moreButtonWidth == null || moreButtonWidth > 0,
+         'moreButtonWidth must be greater than zero',
+       ),
+       assert(
+         collapseButtonWidth == null || collapseButtonWidth > 0,
+         'collapseButtonWidth must be greater than zero',
+       );
 
   /// Ordered actions. The first [collapsedCount] stay visible while collapsed.
   final List<UiSmartActionGroupAction> actions;
@@ -244,20 +244,20 @@ class UiConfirmActionGroup extends StatefulWidget {
     this.duration = UiMotionDuration.slow,
     this.curve,
     this.semanticLabel,
-  })  : assert(primaryFlex > 0, 'primaryFlex must be greater than zero'),
-        assert(
-          confirmingPrimaryFlex > 0,
-          'confirmingPrimaryFlex must be greater than zero',
-        ),
-        assert(secondaryFlex > 0, 'secondaryFlex must be greater than zero'),
-        assert(
-          confirmingSecondaryFlex > 0,
-          'confirmingSecondaryFlex must be greater than zero',
-        ),
-        assert(
-          compactBreakpoint > 0,
-          'compactBreakpoint must be greater than zero',
-        );
+  }) : assert(primaryFlex > 0, 'primaryFlex must be greater than zero'),
+       assert(
+         confirmingPrimaryFlex > 0,
+         'confirmingPrimaryFlex must be greater than zero',
+       ),
+       assert(secondaryFlex > 0, 'secondaryFlex must be greater than zero'),
+       assert(
+         confirmingSecondaryFlex > 0,
+         'confirmingSecondaryFlex must be greater than zero',
+       ),
+       assert(
+         compactBreakpoint > 0,
+         'compactBreakpoint must be greater than zero',
+       );
 
   /// Initial primary label, for example "Save" or "Delete".
   final String actionLabel;
@@ -372,11 +372,11 @@ class UiActionGroupGeometryItem {
     required this.id,
     this.flex = 1,
     this.fixedExtent,
-  })  : assert(flex > 0, 'flex must be greater than zero'),
-        assert(
-          fixedExtent == null || fixedExtent > 0,
-          'fixedExtent must be greater than zero',
-        );
+  }) : assert(flex > 0, 'flex must be greater than zero'),
+       assert(
+         fixedExtent == null || fixedExtent > 0,
+         'fixedExtent must be greater than zero',
+       );
 
   final Object id;
   final int flex;
@@ -404,10 +404,7 @@ class UiActionGroupGeometrySlot {
 @visibleForTesting
 @immutable
 class UiActionGroupGeometry {
-  const UiActionGroupGeometry({
-    required this.size,
-    required this.slots,
-  });
+  const UiActionGroupGeometry({required this.size, required this.slots});
 
   final Size size;
   final List<UiActionGroupGeometrySlot> slots;
@@ -448,9 +445,7 @@ class UiActionGroupGeometrySolver {
     final keepsTargetOrder = toItems.length >= fromItems.length;
     final primaryOrder = keepsTargetOrder ? toItems : fromItems;
     final secondaryOrder = keepsTargetOrder ? fromItems : toItems;
-    final primaryById = {
-      for (final item in primaryOrder) item.id: item,
-    };
+    final primaryById = {for (final item in primaryOrder) item.id: item};
     final ids = <Object>[
       for (final item in primaryOrder) item.id,
       for (final item in secondaryOrder)
@@ -484,9 +479,7 @@ class UiActionGroupGeometrySolver {
 
     final withGaps = <_SolvedSlotMetric>[
       for (var i = 0; i < metrics.length; i++)
-        metrics[i].copyWith(
-          gapAfter: _gapAfter(metrics, i, spacing),
-        ),
+        metrics[i].copyWith(gapAfter: _gapAfter(metrics, i, spacing)),
     ];
     final fitted = _fitAndFill(withGaps, maxWidth);
 
@@ -506,10 +499,7 @@ class UiActionGroupGeometrySolver {
       x += metric.width + metric.gapAfter;
     }
 
-    return UiActionGroupGeometry(
-      size: Size(maxWidth, height),
-      slots: slots,
-    );
+    return UiActionGroupGeometry(size: Size(maxWidth, height), slots: slots);
   }
 
   static List<double> _widthsFor(
@@ -622,8 +612,9 @@ class UiActionGroupGeometrySolver {
     if (index >= metrics.length - 1 || metrics[index].presence <= 0.001) {
       return 0;
     }
-    final hasVisibleTrailingSlot =
-        metrics.skip(index + 1).any((metric) => metric.presence > 0.001);
+    final hasVisibleTrailingSlot = metrics
+        .skip(index + 1)
+        .any((metric) => metric.presence > 0.001);
     return hasVisibleTrailingSlot ? spacing : 0;
   }
 
@@ -633,10 +624,14 @@ class UiActionGroupGeometrySolver {
   ) {
     if (metrics.isEmpty) return metrics;
 
-    final totalGaps =
-        metrics.fold<double>(0, (sum, metric) => sum + metric.gapAfter);
-    final totalWidths =
-        metrics.fold<double>(0, (sum, metric) => sum + metric.width);
+    final totalGaps = metrics.fold<double>(
+      0,
+      (sum, metric) => sum + metric.gapAfter,
+    );
+    final totalWidths = metrics.fold<double>(
+      0,
+      (sum, metric) => sum + metric.width,
+    );
     final availableForWidths = math.max(0.0, maxWidth - totalGaps);
 
     if (totalWidths > availableForWidths + 0.01 && totalWidths > 0) {
@@ -762,7 +757,8 @@ class _UiConfirmActionGroupState extends State<UiConfirmActionGroup> {
       label: widget.semanticLabel,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = !constraints.hasBoundedWidth ||
+          final compact =
+              !constraints.hasBoundedWidth ||
               constraints.maxWidth < widget.compactBreakpoint;
           return _MechanicalActionGroup(
             entries: _entries(confirming: _effectiveConfirming),
@@ -878,7 +874,8 @@ class _UiSmartActionGroupState extends State<UiSmartActionGroup> {
       label: widget.semanticLabel,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = !constraints.hasBoundedWidth ||
+          final compact =
+              !constraints.hasBoundedWidth ||
               constraints.maxWidth < widget.compactBreakpoint;
           return _MechanicalActionGroup(
             entries: _entries(
@@ -913,7 +910,8 @@ class _UiSmartActionGroupState extends State<UiSmartActionGroup> {
           _ActionEntry.action(
             action,
             expanded: expanded,
-            equalFlex: expanded &&
+            equalFlex:
+                expanded &&
                 widget.expandedLayout == UiSmartActionGroupExpandedLayout.equal,
           ),
       ];
@@ -950,8 +948,8 @@ class _UiSmartActionGroupState extends State<UiSmartActionGroup> {
           intent: widget.collapseIntent,
           fixedWidth:
               widget.expandedLayout == UiSmartActionGroupExpandedLayout.equal
-                  ? null
-                  : widget.collapseButtonWidth ?? _defaultToggleWidth(),
+              ? null
+              : widget.collapseButtonWidth ?? _defaultToggleWidth(),
           targetExpanded: false,
         ),
     ];
@@ -1004,8 +1002,8 @@ class _ActionEntry {
       flex: equalFlex
           ? 1
           : expanded
-              ? action.expandedFlex ?? action.flex
-              : action.flex,
+          ? action.expandedFlex ?? action.flex
+          : action.flex,
       fixedWidth: null,
       targetExpanded: null,
       action: action,
@@ -1102,15 +1100,13 @@ class _MechanicalActionGroupState extends State<_MechanicalActionGroup>
     _fromEntries = widget.entries;
     _toEntries = widget.entries;
     _signature = _entrySignature(widget.entries);
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-      value: 1,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed && mounted) {
-          setState(() => _fromEntries = _toEntries);
-        }
-      });
+    _controller =
+        AnimationController(vsync: this, duration: widget.duration, value: 1)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed && mounted) {
+              setState(() => _fromEntries = _toEntries);
+            }
+          });
   }
 
   @override
@@ -1154,8 +1150,9 @@ class _MechanicalActionGroupState extends State<_MechanicalActionGroup>
           return AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
-              final raw =
-                  widget.duration == Duration.zero ? 1.0 : _controller.value;
+              final raw = widget.duration == Duration.zero
+                  ? 1.0
+                  : _controller.value;
               final progress = widget.duration == Duration.zero
                   ? 1.0
                   : widget.curve.transform(raw);
@@ -1432,11 +1429,11 @@ class _MechanicalButton extends StatelessWidget {
                           sourceOpacity: source == null
                               ? 0
                               : contentOpacity *
-                                  _sourceContentOpacity(source!, target),
+                                    _sourceContentOpacity(source!, target),
                           targetOpacity: target == null
                               ? 0
                               : contentOpacity *
-                                  _targetContentOpacity(source, target!),
+                                    _targetContentOpacity(source, target!),
                           style: style,
                           size: size,
                         ),
@@ -1571,7 +1568,9 @@ class _MechanicalButtonContent extends StatelessWidget {
     final iconSize = UiButtonMetrics.iconSize(size);
     final iconExtent = math.max(iconSize, 16.0);
     if (entry.loading) {
-      return Center(child: SizedBox(width: iconExtent, height: iconExtent));
+      return Center(
+        child: SizedBox(width: iconExtent, height: iconExtent),
+      );
     }
 
     return LayoutBuilder(
@@ -1618,9 +1617,10 @@ class _MechanicalButtonContent extends StatelessWidget {
                   child: UiText(
                     entry.label,
                     variant: UiButtonMetrics.textVariant(size),
-                    style: UiButtonMetrics.textStyle(size, tokens).copyWith(
-                      color: foreground,
-                    ),
+                    style: UiButtonMetrics.textStyle(
+                      size,
+                      tokens,
+                    ).copyWith(color: foreground),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     textAlign: TextAlign.center,
@@ -1675,7 +1675,10 @@ class _MechanicalButtonStyle {
       progress,
     )!;
     final foreground = Color.lerp(
-        sourcePalette.foreground, targetPalette.foreground, progress)!;
+      sourcePalette.foreground,
+      targetPalette.foreground,
+      progress,
+    )!;
     final border = Color.lerp(
       source.showBorder
           ? sourcePalette.border ?? const Color(0x00000000)
@@ -1697,8 +1700,9 @@ class _MechanicalButtonStyle {
   }
 
   static UiIntentPalette _paletteFor(UiIntent intent, UiThemeTokens tokens) {
-    final resolved =
-        intent == UiIntent.defaultIntent ? UiIntent.primary : intent;
+    final resolved = intent == UiIntent.defaultIntent
+        ? UiIntent.primary
+        : intent;
     return UiIntentPalette.rest(resolved, tokens.colors);
   }
 }

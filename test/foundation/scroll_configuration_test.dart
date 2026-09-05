@@ -25,9 +25,7 @@ void main() {
               overscrollNotifications++;
               return false;
             },
-            child: ListView(
-              children: const [SizedBox(height: 600)],
-            ),
+            child: ListView(children: const [SizedBox(height: 600)]),
           ),
         ),
       ),
@@ -46,11 +44,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      UiApp(
-        home: ListView(
-          children: const [SizedBox(height: 600)],
-        ),
-      ),
+      UiApp(home: ListView(children: const [SizedBox(height: 600)])),
     );
 
     expect(find.byType(GlowingOverscrollIndicator), findsNothing);

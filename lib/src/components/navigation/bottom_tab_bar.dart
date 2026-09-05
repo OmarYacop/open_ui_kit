@@ -53,9 +53,9 @@ class UiBottomTabAccessory {
     this.collapsedHeight,
     this.height = 56,
   }) : assert(
-          !expanded || leadingItem != null,
-          'An expanded accessory needs a leadingItem.',
-        );
+         !expanded || leadingItem != null,
+         'An expanded accessory needs a leadingItem.',
+       );
 
   final Widget child;
   final bool expanded;
@@ -99,11 +99,7 @@ class UiBottomTabAccessory {
 /// Renders token-driven surface, icon + label stack per item, active
 /// highlight, optional badge, and a pinned safe-area inset so it can
 /// sit at the bottom of a `UiPageScaffold` without extra padding.
-enum UiBottomTabBarLayout {
-  edgeToEdge,
-  floatingDock,
-  adaptive,
-}
+enum UiBottomTabBarLayout { edgeToEdge, floatingDock, adaptive }
 
 const _kLiquidTabWidth = 72.0;
 const _kLiquidTabHeight = 54.0;
@@ -185,39 +181,45 @@ class UiBottomTabBar extends StatelessWidget {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth.isFinite &&
+        final isWide =
+            constraints.maxWidth.isFinite &&
             constraints.maxWidth >= adaptiveBreakpoint;
         final resolvedLayout = switch (layout) {
           UiBottomTabBarLayout.edgeToEdge => UiBottomTabBarLayout.edgeToEdge,
           UiBottomTabBarLayout.floatingDock =>
             UiBottomTabBarLayout.floatingDock,
-          UiBottomTabBarLayout.adaptive => isWide
-              ? UiBottomTabBarLayout.floatingDock
-              : UiBottomTabBarLayout.edgeToEdge,
+          UiBottomTabBarLayout.adaptive =>
+            isWide
+                ? UiBottomTabBarLayout.floatingDock
+                : UiBottomTabBarLayout.edgeToEdge,
         };
 
         final resolvedAccessory =
             resolvedLayout == UiBottomTabBarLayout.floatingDock
-                ? accessory
-                : null;
-        final presence =
-            resolvedAccessory == null ? 0.0 : accessoryPresence.clamp(0.0, 1.0);
+            ? accessory
+            : null;
+        final presence = resolvedAccessory == null
+            ? 0.0
+            : accessoryPresence.clamp(0.0, 1.0);
         final accessoryExpanded = resolvedAccessory?.expanded ?? false;
-        final shouldDetachLastItem = !accessoryExpanded &&
+        final shouldDetachLastItem =
+            !accessoryExpanded &&
             detachLastItem &&
             resolvedLayout != UiBottomTabBarLayout.edgeToEdge &&
             items.length > 1;
-        final mainItems =
-            shouldDetachLastItem ? items.sublist(0, items.length - 1) : items;
+        final mainItems = shouldDetachLastItem
+            ? items.sublist(0, items.length - 1)
+            : items;
         final detachedItem = shouldDetachLastItem ? items.last : null;
-        final mainCurrentIndex =
-            currentIndex < mainItems.length ? currentIndex : -1;
+        final mainCurrentIndex = currentIndex < mainItems.length
+            ? currentIndex
+            : -1;
         final detachedSelected =
             shouldDetachLastItem && currentIndex == items.length - 1;
         final tabSetEndAlignment =
             Directionality.of(context) == TextDirection.rtl
-                ? Alignment.centerLeft
-                : Alignment.centerRight;
+            ? Alignment.centerLeft
+            : Alignment.centerRight;
 
         final tabsRow = AnimatedSwitcher(
           duration: tokens.motion.fast,
@@ -241,7 +243,8 @@ class UiBottomTabBar extends StatelessWidget {
             onChanged: onChanged,
             height: resolvedHeight,
             animateLayout: resolvedAccessory == null,
-            equalWidths: equalWidthsWhenLastSelected &&
+            equalWidths:
+                equalWidthsWhenLastSelected &&
                 !shouldDetachLastItem &&
                 currentIndex == items.length - 1,
           ),
@@ -259,8 +262,10 @@ class UiBottomTabBar extends StatelessWidget {
 
         final horizontalInset = floatingHorizontalMargin;
         final widthCap = constraints.maxWidth.isFinite
-            ? (constraints.maxWidth - horizontalInset * 2)
-                .clamp(0.0, floatingMaxWidth)
+            ? (constraints.maxWidth - horizontalInset * 2).clamp(
+                0.0,
+                floatingMaxWidth,
+              )
             : floatingMaxWidth;
         final preferredDockWidth =
             mainItems.length * _kLiquidTabWidth + _kLiquidDockPadding * 2;
@@ -270,8 +275,8 @@ class UiBottomTabBar extends StatelessWidget {
         final accessoryDockWidth = resolvedAccessory == null
             ? 0.0
             : accessoryExpanded
-                ? 0.0
-                : resolvedAccessory.collapsedWidth * presence;
+            ? 0.0
+            : resolvedAccessory.collapsedWidth * presence;
         final accessoryCollapsedHeight =
             resolvedAccessory?.collapsedHeight ?? resolvedAccessory?.height;
         final hasSeparateIsland =
@@ -279,9 +284,10 @@ class UiBottomTabBar extends StatelessWidget {
         final totalGap = shouldDetachLastItem
             ? _kDetachedTabGap
             : resolvedAccessory == null
-                ? 0.0
-                : _kDetachedTabGap * presence;
-        final preferredTotalWidth = preferredDockWidth +
+            ? 0.0
+            : _kDetachedTabGap * presence;
+        final preferredTotalWidth =
+            preferredDockWidth +
             detachedDockWidth +
             accessoryDockWidth +
             totalGap;
@@ -290,10 +296,7 @@ class UiBottomTabBar extends StatelessWidget {
             : widthCap.toDouble();
         final collapsedMainDockWidth = hasSeparateIsland
             ? (dockWidth - detachedDockWidth - accessoryDockWidth - totalGap)
-                .clamp(
-                _kLiquidTabWidth + _kLiquidDockPadding * 2,
-                dockWidth,
-              )
+                  .clamp(_kLiquidTabWidth + _kLiquidDockPadding * 2, dockWidth)
             : dockWidth;
         final expandedAccessoryWidth = resolvedAccessory == null
             ? 0.0
@@ -398,9 +401,11 @@ class UiBottomTabBar extends StatelessWidget {
                             opacity: presence,
                             child: ImageFiltered(
                               imageFilter: ImageFilter.blur(
-                                sigmaX: tokens.effects.scaleBlur(4) *
+                                sigmaX:
+                                    tokens.effects.scaleBlur(4) *
                                     (1 - presence),
-                                sigmaY: tokens.effects.scaleBlur(4) *
+                                sigmaY:
+                                    tokens.effects.scaleBlur(4) *
                                     (1 - presence),
                               ),
                               child: SizedBox(
@@ -462,10 +467,7 @@ class UiBottomTabBar extends StatelessWidget {
 }
 
 class _AccessoryLeadingCell extends StatelessWidget {
-  const _AccessoryLeadingCell({
-    required this.item,
-    required this.onPressed,
-  });
+  const _AccessoryLeadingCell({required this.item, required this.onPressed});
 
   final UiBottomTabItem item;
   final VoidCallback? onPressed;
@@ -493,10 +495,7 @@ class _AccessoryLeadingCell extends StatelessWidget {
               ),
               child: SizedBox.square(
                 dimension: _kLiquidTabIconSize,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: icon,
-                ),
+                child: FittedBox(fit: BoxFit.contain, child: icon),
               ),
             ),
           ),
@@ -622,10 +621,7 @@ class _BlurredTabSurface extends StatelessWidget {
             borderRadius: borderRadius,
             boxShadow: boxShadow,
           ),
-          child: ClipRRect(
-            borderRadius: borderRadius,
-            child: surface,
-          ),
+          child: ClipRRect(borderRadius: borderRadius, child: surface),
         ),
       ),
     );
@@ -748,8 +744,8 @@ class _TabRowState extends State<_TabRow> {
 
     final selectedIndex =
         widget.currentIndex >= 0 && widget.currentIndex < widget.items.length
-            ? widget.currentIndex
-            : null;
+        ? widget.currentIndex
+        : null;
 
     return SizedBox(
       height: widget.height,
@@ -789,8 +785,9 @@ class _TabRowState extends State<_TabRow> {
                   availableWidth: constraints.maxWidth,
                   policy: _kBottomTabPolicy,
                 );
-          final selectedWidth =
-              selectedIndex == null ? 0.0 : layout.widths[selectedIndex];
+          final selectedWidth = selectedIndex == null
+              ? 0.0
+              : layout.widths[selectedIndex];
           final maxLeft = constraints.maxWidth - selectedWidth;
           final indicatorStart = _drag.dragLeft ?? layout.selectedLeft;
           final indicatorLeft = selectedIndex == null
@@ -823,8 +820,9 @@ class _TabRowState extends State<_TabRow> {
                   child: RepaintBoundary(
                     child: UiBox(
                       background: c.surfaceMuted.withValues(
-                        alpha:
-                            tokens.brightness == Brightness.dark ? 0.42 : 0.72,
+                        alpha: tokens.brightness == Brightness.dark
+                            ? 0.42
+                            : 0.72,
                       ),
                       border: Border.all(
                         color: c.border.withValues(alpha: 0.68),
@@ -1003,8 +1001,9 @@ class _TabCell extends StatelessWidget {
                       curve: tokens.motion.standardCurve,
                       style: tokens.typography.caption.copyWith(
                         color: color,
-                        fontWeight:
-                            selected ? FontWeight.w500 : FontWeight.w400,
+                        fontWeight: selected
+                            ? FontWeight.w500
+                            : FontWeight.w400,
                       ),
                       child: Text(
                         item.label,
@@ -1039,10 +1038,7 @@ class _TabBadge extends StatelessWidget {
     return UiBox(
       background: tokens.colors.danger,
       borderRadius: tokens.radius.pillAll,
-      padding: EdgeInsets.symmetric(
-        horizontal: count > 9 ? 4 : 5,
-        vertical: 1,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: count > 9 ? 4 : 5, vertical: 1),
       child: UiText(
         count > 99 ? '99+' : '$count',
         variant: UiTextVariant.micro,

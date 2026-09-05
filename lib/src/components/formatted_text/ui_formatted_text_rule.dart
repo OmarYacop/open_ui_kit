@@ -22,53 +22,48 @@ class UiFormattedTextRule {
   final String? semanticLabel;
 
   static List<UiFormattedTextRule> defaults() => [
-        UiFormattedTextRule(
-          id: 'bold',
-          open: '**',
-          semanticLabel: 'bold',
-          styleBuilder: (_, style) =>
-              style.copyWith(fontWeight: FontWeight.w700),
-        ),
-        UiFormattedTextRule(
-          id: 'italic',
-          open: '_',
-          semanticLabel: 'italic',
-          styleBuilder: (_, style) =>
-              style.copyWith(fontStyle: FontStyle.italic),
-        ),
-        UiFormattedTextRule(
-          id: 'strikethrough',
-          open: '~~',
-          semanticLabel: 'strikethrough',
-          styleBuilder: (_, style) =>
-              style.copyWith(decoration: TextDecoration.lineThrough),
-        ),
-        UiFormattedTextRule(
-          id: 'code',
-          open: '`',
-          semanticLabel: 'code',
-          styleBuilder: (_, style) => style.copyWith(fontFamily: 'monospace'),
-        ),
-        UiFormattedTextRule(
-          id: 'underline',
-          open: '__',
-          semanticLabel: 'underline',
-          styleBuilder: (_, style) =>
-              style.copyWith(decoration: TextDecoration.underline),
-        ),
-        UiFormattedTextRule(
-          id: 'highlight',
-          open: '==',
-          semanticLabel: 'highlight',
-          styleBuilder: (context, style) {
-            final color =
-                style.color ?? DefaultTextStyle.of(context).style.color;
-            return style.copyWith(
-              backgroundColor: color?.withValues(alpha: .12),
-            );
-          },
-        ),
-      ];
+    UiFormattedTextRule(
+      id: 'bold',
+      open: '**',
+      semanticLabel: 'bold',
+      styleBuilder: (_, style) => style.copyWith(fontWeight: FontWeight.w700),
+    ),
+    UiFormattedTextRule(
+      id: 'italic',
+      open: '_',
+      semanticLabel: 'italic',
+      styleBuilder: (_, style) => style.copyWith(fontStyle: FontStyle.italic),
+    ),
+    UiFormattedTextRule(
+      id: 'strikethrough',
+      open: '~~',
+      semanticLabel: 'strikethrough',
+      styleBuilder: (_, style) =>
+          style.copyWith(decoration: TextDecoration.lineThrough),
+    ),
+    UiFormattedTextRule(
+      id: 'code',
+      open: '`',
+      semanticLabel: 'code',
+      styleBuilder: (_, style) => style.copyWith(fontFamily: 'monospace'),
+    ),
+    UiFormattedTextRule(
+      id: 'underline',
+      open: '__',
+      semanticLabel: 'underline',
+      styleBuilder: (_, style) =>
+          style.copyWith(decoration: TextDecoration.underline),
+    ),
+    UiFormattedTextRule(
+      id: 'highlight',
+      open: '==',
+      semanticLabel: 'highlight',
+      styleBuilder: (context, style) {
+        final color = style.color ?? DefaultTextStyle.of(context).style.color;
+        return style.copyWith(backgroundColor: color?.withValues(alpha: .12));
+      },
+    ),
+  ];
 }
 
 class UiFormattedTextMatch {
@@ -145,9 +140,11 @@ class UiFormattedTextParser {
 
   bool _isEscaped(String source, int index) {
     var slashes = 0;
-    for (var cursor = index - 1;
-        cursor >= 0 && source.codeUnitAt(cursor) == 92;
-        cursor--) {
+    for (
+      var cursor = index - 1;
+      cursor >= 0 && source.codeUnitAt(cursor) == 92;
+      cursor--
+    ) {
       slashes++;
     }
     return slashes.isOdd;

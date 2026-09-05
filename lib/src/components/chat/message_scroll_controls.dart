@@ -109,7 +109,8 @@ class UiMessageQueueBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final label = count > 999 ? '999+' : '$count';
-    final semanticLabel = semanticLabelBuilder?.call(count) ??
+    final semanticLabel =
+        semanticLabelBuilder?.call(count) ??
         '$count new ${count == 1 ? 'message' : 'messages'}';
     return Semantics(
       label: semanticLabel,
@@ -267,14 +268,14 @@ class UiMessageScrollControls extends StatelessWidget {
                 boxShadow: chromeProgress == 0
                     ? null
                     : tokens.shadows.sm
-                        .map(
-                          (shadow) => shadow.copyWith(
-                            color: shadow.color.withValues(
-                              alpha: shadow.color.a * chromeProgress,
+                          .map(
+                            (shadow) => shadow.copyWith(
+                              color: shadow.color.withValues(
+                                alpha: shadow.color.a * chromeProgress,
+                              ),
                             ),
-                          ),
-                        )
-                        .toList(growable: false),
+                          )
+                          .toList(growable: false),
                 child: child,
               ),
               child: Row(
@@ -343,22 +344,18 @@ class _ReplyReturnTransitionState extends State<_ReplyReturnTransition>
     } else if (oldWidget.child != null) {
       _controller
           .animateWith(
-        SpringSimulation(
-          const SpringDescription(
-            mass: 1,
-            stiffness: 320,
-            damping: 28,
-          ),
-          _controller.value,
-          0,
-          0,
-        ),
-      )
+            SpringSimulation(
+              const SpringDescription(mass: 1, stiffness: 320, damping: 28),
+              _controller.value,
+              0,
+              0,
+            ),
+          )
           .whenComplete(() {
-        if (mounted && widget.child == null) {
-          setState(() => _retainedChild = null);
-        }
-      });
+            if (mounted && widget.child == null) {
+              setState(() => _retainedChild = null);
+            }
+          });
     }
   }
 

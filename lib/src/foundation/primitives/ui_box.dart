@@ -45,7 +45,8 @@ class UiBox extends StatelessWidget {
       content = Align(alignment: alignment!, child: content);
     }
 
-    final hasDecoration = background != null ||
+    final hasDecoration =
+        background != null ||
         border != null ||
         borderRadius != null ||
         (boxShadow != null && boxShadow!.isNotEmpty);

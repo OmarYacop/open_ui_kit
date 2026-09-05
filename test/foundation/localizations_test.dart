@@ -4,8 +4,7 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 
 void main() {
   group('UiLocalizations', () {
-    testWidgets(
-        'of(context) returns English defaults when no delegate '
+    testWidgets('of(context) returns English defaults when no delegate '
         'is installed', (tester) async {
       late UiLocalizations strings;
       await tester.pumpWidget(

@@ -74,10 +74,7 @@ void main() {
               textDirection: TextDirection.ltr,
               child: UiSheet(
                 padding: const EdgeInsets.all(8),
-                footer: const SizedBox(
-                  key: ValueKey('footer'),
-                  height: 44,
-                ),
+                footer: const SizedBox(key: ValueKey('footer'), height: 44),
                 child: const Text('body', key: ValueKey('body')),
               ),
             ),

@@ -143,10 +143,7 @@ class UiCollectionPage<T> extends StatelessWidget {
 
   Widget _buildBody(BuildContext context) {
     if (loading) {
-      return UiLoadingState(
-        mode: UiAsyncStateMode.page,
-        title: loadingTitle,
-      );
+      return UiLoadingState(mode: UiAsyncStateMode.page, title: loadingTitle);
     }
 
     if (error) {
@@ -270,12 +267,13 @@ class UiSliverCollection<T> extends StatelessWidget {
         final headerGap = sectionSpacing ?? tokens.spacing.x2;
         final resolvedLayout = layout == UiCollectionLayout.adaptiveGrid
             ? breakpoints.resolve(constraints.crossAxisExtent) ==
-                    UiFormFactor.phone
-                ? UiCollectionLayout.list
-                : UiCollectionLayout.grid
+                      UiFormFactor.phone
+                  ? UiCollectionLayout.list
+                  : UiCollectionLayout.grid
             : layout;
-        final columnCount =
-            resolvedLayout == UiCollectionLayout.list ? 1 : gridColumnCount;
+        final columnCount = resolvedLayout == UiCollectionLayout.list
+            ? 1
+            : gridColumnCount;
         final headers = List<Widget?>.generate(
           items.length,
           (index) => sectionBuilder?.call(context, items[index], index),
@@ -399,8 +397,10 @@ class _CollectionList<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final gap = itemSpacing ?? tokens.spacing.x3;
-    final resolvedPadding =
-        _withBodyInsets(context, padding ?? EdgeInsets.all(tokens.spacing.x4));
+    final resolvedPadding = _withBodyInsets(
+      context,
+      padding ?? EdgeInsets.all(tokens.spacing.x4),
+    );
 
     return ListView.separated(
       padding: resolvedPadding,
@@ -441,8 +441,10 @@ class _CollectionGrid<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final gap = tokens.spacing.x3;
-    final resolvedPadding =
-        _withBodyInsets(context, padding ?? EdgeInsets.all(tokens.spacing.x4));
+    final resolvedPadding = _withBodyInsets(
+      context,
+      padding ?? EdgeInsets.all(tokens.spacing.x4),
+    );
 
     return GridView.builder(
       padding: resolvedPadding,

@@ -32,9 +32,7 @@ UiContourActionGeometryInput _input(
 
 void main() {
   group('endpoints', () {
-    test(
-        'progress 0: outer size equals trigger size, actions are zero-size at its trailing edge',
-        () {
+    test('progress 0: outer size equals trigger size, actions are zero-size at its trailing edge', () {
       final g = UiContourActionGeometrySolver.solve(_input(0));
       expect(g.outerSize.width, 80);
       expect(g.triggerRect, const Rect.fromLTWH(0, 0, 80, 40));
@@ -47,16 +45,18 @@ void main() {
       expect(g.actionInteractive, everyElement(isFalse));
     });
 
-    test('progress 1: actions reach natural size at final laid-out positions',
-        () {
-      final g = UiContourActionGeometrySolver.solve(_input(1));
-      // trigger(80) + spacing(8) + action0(40) + spacing(8) + action1(40)
-      expect(g.outerSize.width, 176);
-      expect(g.actionRects[0], const Rect.fromLTWH(88, 0, 40, 40));
-      expect(g.actionRects[1], const Rect.fromLTWH(136, 0, 40, 40));
-      expect(g.actionVisibility, everyElement(1));
-      expect(g.actionInteractive, everyElement(isTrue));
-    });
+    test(
+      'progress 1: actions reach natural size at final laid-out positions',
+      () {
+        final g = UiContourActionGeometrySolver.solve(_input(1));
+        // trigger(80) + spacing(8) + action0(40) + spacing(8) + action1(40)
+        expect(g.outerSize.width, 176);
+        expect(g.actionRects[0], const Rect.fromLTWH(88, 0, 40, 40));
+        expect(g.actionRects[1], const Rect.fromLTWH(136, 0, 40, 40));
+        expect(g.actionVisibility, everyElement(1));
+        expect(g.actionInteractive, everyElement(isTrue));
+      },
+    );
 
     test('trigger rect never changes across progress', () {
       const expected = Rect.fromLTWH(0, 0, 80, 40);
@@ -71,8 +71,9 @@ void main() {
     test('outer width is monotonically non-decreasing across checkpoints', () {
       double? previous;
       for (final t in _checkpoints) {
-        final width =
-            UiContourActionGeometrySolver.solve(_input(t)).outerSize.width;
+        final width = UiContourActionGeometrySolver.solve(_input(t))
+            .outerSize
+            .width;
         if (previous != null) {
           expect(
             width,
@@ -91,20 +92,21 @@ void main() {
         for (var i = 0; i < g.actionRects.length; i++) {
           final right = g.actionRects[i].right;
           if (previous[i] != null) {
-            expect(right, greaterThanOrEqualTo(previous[i]!),
-                reason: 'action $i at t=$t');
+            expect(
+              right,
+              greaterThanOrEqualTo(previous[i]!),
+              reason: 'action $i at t=$t',
+            );
           }
           previous[i] = right;
         }
       }
     });
 
-    test(
-        'reverse traversal mirrors forward traversal exactly (same function of t)',
-        () {
+    test('reverse traversal mirrors forward traversal exactly (same function of t)', () {
       final forward = [
         for (final t in _checkpoints)
-          UiContourActionGeometrySolver.solve(_input(t))
+          UiContourActionGeometrySolver.solve(_input(t)),
       ];
       final reversed = [
         for (final t in _checkpoints.reversed)
@@ -117,14 +119,17 @@ void main() {
     });
 
     test(
-        'no width recoil at the specific 24-30ms-equivalent low-progress region',
-        () {
-      final low =
-          UiContourActionGeometrySolver.solve(_input(0.1)).outerSize.width;
-      final mid =
-          UiContourActionGeometrySolver.solve(_input(0.15)).outerSize.width;
-      expect(mid, greaterThan(low));
-    });
+      'no width recoil at the specific 24-30ms-equivalent low-progress region',
+      () {
+        final low = UiContourActionGeometrySolver.solve(_input(0.1))
+            .outerSize
+            .width;
+        final mid = UiContourActionGeometrySolver.solve(_input(0.15))
+            .outerSize
+            .width;
+        expect(mid, greaterThan(low));
+      },
+    );
   });
 
   group('finiteness and bounds', () {
@@ -190,26 +195,28 @@ void main() {
       expect(g.actionRects.single.left, 88);
     });
 
-    test('four actions all resolve to distinct, ordered, non-overlapping rects',
-        () {
-      final g = UiContourActionGeometrySolver.solve(
-        _input(
-          1,
-          actionSizes: const [
-            Size(36, 36),
-            Size(36, 36),
-            Size(36, 36),
-            Size(36, 36)
-          ],
-        ),
-      );
-      for (var i = 1; i < g.actionRects.length; i++) {
-        expect(
-          g.actionRects[i].left,
-          greaterThanOrEqualTo(g.actionRects[i - 1].right),
+    test(
+      'four actions all resolve to distinct, ordered, non-overlapping rects',
+      () {
+        final g = UiContourActionGeometrySolver.solve(
+          _input(
+            1,
+            actionSizes: const [
+              Size(36, 36),
+              Size(36, 36),
+              Size(36, 36),
+              Size(36, 36),
+            ],
+          ),
         );
-      }
-    });
+        for (var i = 1; i < g.actionRects.length; i++) {
+          expect(
+            g.actionRects[i].left,
+            greaterThanOrEqualTo(g.actionRects[i - 1].right),
+          );
+        }
+      },
+    );
   });
 
   group('varying spacing and sizes', () {

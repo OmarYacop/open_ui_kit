@@ -89,16 +89,16 @@ class UiSlideFadeTransition extends StatelessWidget {
 
     final childWithMotion = switch (offsetUnit) {
       UiTransitionOffsetUnit.fractional => SlideTransition(
-          position: offset,
-          child: child,
-        ),
+        position: offset,
+        child: child,
+      ),
       UiTransitionOffsetUnit.logicalPixels => AnimatedBuilder(
-          animation: offset,
-          child: child,
-          builder: (context, child) {
-            return Transform.translate(offset: offset.value, child: child);
-          },
-        ),
+        animation: offset,
+        child: child,
+        builder: (context, child) {
+          return Transform.translate(offset: offset.value, child: child);
+        },
+      ),
     };
 
     Widget current = childWithMotion;
