@@ -13,6 +13,8 @@ remain follow-up work. Tests run through `./scripts/ci quality` and `examples`.
 | Date picker | Arabic date, navigation and mode announcements; keyboard traversal | `test/components/localized_feedback_test.dart`, `test/pickers/pickers_test.dart` | Physical VoiceOver/TalkBack traversal |
 | Gallery | Shrinking/empty lists; zoom limits | `test/components/audit_regressions_test.dart` | Gesture interruption on hardware |
 | Showcase | Light/dark, 390/600/1024px, 1x/2x text | `example/test/showcase_adaptive_test.dart` | 3x text; landscape keyboard |
+| Form orchestration | Touched/errors; reset; async races; duplicate submits; edits during save; disposal | `test/components/form_controller_test.dart` | App-specific server validation policies |
+| Multi-select | Pointer/keyboard; disabled updates; selection limits; lazy search; empty state; RTL/2x text | `test/components/multi_select_test.dart` | Physical screen readers; remote search adapters |
 | Layer boundaries | Foundation → components → patterns; exact UiApp exceptions; no Material/Cupertino imports | `test/architecture/layer_boundaries_test.dart` | Review any new exception with an ADR |
 
 For every new public input, require empty/disabled/error states, keyboard and

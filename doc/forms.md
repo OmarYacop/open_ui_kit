@@ -52,3 +52,43 @@ networking, persistence, authentication, or application navigation.
 
 Use immutable new collections for multi-selection values. Collection equality
 follows the value type's equality; set/list mutation in place is unsupported.
+
+## Searchable multi-selection
+
+`UiMultiSelect<T>` uses `UiSelectOption<T>` and a controlled `Set<T>`:
+
+```dart
+UiMultiSelect<String>(
+  label: 'Teams',
+  options: const [
+    UiSelectOption(value: 'design', label: 'Design'),
+    UiSelectOption(value: 'engineering', label: 'Engineering'),
+  ],
+  value: selectedTeams,
+  onChanged: (values) => setState(() => selectedTeams = values),
+);
+```
+
+The popup stays open after a selection. Up/Down moves through enabled options,
+Enter toggles the active option, Escape closes, and Backspace on an empty query
+removes the last removable selection. Removable selections have explicit localized
+labels. Active-option announcements and selection counts are localized.
+
+`disabledValues` prevents both choosing and removing those values. `maxSelections`
+limits new additions without discarding selections already supplied by the caller.
+Changing options never removes selections; use `selectedLabelBuilder` to name values
+that are temporarily absent from the options. Use stable unique option values.
+
+Rows are built lazily. Filtering runs against the supplied option models; remote
+search, paging, and cancellation of network requests stay application-owned.
+Option label, value, and leading content are supported; rich subtitles and custom
+row builders remain features of the single-select APIs.
+
+Run the full composition from the example directory with:
+
+```sh
+flutter run -t lib/forms_main.dart
+```
+
+`example/lib/form_workflow.dart` demonstrates text and multi-select adapters, an
+error summary, a save callback, failure recovery, and disabled submission states.

@@ -47,6 +47,13 @@ abstract class UiLocalizations {
   const UiLocalizations();
 
   // Concrete defaults keep existing custom localization subclasses compatible.
+  String get searchOptions => 'Search options';
+  String get noOptions => 'No matching options';
+  String removeSelection(String label) => 'Remove $label';
+  String selectionCount(int count) => '$count selected';
+  String activeSelection(String label, int count) =>
+      '$label. ${selectionCount(count)}';
+
   String get formErrors => 'Please check these fields';
 
   String get alertError => 'Error';
@@ -330,6 +337,15 @@ class UiLocalizationsEn extends UiLocalizations {
 /// RTL locale.
 class UiLocalizationsAr extends UiLocalizations {
   const UiLocalizationsAr();
+
+  @override
+  String get searchOptions => 'البحث في الخيارات';
+  @override
+  String get noOptions => 'لا توجد خيارات مطابقة';
+  @override
+  String removeSelection(String label) => 'إزالة $label';
+  @override
+  String selectionCount(int count) => 'تم تحديد $count';
 
   @override
   String get formErrors => 'يرجى مراجعة هذه الحقول';
