@@ -7,6 +7,7 @@
 - Add `UiFormController`, typed field controllers, text/custom field adapters, and error summaries. Async validation rejects stale results and submission preserves edits made during saving. Existing `UiFormSubmitController` remains compatible.
 
 ### Fixed
+- Preserve compact single-line input text insets as text scales. Embedded and multiline controls retain their existing spacing contracts.
 - Input, slider, and rating share field presentation with a single localized live error announcement.
 - Tooltips follow their anchors and remain within narrow overlays; date-picker navigation and mode announcements are localized.
 - Preserve the selected gallery item when media changes, keep empty galleries dismissible,

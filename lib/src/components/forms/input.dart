@@ -293,11 +293,31 @@ class UiInputState extends State<UiInput>
     ];
 
     final effectiveReadOnly = widget.readOnly || disabled;
+    final textStyle = tokens.typography.body.copyWith(color: textColor);
+    // Preserve the compact control's normal-size text insets as text grows.
+    // Apply them to the text slot so trailing controls do not inflate the row.
+    // Embedded controls leave their spacing to the containing accessory.
+    var textInset = 0.0;
+    if (widget.maxLines == 1 && !embedded) {
+      final painter = TextPainter(
+        text: TextSpan(text: ' ', style: textStyle),
+        textDirection: widget.textDirection ?? Directionality.of(context),
+        textScaler: TextScaler.noScaling,
+      )..layout();
+      final normalHeight =
+          widget.minHeight ?? UiButtonMetrics.minHeight(widget.size);
+      const borderInset = 2.0;
+      textInset = ((normalHeight - borderInset - painter.height) / 2).clamp(
+        0.0,
+        double.infinity,
+      );
+      painter.dispose();
+    }
     final field = EditableText(
       key: _editableTextKey,
       controller: _controller,
       focusNode: _focusNode,
-      style: tokens.typography.body.copyWith(color: textColor),
+      style: textStyle,
       cursorColor: c.primary,
       backgroundCursorColor: c.input,
       selectionColor: c.primary.withValues(alpha: 0.18),
@@ -402,7 +422,10 @@ class UiInputState extends State<UiInput>
                             ),
                           ),
                         ),
-                      field,
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: textInset),
+                        child: field,
+                      ),
                     ],
                   ),
                 ),
