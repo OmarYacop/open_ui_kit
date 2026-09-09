@@ -104,7 +104,6 @@
 
 - Chat composers contain text and send/record actions in one input surface. Icon buttons support `surfaceMargin` to inset a smaller painted action without enlarging the input or reducing the touch target.
 - Message scrolling uses stable item boundaries for media/history pagination and direct distant jumps; asynchronous initial content is positioned correctly. Latest positioning respects composer padding, kept-alive message jumps settle on the requested ID, and newer scroll commands supersede initialization.
-- Search inputs and combobox filtering debounce for 300 ms; `UiInput.debounceDuration` allows explicit control.
 - Back history preserves replacement order, uses stable route targets, and no longer invents destinations from labels.
 - Released bottom-dock accessory buttons retain their growing press surface.
 
