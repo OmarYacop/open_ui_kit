@@ -1,6 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 - 2026-09-09
+
+### Release highlights
+
+- Add reusable chat composition, media viewing, OTP input, typed drag-and-drop, and accessible reordering.
+- Add experimental fluid surfaces, routes, sheets, nested menus, and expanding bottom navigation.
+- Improve navigation history, header layout, keyboard behavior, RTL, reduced motion, and adaptive presentation.
+
+### Compatibility and behavior changes
+
+- Flutter 3.47.0 / Dart 3.13.0 remain the minimum supported SDKs. Existing deprecated compatibility APIs remain available through 0.x.
+- Bottom navigation now defaults to a four-slot expanding dock. Set `overflowBehavior: UiBottomTabOverflowBehavior.drawer, maxVisibleBottomItems: 3` to retain the previous More behavior.
+- Menus consume outside taps and dismiss on ancestor scrolling by default. Use `consumeOutsideTap: false` and `UiMenuScrollBehavior.followAnchor` for persistent menus.
+- Search inputs and combobox filtering default to a 300 ms debounce; use `UiInput.debounceDuration` to customize it.
+
+### Detailed changes
+
+- Fix pub.dev showcase images in dark mode with absolute, commit-pinned image URLs for both picture sources and fallback images.
 
 - Add optional `UiIconButton.iconSize` to size glyphs independently of the surface while preserving the accessible touch target. Keep Contour action surfaces at 36px with their original glyph sizing.
 
@@ -22,22 +39,11 @@
 
 - Match chat attachment and selection-primary button surfaces to the composer control extent on all platforms. Add optional `UiIconButton.visualExtent` for parent-sized controls; default toolbar sizes remain unchanged.
 
-- Increase medium navigation/menu icon surfaces to 44px and back chevrons to 32px, restoring 6px chevron inset and matching class-card primary action height.
-
 - Use a shared fixed 40px medium icon-button surface and 22px action icon across text settings; keep the back chevron at 30px with room around it. Restore progressive top scroll blur on Android alongside Apple platforms, retaining the blur opt-out and preserving live page state when the shader loads.
-
-- Slightly enlarge the navigation back chevron and scale it with its button chrome consistently across iOS and Android.
-
-- Soften progressive blur onset with smoothstep easing and restore the original 128px phone fade region; Android remains gradient-only.
-
 
 - Keep root menu action targets at their final positions while opening content appears, so selection and submenu navigation do not wait for the spring to settle.
 
-- Restore historical Apple progressive blur and Android gradient-only scroll edges, remove header tint plateaus, and keep icon-button painted sizes stable inside tight navigation slots.
-
-
 - Fix translucent scroll-edge protection, reduce phone fade clearance, preserve header/scroll state when search toggles keyboard avoidance, retain compact navigation columns with one-line labels, and align unread counts with truncated conversation titles. Tighten back-button surfaces with directional optical alignment.
-
 
 - Address the family Android audit: protect fixed headers independently of blur support, keep large-title origins consistent, adapt expanded navigation columns to whole-word label widths, and refine back controls, compact titles, menus, and chat scroll controls.
 - Distant message reveals use one interruptible fade-through instead of repeated estimated scroll animations, and settle clear of floating controls. Composer transitions reuse input/deck subtrees; reply-return count updates do not restart entrance motion. Add optional `UiScrollEdgeFade.topProtectionExtent` for fixed chrome over bright content.
@@ -67,15 +73,11 @@
 
 - Refine conversation spacing above the keyboard and live edge, round message quotes and tighten their content gap, compact failed-send recovery, and use neutral history controls. Inbox previews use remaining width. `UiChatComposerActions` adds Contour selection-deck transitions with a persistent close control and an opaque destructive primary action; `onAttachmentMenuOpened` supports preserving draft focus through native attachment flows.
 
-- Navigation titles use measured side-control widths; chat headers default to equal, text-scaled 44px back/avatar slots (`controlExtent`). Page body insets now clear active scroll fades as well as system safe areas, with `scrollFadeTopClearance` / `scrollFadeBottomClearance` overrides on `UiPageScaffold`. Custom scrollables must consume `UiPageBodyInsets`.
-
 - Add `UiChatComposer.conversation`, measured `UiChatScaffold`, compact `UiChatHeader`, grouped `UiChatTimeline.messages`, `UiChatMessage`, and `UiChatWorkspace`. Preserve the LMS attachment/input/reply design, formatted controller ownership, selection/recording mode slots, RTL reply gestures and latest-outgoing receipt policy. Existing chat constructors remain available.
 
 - Refine chat presentation: compact message/composer reply variants without arrows, configurable inset corner radii, full-width conversation titles and trailing preview-line timestamps.
 
 - Message-scroller controllers expose `isMessageVisible`, `isScrolling`, and opt-in `jumpToMessage(onlyIfNeeded: true)` for reply navigation that leaves readable targets in place. Incoming arrivals preserve active drags/flings near the live edge.
-
-- `UiMessageScroller` now uses a standard lazy Flutter `ListView.builder` with platform physics, retaining message-ID jumps, unread/live-edge controls and history preservation without scroll-end reanchoring.
 
 - Add `UiMessageReceipt` / `UiMessageDeliveryStatus`, `UiReplyPreview`, `UiConversationTile`, and `UiConversationLayout` for reusable delivery/retry, quoted replies, inbox rows and floating conversation chrome. Existing chat APIs remain compatible. See `doc/chat_presentation.md` and `example/lib/chat_main.dart`.
 
@@ -84,7 +86,6 @@
 - **Behavior change:** `UiBottomNavigationTokens` defaults shrink the expanding dock from 76 to 64 (`compactHeight`) with a 44 icon area; icon tiles stay vertically centered and the drawer handle, accessory source and body inset derive from the tokens.
 - `UiApp` installs an app-wide `IconTheme` using the token foreground, and `UiSettingsItem.trailing` inherits a themed icon color like `leading`, so bare icons no longer render opaque black in dark mode.
 - Back history: only the active tab page publishes its title, and pages without a large title fall back to `compactTitle`, so a page pushed from a tab lists that tab (not a previously visited sibling) in the long-press menu.
-- Icons follow the system text scale: `UiApp` sets `applyTextScaling` on its root `IconTheme`, chrome (icon buttons, tab bars, settings tiles, timeline markers, smart action groups) grows up to 1.3x via `uiChromeScale`, and `UiApp.maxTextScale` can clamp text and icons together.
 - Expanding bottom navigation: the whole compact dock (and the strip above the expanded grid) is a translucent drag surface for the deck, so users no longer need to hit the 32pt pill; taps and hold-to-reorder on tiles still win. Destination labels get side padding and ellipsize instead of touching neighbouring cells.
 - Text inputs on Android (and any platform without `SystemContextMenu`) show a widgets-layer port of the standard Material selection toolbar with localized actions instead of the kit's custom action sheet; OTP inputs share it.
 - Fluid page routes can be dragged to dismiss: a free-form drag anywhere on the page (a sideways pull on a list, or an over-scroll past its top) carries the page with the finger in any direction while it shrinks. Releasing hands the page's position and velocity to a spring, so past the threshold it flies straight back into the source and otherwise springs back in place, never restarting from rest (`UiFluidPageRoute.dragToDismissEnabled`, `UiFluidDismissRegion`). `UiFluidOpenContainer` makes its closed surface pressable like `UiOpenContainer`.
@@ -103,10 +104,8 @@
 
 - Chat composers contain text and send/record actions in one input surface. Icon buttons support `surfaceMargin` to inset a smaller painted action without enlarging the input or reducing the touch target.
 - Message scrolling uses stable item boundaries for media/history pagination and direct distant jumps; asynchronous initial content is positioned correctly. Latest positioning respects composer padding, kept-alive message jumps settle on the requested ID, and newer scroll commands supersede initialization.
-- Search inputs and combobox filtering debounce for 300 ms; `UiInput.debounceDuration` allows explicit control.
 - Back history preserves replacement order, uses stable route targets, and no longer invents destinations from labels.
 - Released bottom-dock accessory buttons retain their growing press surface.
-
 
 - **Behavior change:** `UiBottomTabScaffold` now defaults to expanding navigation with four compact slots. Use `overflowBehavior: UiBottomTabOverflowBehavior.drawer, maxVisibleBottomItems: 3` to retain the previous More behavior; explicit paged navigation and low-level tab bars remain supported.
 - Add `UiBottomNavigationTokens` through `UiThemeData` / `UiThemeTokens.bottomNavigation` for drawer cell geometry and motion. Separate drawer state from paging and share accessory contour rendering without allocating paging controllers in the default path.
@@ -173,7 +172,6 @@
 - Use 48-pixel rating targets and mirror partial star fills in RTL.
 - Stack optional page panes when they would crowd out the body; reflow showcase actions and schedule details at large text sizes.
 - Run example tests, including the light/dark responsive text-scale matrix, in the required CI gate.
-
 
 ### Compatibility
 
