@@ -17,6 +17,8 @@
 
 ### Detailed changes
 
+- Fix pub.dev showcase images in dark mode with absolute, commit-pinned image URLs for both picture sources and fallback images.
+
 - Add optional `UiIconButton.iconSize` to size glyphs independently of the surface while preserving the accessible touch target. Keep Contour action surfaces at 36px with their original glyph sizing.
 
 - Keep bottom navigation accessories sharp when switching pages with the same icon. `UiBottomTabAccessory.contentKey` identifies custom content independently of the destination; changed content retains its dissolve.
