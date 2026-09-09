@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add optional `UiIconButton.iconSize` to size glyphs independently of the surface while preserving the accessible touch target. Keep Contour action surfaces at 36px with their original glyph sizing.
+
 - Keep bottom navigation accessories sharp when switching pages with the same icon. `UiBottomTabAccessory.contentKey` identifies custom content independently of the destination; changed content retains its dissolve.
 
 - `UiDialog` gains `headerAction` (a trailing title-row control such as a close button), `maxWidth`, and `scrollable`, so compact pickers and tall content no longer need a hand-built dialog shell around `UiDialogScope.show`.

@@ -289,6 +289,8 @@ class _ContourBarSurface extends StatelessWidget {
                         child: UiIconButton(
                           icon: item.icon,
                           semanticsLabel: item.semanticsLabel,
+                          visualExtent: 36,
+                          iconSize: 20,
                           onPressed: item.onPressed,
                         ),
                       ),
@@ -306,6 +308,8 @@ class _ContourBarSurface extends StatelessWidget {
                     child: UiIconButton(
                       icon: searchIcon,
                       semanticsLabel: searchSemanticsLabel,
+                      visualExtent: 36,
+                      iconSize: 20,
                       onPressed: onSearchPressed,
                     ),
                   ),
@@ -369,6 +373,7 @@ class _ContourAccessorySurface extends StatelessWidget {
                   icon: const Icon(LucideIcons.x),
                   semanticsLabel: 'Close search',
                   size: UiSize.sm,
+                  visualExtent: 36,
                   onPressed: onCollapse,
                 ),
                 const SizedBox(width: 4),

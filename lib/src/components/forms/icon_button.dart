@@ -44,6 +44,7 @@ class UiIconButton extends StatelessWidget {
     this.intent = UiIntent.ghost,
     this.size = UiSize.md,
     this.visualExtent,
+    this.iconSize,
     this.backgroundColor,
     this.foregroundColor,
     this.borderColor,
@@ -64,6 +65,9 @@ class UiIconButton extends StatelessWidget {
   /// such as a chat composer's outer actions. The icon still follows [size]
   /// and the touch target remains at least 44 logical pixels.
   final double? visualExtent;
+
+  /// Overrides the glyph size while keeping the button surface size.
+  final double? iconSize;
   final Color? backgroundColor;
   final Color? foregroundColor;
   final Color? borderColor;
@@ -83,7 +87,7 @@ class UiIconButton extends StatelessWidget {
     // Icon-only chrome has stable geometry across text preferences. Content
     // text still scales normally; the independent touch target remains >=44px.
     final visualSize = visualExtent ?? _visualSize(size);
-    final iconSize = _iconSize(size);
+    final effectiveIconSize = iconSize ?? _iconSize(size);
 
     return UiPressable(
       onPressed: onPressed,
@@ -166,7 +170,7 @@ class UiIconButton extends StatelessWidget {
                       child: IconTheme.merge(
                         data: IconThemeData(
                           color: fg,
-                          size: iconSize,
+                          size: effectiveIconSize,
                           applyTextScaling: false,
                         ),
                         child: icon,

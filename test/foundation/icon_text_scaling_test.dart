@@ -73,6 +73,37 @@ void main() {
       expect(box.width, greaterThanOrEqualTo(44));
     });
 
+    testWidgets(
+      'custom glyph size preserves the surface and accessible target',
+      (tester) async {
+        var taps = 0;
+        await tester.pumpWidget(
+          host(
+            UiIconButton(
+              icon: const Icon(LucideIcons.x),
+              semanticsLabel: 'Close',
+              visualExtent: 36,
+              iconSize: 20,
+              onPressed: () => taps++,
+            ),
+            scale: 2,
+          ),
+        );
+        final button = find.byType(UiIconButton);
+        expect(iconSizeIn(tester, button), const Size(20, 20));
+        expect(tester.getSize(button), const Size(44, 44));
+        expect(
+          tester.getSize(
+            find.descendant(of: button, matching: find.byType(UiBox)),
+          ),
+          const Size(36, 36),
+        );
+        await tester.tap(button);
+        expect(taps, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('UiSettingsList row renders at 2x without overflow', (
       tester,
     ) async {
