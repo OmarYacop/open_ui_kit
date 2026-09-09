@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'ui_pressable_long_press_scope.dart';
+
 /// Interaction states surfaced by [UiPressable].
 @immutable
 class UiPressableState {
@@ -48,6 +50,7 @@ class UiPressable extends StatefulWidget {
     required this.builder,
     this.child,
     this.onPressed,
+    this.onPressChanged,
     this.onLongPress,
     this.focusNode,
     this.autofocus = false,
@@ -63,6 +66,9 @@ class UiPressable extends StatefulWidget {
   final UiPressableBuilder builder;
   final Widget? child;
   final VoidCallback? onPressed;
+
+  /// Reports pointer press/release/cancel to a composed surface owner.
+  final ValueChanged<bool>? onPressChanged;
   final VoidCallback? onLongPress;
   final FocusNode? focusNode;
   final bool autofocus;
@@ -88,7 +94,10 @@ class _UiPressableState extends State<UiPressable> {
       (widget.onPressed != null || widget.onLongPress != null);
 
   void _setPressed(bool v) {
-    if (_pressed != v) setState(() => _pressed = v);
+    if (_pressed != v) {
+      setState(() => _pressed = v);
+      widget.onPressChanged?.call(v);
+    }
   }
 
   void _setHovered(bool v) {
@@ -107,6 +116,7 @@ class _UiPressableState extends State<UiPressable> {
 
   @override
   Widget build(BuildContext context) {
+    final menuHold = UiPressableLongPressScope.maybeOf(context);
     final disabled = !_isInteractive;
     final state = UiPressableState(
       hovered: _hovered && !disabled,
@@ -169,7 +179,13 @@ class _UiPressableState extends State<UiPressable> {
       onTapUp: disabled ? null : (_) => _setPressed(false),
       onTapCancel: disabled ? null : () => _setPressed(false),
       onTap: disabled ? null : widget.onPressed,
-      onLongPress: disabled ? null : widget.onLongPress,
+      onLongPress: disabled || menuHold?.onStart != null
+          ? null
+          : widget.onLongPress,
+      onLongPressStart: disabled ? null : menuHold?.onStart,
+      onLongPressMoveUpdate: disabled ? null : menuHold?.onMoveUpdate,
+      onLongPressEnd: disabled ? null : menuHold?.onEnd,
+      onLongPressCancel: disabled ? null : menuHold?.onCancel,
       excludeFromSemantics: true,
       child: content,
     );
@@ -181,7 +197,9 @@ class _UiPressableState extends State<UiPressable> {
         enabled: !disabled,
         label: widget.semanticsLabel,
         onTap: disabled ? null : widget.onPressed,
-        onLongPress: disabled ? null : widget.onLongPress,
+        onLongPress: disabled
+            ? null
+            : (menuHold?.onSemanticLongPress ?? widget.onLongPress),
         child: content,
       );
     }

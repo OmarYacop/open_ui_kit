@@ -87,7 +87,7 @@ class UiAlertDialog extends StatelessWidget {
             borderRadius: tokens.radius.xlAll,
             padding: EdgeInsetsDirectional.only(
               top: tokens.spacing.x5,
-              start: tokens.spacing.x5,
+              start: tokens.spacing.x3,
               bottom: tokens.spacing.x3,
               end: tokens.spacing.x3,
             ),
@@ -96,15 +96,23 @@ class UiAlertDialog extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                UiText(title, variant: UiTextVariant.heading),
-                if (description != null) ...[
-                  SizedBox(height: tokens.spacing.x2),
-                  UiText(
-                    description!,
-                    variant: UiTextVariant.body,
-                    tone: UiTextTone.muted,
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x2),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      UiText(title, variant: UiTextVariant.heading),
+                      if (description != null) ...[
+                        SizedBox(height: tokens.spacing.x2),
+                        UiText(
+                          description!,
+                          variant: UiTextVariant.body,
+                          tone: UiTextTone.muted,
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
                 SizedBox(height: tokens.spacing.x6),
                 LayoutBuilder(
                   builder: (context, constraints) {

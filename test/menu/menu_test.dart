@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +23,56 @@ Widget _reducedMotionHost(Widget child) {
 }
 
 void main() {
+  for (final size in [const Size(393, 852), const Size(393, 500)]) {
+    testWidgets('toolbar menu shares trigger height above the title at $size', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        UiApp(
+          home: Padding(
+            padding: const EdgeInsets.only(top: 59),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Center(child: UiText('Show Details')),
+                    ),
+                    UiDropdownMenu(
+                      trigger: const SizedBox(width: 44, height: 44),
+                      items: [
+                        UiMenuItem(label: 'Pin chat', onPressed: () {}),
+                        UiMenuItem(label: 'Leave chat', onPressed: () {}),
+                        UiMenuItem(label: 'Archive chat', onPressed: () {}),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      final trigger = tester.getRect(find.byType(UiDropdownMenu));
+      final title = tester.getRect(find.text('Show Details'));
+      await tester.tap(find.byType(UiDropdownMenu));
+      await tester.pumpAndSettle();
+      final surface = tester.widget<UiFluidSurface>(
+        find.byType(UiFluidSurface).first,
+      );
+      final stack = tester.getTopLeft(find.byType(UiMenuStack));
+      final bounds = surface.geometry.rect.shift(stack);
+      expect(bounds.top, closeTo(trigger.top, .01));
+      expect(bounds.overlaps(title), isTrue);
+      expect(bounds.bottom, lessThanOrEqualTo(size.height));
+      expect(find.text('Archive chat').hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
   testWidgets('outside tap closes menu and activates underlying control', (
     tester,
   ) async {
@@ -31,6 +83,7 @@ void main() {
           body: Column(
             children: [
               UiDropdownMenu(
+                consumeOutsideTap: false,
                 trigger: const Text('Open menu'),
                 items: [UiMenuItem(label: 'Profile', onPressed: () {})],
               ),
@@ -55,6 +108,153 @@ void main() {
     await tester.pumpAndSettle();
     expect(outsidePressed, isTrue);
     expect(find.text('Profile'), findsNothing);
+  });
+
+  testWidgets('default outside tap dismisses without activating the page', (
+    tester,
+  ) async {
+    var hit = false;
+    await tester.pumpWidget(
+      _host(
+        Column(
+          children: [
+            const UiDropdownMenu(
+              trigger: Text('Open'),
+              items: [UiMenuItem(label: 'Action')],
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: () => hit = true,
+              child: const Text('Outside'),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Outside')));
+    await tester.pumpAndSettle();
+    expect(hit, isFalse);
+    expect(find.text('Action'), findsNothing);
+  });
+
+  testWidgets('ancestor scroll dismisses but internal menu scroll does not', (
+    tester,
+  ) async {
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.binding.setSurfaceSize(const Size(400, 500));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      _host(
+        ListView(
+          controller: controller,
+          children: [
+            UiDropdownMenu(
+              consumeOutsideTap: false,
+              trigger: const Text('Open'),
+              items: List.generate(40, (i) => UiMenuItem(label: 'Action $i')),
+            ),
+            const SizedBox(height: 1200),
+          ],
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.text('Action 2'), const Offset(0, -80));
+    await tester.pumpAndSettle();
+    expect(find.text('Action 4'), findsOneWidget);
+    controller.jumpTo(30);
+    await tester.pumpAndSettle();
+    expect(find.text('Action 4'), findsNothing);
+  });
+
+  testWidgets(
+    'submenu action closes the root before its async callback finishes',
+    (tester) async {
+      final completed = Completer<void>();
+      await tester.pumpWidget(
+        _host(
+          UiDropdownMenu(
+            trigger: const Text('Open'),
+            items: [
+              UiMenuSubmenu(
+                label: 'Nested',
+                items: [
+                  UiMenuItem(
+                    label: 'Action',
+                    onPressed: () => completed.future,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nested'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Action'));
+      await tester.pump();
+      expect(find.text('Action').hitTestable(), findsNothing);
+      completed.complete();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('system Back dismisses the menu before leaving its page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const UiDropdownMenu(
+          trigger: Text('Open'),
+          items: [UiMenuItem(label: 'Action')],
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Action'), findsNothing);
+    expect(find.text('Open'), findsOneWidget);
+  });
+
+  testWidgets('keyboard can open a submenu and activate its action', (
+    tester,
+  ) async {
+    var selected = false;
+    await tester.pumpWidget(
+      _host(
+        UiDropdownMenu(
+          trigger: const Text('Open'),
+          items: [
+            UiMenuSubmenu(
+              label: 'Nested',
+              items: [
+                UiMenuItem(label: 'Action', onPressed: () => selected = true),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(find.text('Action'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(selected, isTrue);
+    expect(find.text('Action'), findsNothing);
   });
 
   testWidgets('outside dismissal can be disabled explicitly', (tester) async {
@@ -152,7 +352,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selected, isFalse);
-    expect(find.text('First'), findsOneWidget);
+    expect(find.text('First'), findsNothing);
   });
 
   testWidgets('dropdown entrance resolves immediately with reduced motion', (
@@ -171,24 +371,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('Profile'), findsOneWidget);
-    final fadeValues = tester
-        .widgetList<FadeTransition>(
-          find.ancestor(
-            of: find.text('Profile'),
-            matching: find.byType(FadeTransition),
-          ),
-        )
-        .map((widget) => widget.opacity.value);
-    final scaleValues = tester
-        .widgetList<ScaleTransition>(
-          find.ancestor(
-            of: find.text('Profile'),
-            matching: find.byType(ScaleTransition),
-          ),
-        )
-        .map((widget) => widget.scale.value);
-    expect(fadeValues, contains(1.0));
-    expect(scaleValues, contains(1.0));
+    final morph = tester.widget<UiFluidMorph>(find.byType(UiFluidMorph));
+    expect(morph.controller.value, 1);
+    expect(morph.controller.isAnimating, isFalse);
   });
 
   testWidgets('keyboard navigation activates focused row with Enter', (
@@ -244,9 +429,7 @@ void main() {
     expect(disabledNode.hint, contains('disabled'));
   });
 
-  testWidgets('fully fitting content is not wrapped in a scroll view', (
-    tester,
-  ) async {
+  testWidgets('fully fitting content has no scroll extent', (tester) async {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
@@ -262,57 +445,62 @@ void main() {
     await tester.tap(find.text('Fit menu'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(
+      tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position
+          .maxScrollExtent,
+      0,
+    );
   });
 
-  testWidgets(
-    'menu sizes to its widest item and inserts spacing between rows',
-    (tester) async {
-      await tester.pumpWidget(
-        _host(
-          UiDropdownMenu(
-            minWidth: 0,
-            trigger: const SizedBox(width: 20, child: Text('Open')),
-            items: [
-              UiMenuItem(label: 'A', onPressed: () {}),
-              UiMenuItem(
-                label: 'A wider menu item',
-                shortcut: const UiMenuShortcut('⌘K'),
-                onPressed: () {},
-              ),
-            ],
-          ),
+  testWidgets('menu sizes to its widest item and keeps contiguous rows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        UiDropdownMenu(
+          minWidth: 0,
+          trigger: const SizedBox(width: 20, child: Text('Open')),
+          items: [
+            UiMenuItem(label: 'A', onPressed: () {}),
+            UiMenuItem(
+              label: 'A wider menu item',
+              shortcut: const UiMenuShortcut('⌘K'),
+              onPressed: () {},
+            ),
+          ],
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
 
-      final surface = find.byWidgetPredicate(
-        (widget) => widget is UiBox && widget.border != null,
-      );
-      final wideText = tester.getRect(find.text('A wider menu item'));
-      final menuRect = tester.getRect(surface);
-      expect(menuRect.width, greaterThan(wideText.width));
-      expect(menuRect.width, lessThanOrEqualTo(320));
+    final surface = find.byWidgetPredicate(
+      (widget) =>
+          widget is UiFluidSurface && widget.border.style == BorderStyle.solid,
+    );
+    final wideText = tester.getRect(find.text('A wider menu item'));
+    final menuRect = tester.getRect(surface);
+    expect(menuRect.width, greaterThan(wideText.width));
+    expect(menuRect.width, lessThanOrEqualTo(320));
 
-      final firstRow = tester.getRect(
-        find
-            .ancestor(of: find.text('A'), matching: find.byType(UiPressable))
-            .first,
-      );
-      final secondRow = tester.getRect(
-        find
-            .ancestor(
-              of: find.text('A wider menu item'),
-              matching: find.byType(UiPressable),
-            )
-            .first,
-      );
-      final tokens = UiThemeTokens.of(tester.element(find.text('A')));
-      expect(secondRow.top - firstRow.bottom, closeTo(tokens.spacing.x1, 0.01));
-    },
-  );
+    final firstRow = tester.getRect(
+      find
+          .ancestor(of: find.text('A'), matching: find.byType(UiPressable))
+          .first,
+    );
+    final secondRow = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('A wider menu item'),
+            matching: find.byType(UiPressable),
+          )
+          .first,
+    );
+    expect(secondRow.top - firstRow.bottom, closeTo(0, 0.01));
+  });
 
   testWidgets(
     'content-sized menu does not exceed the available viewport width',
@@ -339,7 +527,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final surface = find.byWidgetPredicate(
-        (widget) => widget is UiBox && widget.border != null,
+        (widget) =>
+            widget is UiFluidSurface &&
+            widget.border.style == BorderStyle.solid,
       );
       expect(tester.getRect(surface).width, lessThanOrEqualTo(180));
     },
@@ -376,7 +566,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final surface = find.byWidgetPredicate(
-        (widget) => widget is UiBox && widget.border != null,
+        (widget) =>
+            widget is UiFluidSurface &&
+            widget.border.style == BorderStyle.solid,
       );
       expect(surface, findsOneWidget);
       final rect = tester.getRect(surface);
@@ -388,9 +580,7 @@ void main() {
     },
   );
 
-  testWidgets('menu uses shadcn content inset and nested corner radii', (
-    tester,
-  ) async {
+  testWidgets('menu uses theme surface tokens', (tester) async {
     await tester.pumpWidget(
       _host(
         UiDropdownMenu(
@@ -403,22 +593,19 @@ void main() {
     await tester.tap(find.text('Styled menu'));
     await tester.pumpAndSettle();
 
-    final boxes = tester.widgetList<UiBox>(find.byType(UiBox)).toList();
     final tokens = UiThemeTokens.of(tester.element(find.text('Profile')));
-    final surface = boxes.singleWhere((box) => box.border != null);
-    final row = boxes.singleWhere(
-      (box) => box.border == null && box.padding != null,
-    );
-    expect(surface.padding, EdgeInsets.all(tokens.spacing.x2 / 1.5));
-    expect(surface.borderRadius, tokens.radius.lgAll);
-    expect(
-      row.padding,
-      EdgeInsets.symmetric(
-        horizontal: tokens.spacing.x2,
-        vertical: tokens.spacing.x3 / 2,
+    final surface = tester.widget<UiFluidSurface>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is UiFluidSurface &&
+            widget.border.style == BorderStyle.solid,
       ),
     );
-    expect(row.borderRadius, tokens.radius.smAll);
+    expect(surface.geometry.radius, tokens.radius.lg.x);
+    expect(surface.border.width, tokens.menu.borderWidth);
+    final morph = tester.widget<UiFluidMorph>(find.byType(UiFluidMorph));
+    expect(morph.backdropBlurSigma, tokens.menu.backdropBlurSigma);
+    expect(morph.color.a, closeTo(tokens.menu.surfaceOpacity, .01));
   });
 
   testWidgets('open menu follows its trigger while the page scrolls', (
@@ -438,6 +625,7 @@ void main() {
               Align(
                 alignment: Alignment.centerLeft,
                 child: UiDropdownMenu(
+                  scrollBehavior: UiMenuScrollBehavior.followAnchor,
                   trigger: const Text('Scrolling trigger'),
                   items: [
                     UiMenuItem(label: 'Scrolling action', onPressed: () {}),
@@ -453,20 +641,18 @@ void main() {
 
     await tester.tap(find.text('Scrolling trigger'));
     await tester.pumpAndSettle();
-    final triggerBefore = tester.getTopLeft(find.text('Scrolling trigger')).dy;
     final menuBefore = tester.getTopLeft(find.text('Scrolling action')).dy;
 
     controller.jumpTo(60);
     await tester.pump();
+    await tester.pump();
 
-    final triggerAfter = tester.getTopLeft(find.text('Scrolling trigger')).dy;
     final menuAfter = tester.getTopLeft(find.text('Scrolling action')).dy;
-    expect(triggerAfter - triggerBefore, closeTo(-60, 0.01));
     expect(menuAfter - menuBefore, closeTo(-60, 0.01));
     expect(find.text('Scrolling action'), findsOneWidget);
   });
 
-  testWidgets('navigation chrome paints and receives input above dropdowns', (
+  testWidgets('dropdowns paint and receive input above navigation chrome', (
     tester,
   ) async {
     var menuHit = false;
@@ -514,10 +700,10 @@ void main() {
 
     await tester.tap(find.text('Layered menu'));
     await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(100, 60));
+    await tester.tap(find.text('Menu action').hitTestable());
     await tester.pumpAndSettle();
 
-    expect(navigationHit, isTrue);
-    expect(menuHit, isFalse);
+    expect(navigationHit, isFalse);
+    expect(menuHit, isTrue);
   });
 }

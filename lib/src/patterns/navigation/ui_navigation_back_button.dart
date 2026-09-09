@@ -1,14 +1,19 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/icons/ui_directional_icons.dart';
-import '../../foundation/motion/ui_motion_transitions.dart';
-import '../../foundation/overlay/overlay.dart';
-import '../../foundation/primitives/ui_box.dart';
+import '../../components/forms/button.dart';
 import '../../foundation/primitives/ui_pressable.dart';
-import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/primitives/ui_box.dart';
+import '../../foundation/primitives/ui_focus_ring.dart';
+import '../../components/forms/icon_button.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+import '../../components/menu/ui_menu_anchor.dart';
+import '../../components/menu/ui_dropdown_menu.dart';
+import 'ui_navigation_scope.dart';
+import 'ui_navigator_history.dart';
+import 'ui_route_entry.dart';
 
 @immutable
 class UiNavigationBackHistoryItem {
@@ -25,23 +30,34 @@ class UiNavigationBackHistoryItem {
 
 @immutable
 class UiNavigationBackPopTarget {
-  const UiNavigationBackPopTarget(this.count)
+  const UiNavigationBackPopTarget(this.count, {this.route})
     : assert(count > 0, 'count must be greater than zero');
 
   final int count;
+
+  /// Stable destination for observer-generated history.
+  final Route<dynamic>? route;
 }
 
 /// iOS-style back affordance: a chevron, with [label] kept for
-/// accessibility and as the seeded root of the long-press history menu
+/// accessibility and the title of the long-press history menu
 /// even when it isn't painted. Set [showLabel] to restore the previous
 /// chevron-plus-title look for apps that still want it.
+///
+/// The long-press history menu works out of the box: with no explicit
+/// [history], the button lists the routes behind the current page from the
+/// enclosing [UiNavigationControllerScope] or [UiNavigatorHistoryScope]
+/// (which [UiApp] installs), and picking an entry pops back to it. That is
+/// the same behaviour [UiSliverNavigationBar] provides, so custom chrome
+/// such as [UiChatHeader] can drop this button into its leading slot and
+/// stay part of the stack without any extra wiring.
 class UiNavigationBackButton extends StatefulWidget {
   const UiNavigationBackButton({
     super.key,
     required this.label,
     required this.onPressed,
     this.showLabel = false,
-    this.history = const <UiNavigationBackHistoryItem>[],
+    this.history,
     this.onHistorySelected,
   });
 
@@ -51,418 +67,183 @@ class UiNavigationBackButton extends StatefulWidget {
   /// Whether [label] is painted next to the chevron. Defaults to `false`
   /// (iOS-style chevron-only), leaving more room for the title and
   /// trailing actions. [label] still drives the semantics announcement and
-  /// the history menu's seeded root entry either way.
+  /// the history menu title either way; it never creates a destination.
   final bool showLabel;
-  final List<UiNavigationBackHistoryItem> history;
+
+  /// Entries behind the current page, newest first, for the long-press
+  /// menu. `null` (the default) resolves them with [historyOf]; pass an
+  /// empty list to opt out of the menu entirely.
+  final List<UiNavigationBackHistoryItem>? history;
+
+  /// Called when a history entry is picked. `null` (the default) pops back
+  /// to that entry with [popToHistoryItem], falling back to [onPressed] for
+  /// entries the kit cannot navigate to itself.
   final ValueChanged<UiNavigationBackHistoryItem>? onHistorySelected;
+
+  /// The routes behind the page enclosing [context], newest first — the
+  /// shape the long-press menu wants. Prefers a [UiNavigationController]
+  /// runtime, then [UiApp]'s plain-`Navigator` history observer; empty when
+  /// neither is present or nothing is behind the current route.
+  static List<UiNavigationBackHistoryItem> historyOf(BuildContext context) {
+    final runtime = UiNavigationControllerScope.maybeOf(context);
+    if (runtime != null) return runtime.controller.historyItems();
+    return UiNavigatorHistoryScope.maybeOf(context)
+            ?.historyItems(currentRoute: ModalRoute.of(context)) ??
+        const <UiNavigationBackHistoryItem>[];
+  }
+
+  /// Pops back to the page [item] describes. A [UiRouteEntry] value pops the
+  /// enclosing [UiNavigationController]; a [UiNavigationBackPopTarget] pops
+  /// the enclosing [Navigator] one `maybePop` at a time, so every page's
+  /// `PopScope` still gets a say, and stops as soon as a guarded page
+  /// refuses. Any other value invokes [orElse] instead.
+  static Future<void> popToHistoryItem(
+    BuildContext context,
+    UiNavigationBackHistoryItem item, {
+    VoidCallback? orElse,
+  }) async {
+    final value = item.value;
+    final controller = UiNavigationControllerScope.maybeOf(context)?.controller;
+    if (controller != null && value is UiRouteEntry) {
+      controller.popTo(value);
+      return;
+    }
+    if (value is UiNavigationBackPopTarget) {
+      final navigator = Navigator.maybeOf(context);
+      if (navigator == null) return;
+      final destination = value.route;
+      if (destination == null) {
+        await _popNavigatorTimes(navigator, value.count);
+        return;
+      }
+      if (!destination.isActive || destination.navigator != navigator) return;
+      await _popNavigatorTo(navigator, destination);
+      return;
+    }
+    orElse?.call();
+  }
 
   @override
   State<UiNavigationBackButton> createState() => _UiNavigationBackButtonState();
 }
 
+Future<void> _popNavigatorTo(
+  NavigatorState navigator,
+  Route<dynamic> target,
+) async {
+  while (navigator.mounted && target.isActive && !target.isCurrent) {
+    // maybePop reports success even when a PopScope vetoes the pop, so
+    // stop as soon as the top of the stack fails to change.
+    Route<dynamic>? top;
+    navigator.popUntil((route) {
+      top = route;
+      return true;
+    });
+    if (!await navigator.maybePop() || top?.isCurrent == true) return;
+  }
+}
+
+Future<void> _popNavigatorTimes(NavigatorState navigator, int count) async {
+  for (var i = 0; i < count; i++) {
+    if (!await navigator.maybePop()) return;
+  }
+}
+
 class _UiNavigationBackButtonState extends State<UiNavigationBackButton> {
-  final GlobalKey _targetKey = GlobalKey();
-  final Object _tapRegionGroup = Object();
-  OverlayEntry? _menuEntry;
-  bool _openAbove = false;
-  double _menuMaxHeight = 320;
-  double _menuWidth = 220;
-  bool _contentFits = true;
-  double _overlayLeft = 0;
-  double _overlayTop = 0;
-
-  @override
-  void dispose() {
-    _removeMenu();
-    super.dispose();
-  }
-
-  void _toggleMenu() {
-    if (_menuEntry != null) {
-      _removeMenu();
-      return;
-    }
-    final layeredOverlay = UiLayeredOverlay.maybeOf(
-      context,
-      UiOverlayLayer.floating,
-    );
-    final overlay = layeredOverlay ?? Overlay.maybeOf(context);
-    if (overlay == null) return;
-    if (!_resolvePlacement(overlay)) return;
-
-    // UiLayeredOverlayHost's per-layer Overlays are siblings of the page
-    // content inside its own Stack, not ancestors of it — so
-    // InheritedTheme.capture (which requires `to` to be an ancestor of
-    // `from`) doesn't apply, and isn't needed: both branches already share
-    // every ancestor above UiLayeredOverlayHost. Only capture for the plain
-    // Overlay.maybeOf fallback, where the overlay (e.g. WidgetsApp's root)
-    // genuinely is an ancestor.
-    if (layeredOverlay != null) {
-      _menuEntry = OverlayEntry(
-        builder: (overlayContext) => _buildMenuOverlay(overlayContext),
-      );
-    } else {
-      final capturedThemes = InheritedTheme.capture(
-        from: context,
-        to: overlay.context,
-      );
-      _menuEntry = OverlayEntry(
-        builder: (overlayContext) =>
-            capturedThemes.wrap(_buildMenuOverlay(overlayContext)),
-      );
-    }
-    overlay.insert(_menuEntry!);
-  }
-
-  void _removeMenu() {
-    _menuEntry?.remove();
-    _menuEntry = null;
-  }
-
-  /// Measures the trigger and available viewport space, mirroring the
-  /// placement policy [UiDropdownMenu] and `UiSelect` share — bounded
-  /// width/height, flips above the trigger when there's more room there,
-  /// and scrolls once the history is too tall to fit either way.
-  bool _resolvePlacement(OverlayState overlay) {
-    final tokens = UiThemeTokens.of(context);
-    final textScaler =
-        MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
-    final surfaceInset = tokens.spacing.x2 / 1.5;
-    final itemGap = tokens.spacing.x1;
-
-    final estimated =
-        widget.history.fold<double>(
-          surfaceInset * 2,
-          (height, item) => height + _rowHeight(tokens, textScaler, item),
-        ) +
-        math.max(0, widget.history.length - 1) * itemGap;
-    final desiredWidth = _preferredWidth(tokens, textScaler, surfaceInset);
-
-    final geometry = resolveUiAnchoredOverlayGeometry(
-      context: context,
-      targetKey: _targetKey,
-      overlay: overlay,
-      desiredHeight: estimated,
-      maxHeight: estimated,
-      desiredWidth: desiredWidth,
-      minWidth: math.min(180, desiredWidth),
-    );
-    if (geometry == null) return false;
-
-    _openAbove = geometry.openAbove;
-    _menuMaxHeight = math.max(0, geometry.maxHeight - surfaceInset * 2);
-    _menuWidth = math.max(
-      0,
-      math.min(desiredWidth, geometry.width) - surfaceInset * 2,
-    );
-    _contentFits = estimated <= geometry.maxHeight + 0.5;
-    final outerHeight = math.min(estimated, geometry.maxHeight);
-    _overlayLeft = geometry.targetOverlayRect.left + geometry.horizontalOffset;
-    _overlayTop = geometry.openAbove
-        ? geometry.targetOverlayRect.top - geometry.gap - outerHeight
-        : geometry.targetOverlayRect.bottom + geometry.gap;
-    return true;
-  }
-
-  double _rowHeight(
-    UiThemeTokens tokens,
-    TextScaler textScaler,
-    UiNavigationBackHistoryItem item,
-  ) {
-    final bodyStyle = tokens.typography.body;
-    final titleHeight =
-        textScaler.scale(bodyStyle.fontSize ?? 14) * (bodyStyle.height ?? 1);
-    var height = titleHeight + tokens.spacing.x3;
-    if (item.subtitle != null) {
-      final captionStyle = tokens.typography.caption;
-      height +=
-          textScaler.scale(captionStyle.fontSize ?? 12) *
-          (captionStyle.height ?? 1);
-    }
-    return height;
-  }
-
-  double _preferredWidth(
-    UiThemeTokens tokens,
-    TextScaler textScaler,
-    double surfaceInset,
-  ) {
-    double textWidth(String text, TextStyle style) {
-      final painter = TextPainter(
-        text: TextSpan(text: text, style: style),
-        textDirection: Directionality.of(context),
-        textScaler: textScaler,
-        maxLines: 1,
-      )..layout();
-      return painter.width;
-    }
-
-    final rowPadding = tokens.spacing.x2 * 2;
-    final bodyStyle = tokens.typography.body;
-    final captionStyle = tokens.typography.caption;
-    var contentWidth = 0.0;
-    for (final item in widget.history) {
-      var width = rowPadding + textWidth(item.title, bodyStyle);
-      if (item.subtitle != null) {
-        width = math.max(
-          width,
-          rowPadding + textWidth(item.subtitle!, captionStyle),
-        );
-      }
-      contentWidth = math.max(contentWidth, width);
-    }
-    return math.min(320, math.max(180, contentWidth + surfaceInset * 2));
-  }
-
-  Widget _buildMenuOverlay(BuildContext context) {
-    final tokens = UiThemeTokens.of(this.context);
-    final c = tokens.colors;
-    final surfaceInset = tokens.spacing.x2 / 1.5;
-    final direction = Directionality.of(this.context);
-    final origin =
-        (_openAbove
-                ? AlignmentDirectional.bottomStart
-                : AlignmentDirectional.topStart)
-            .resolve(direction);
-
-    return Stack(
-      children: [
-        Positioned(
-          left: _overlayLeft,
-          top: _overlayTop,
-          child: UiAnchoredOverlayTapRegion(
-            groupId: _tapRegionGroup,
-            onDismiss: _removeMenu,
-            child: _HistoryMenuEntrance(
-              origin: origin,
-              child: UiBox(
-                background: c.popover,
-                border: Border.all(color: c.border),
-                borderRadius: tokens.radius.lgAll,
-                boxShadow: tokens.shadows.md,
-                padding: EdgeInsets.all(surfaceInset),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: _menuWidth,
-                    maxWidth: _menuWidth,
-                    maxHeight: _menuMaxHeight,
-                  ),
-                  child: Builder(
-                    builder: (context) {
-                      final rows = <Widget>[];
-                      for (final item in widget.history) {
-                        if (rows.isNotEmpty) {
-                          rows.add(SizedBox(height: tokens.spacing.x1));
-                        }
-                        rows.add(
-                          _HistoryRow(
-                            item: item,
-                            onTap: () {
-                              _removeMenu();
-                              final onHistorySelected =
-                                  widget.onHistorySelected;
-                              if (onHistorySelected != null) {
-                                onHistorySelected(item);
-                              } else {
-                                widget.onPressed();
-                              }
-                            },
-                          ),
-                        );
-                      }
-                      final content = Column(
-                        key: const Key('ui_navigation_back_history_content'),
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: rows,
-                      );
-                      return _contentFits
-                          ? content
-                          : SingleChildScrollView(child: content);
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final c = tokens.colors;
-
-    return KeyedSubtree(
-      key: _targetKey,
-      child: UiPressable(
-        onPressed: widget.onPressed,
-        onLongPress: widget.history.isEmpty ? null : _toggleMenu,
-        semanticsLabel: widget.label,
-        minTapSize: 0,
-        builder: (context, state, _) {
-          final foreground = state.pressed
-              ? c.textPrimary.withValues(alpha: 0.55)
-              : state.hovered || state.focused
-              ? c.textPrimary.withValues(alpha: 0.78)
-              : c.textPrimary;
-
-          return TweenAnimationBuilder<Color?>(
-            tween: ColorTween(end: foreground),
-            duration: tokens.motion.fast,
-            curve: tokens.motion.standardCurve,
-            builder: (context, color, _) {
-              final resolvedColor = color ?? foreground;
-              return UiBox(
-                background: const Color(0x00000000),
-                borderRadius: tokens.radius.smAll,
-                padding: EdgeInsets.zero,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      UiDirectionalIcons.chevronBack(context),
-                      size: widget.showLabel ? 17 : 20,
-                      color: resolvedColor,
-                    ),
-                    if (widget.showLabel) ...[
-                      SizedBox(width: tokens.spacing.x1 / 2),
-                      Flexible(
-                        child: UiText(
-                          widget.label,
-                          variant: UiTextVariant.body,
-                          style: TextStyle(color: resolvedColor),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ],
+    final history = widget.history ?? UiNavigationBackButton.historyOf(context);
+    return UiMenuAnchor(
+      title: widget.label,
+      openOnLongPress: history.isNotEmpty,
+      onTriggerPressed: widget.onPressed,
+      items: [
+        for (final item in history)
+          UiMenuItem(
+            label: item.title,
+            subtitle: item.subtitle,
+            onPressed: () {
+              final custom = widget.onHistorySelected;
+              if (custom != null) {
+                custom(item);
+                return;
+              }
+              unawaited(
+                UiNavigationBackButton.popToHistoryItem(
+                  context,
+                  item,
+                  orElse: widget.onPressed,
                 ),
               );
             },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.item, required this.onTap});
-
-  final UiNavigationBackHistoryItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = UiThemeTokens.of(context);
-    final c = tokens.colors;
-
-    return Semantics(
-      button: true,
-      label: item.title,
-      excludeSemantics: true,
-      child: UiPressable(
-        onPressed: onTap,
-        minTapSize: 0,
-        excludeFromSemantics: true,
-        builder: (context, state, _) {
-          final hover = state.hovered || state.pressed || state.focused;
-          return UiBox(
-            background: hover ? c.accent : const Color(0x00000000),
-            borderRadius: tokens.radius.smAll,
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.x2,
-              vertical: tokens.spacing.x3 / 2,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                UiText(
-                  item.title,
-                  variant: UiTextVariant.body,
-                  style: TextStyle(color: c.popoverForeground),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          ),
+      ],
+      triggerBuilder: (context, activate) {
+        // Chevron stroke mass sits toward its point; a small directional
+        // correction balances the painted glyph rather than its font box.
+        final icon = Transform.translate(
+          offset: Offset(
+            Directionality.of(context) == TextDirection.rtl ? 1 : -1,
+            0,
+          ),
+          child: Icon(
+            UiDirectionalIcons.chevronBack(context),
+            size: 32,
+            applyTextScaling: false,
+          ),
+        );
+        if (widget.showLabel) {
+          return UiPressable(
+            semanticsLabel: widget.label,
+            minTapSize: 44,
+            onPressed: activate,
+            builder: (context, state, child) => UiFocusRing(
+              visible: state.focused,
+              borderRadius: tokens.radius.pillAll,
+              child: UiBox(
+                padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x2),
+                background: state.pressed
+                    ? tokens.colors.surfaceMuted
+                    : tokens.colors.surface,
+                borderRadius: tokens.radius.pillAll,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    icon,
+                    SizedBox(width: tokens.spacing.x1),
+                    Flexible(
+                      child: Text(
+                        widget.label,
+                        style: tokens.typography.subheading.copyWith(
+                          color: tokens.colors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                if (item.subtitle != null)
-                  UiText(
-                    item.subtitle!,
-                    variant: UiTextVariant.caption,
-                    tone: UiTextTone.muted,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
+              ),
             ),
           );
-        },
-      ),
-    );
-  }
-}
-
-/// Fade + scale entrance for the history flyout, anchored so the surface
-/// grows toward the trigger regardless of which side it opens on. Mirrors
-/// the same treatment `UiDropdownMenu` and `UiSelect` use, so every
-/// floating menu in the kit shares one motion language. There is
-/// deliberately no matching exit animation — those menus remove their
-/// overlay entry immediately on close too.
-class _HistoryMenuEntrance extends StatefulWidget {
-  const _HistoryMenuEntrance({
-    required this.child,
-    this.origin = Alignment.topLeft,
-  });
-
-  final Widget child;
-  final Alignment origin;
-
-  @override
-  State<_HistoryMenuEntrance> createState() => _HistoryMenuEntranceState();
-}
-
-class _HistoryMenuEntranceState extends State<_HistoryMenuEntrance>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this);
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final motion = UiThemeTokens.motionOf(context);
-    _controller.duration = motion.fast;
-    if (_started) return;
-    _started = true;
-    if (motion.fast == Duration.zero) {
-      _controller.value = 1.0;
-    } else {
-      _controller.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final motion = UiThemeTokens.motionOf(context);
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: motion.standardCurve,
-    );
-    return UiFadeScaleTransition(
-      animation: curved,
-      beginScale: 0.96,
-      alignment: widget.origin,
-      repaintBoundary: true,
-      child: widget.child,
+        }
+        return UiIconButton(
+          icon: icon,
+          semanticsLabel: widget.label,
+          size: UiSize.md,
+          borderRadius: tokens.radius.pillAll,
+          backgroundColor: tokens.colors.surface.withValues(
+            alpha: tokens.menu.surfaceOpacity,
+          ),
+          borderColor: tokens.colors.textPrimary.withValues(
+            alpha: tokens.menu.borderOpacity,
+          ),
+          borderWidth: tokens.menu.borderWidth,
+          foregroundColor: tokens.colors.textPrimary,
+          onPressed: activate,
+        );
+      },
     );
   }
 }

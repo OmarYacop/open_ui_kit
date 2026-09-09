@@ -251,6 +251,8 @@ UiRadioGroup<AccountType>(
 Prefer:
 
 - `UiInput` for text entry with labels, helper text, errors, and validators.
+- [`UiOtpInput`](otp_input.md) for verification codes rendered as grouped slots
+  with one editable value, paste, and platform one-time-code autofill hints.
 - `UiSelect<T>` for small option sets.
 - `UiCombobox<T>` for searchable option sets.
 - `UiCheckbox` for independent booleans.

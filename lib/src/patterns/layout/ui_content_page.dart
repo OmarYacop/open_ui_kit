@@ -175,6 +175,8 @@ class _UiContentPageState extends State<UiContentPage>
                     ),
                   ),
                   SliverPadding(
+                    // Navigation already supplies the safe-area clearance.
+                    // Keep section spacing independent of the painted fade.
                     padding: contentPadding,
                     sliver: SliverList.list(
                       children: [

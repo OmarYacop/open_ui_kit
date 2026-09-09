@@ -780,7 +780,7 @@ void main() {
         expect(bodyRect.bottom, screen.height);
         expect(bodyRect.left, leftInset);
         expect(bodyRect.right, screen.width - rightInset);
-        expect(find.text('insets:$topInset/$bottomInset'), findsOneWidget);
+        expect(find.text('insets:128.0/48.0'), findsOneWidget);
       },
     );
 
@@ -961,7 +961,7 @@ void main() {
       expect(bodyRect.bottom, screen.height);
       expect(bodyRect.left, leftInset);
       expect(bodyRect.right, screen.width - rightInset);
-      expect(find.text('insets:$topInset/$bottomInset'), findsOneWidget);
+      expect(find.text('insets:128.0/48.0'), findsOneWidget);
       expect(find.byType(SafeArea), findsOneWidget);
     });
 
@@ -1000,19 +1000,16 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('insets:0.0/$topInset/0.0/$bottomInset'),
-        findsOneWidget,
-      );
+      expect(find.text('insets:0.0/128.0/0.0/48.0'), findsOneWidget);
     });
 
     testWidgets(
-      'UiPageScaffold keeps the surface-color fade on non-Apple platforms',
+      'UiPageScaffold keeps the surface-color fade on other desktop platforms',
       (tester) async {
         const bg = Color(0xFFFFFFFF);
         final previous = debugDefaultTargetPlatformOverride;
         try {
-          debugDefaultTargetPlatformOverride = TargetPlatform.android;
+          debugDefaultTargetPlatformOverride = TargetPlatform.windows;
           await tester.pumpWidget(
             const Directionality(
               textDirection: TextDirection.ltr,
@@ -1037,7 +1034,8 @@ void main() {
               (gradient) => gradient.colors.last == bg.withValues(alpha: 0),
             ),
             isTrue,
-            reason: 'Non-Apple fades must retain the configured surface color.',
+            reason:
+                'Other desktop fades must retain the configured surface color.',
           );
           expect(find.byType(BackdropFilter), findsNothing);
           expect(find.byType(ShaderMask), findsNothing);
@@ -1052,7 +1050,7 @@ void main() {
     );
 
     testWidgets(
-      'UiPageScaffold graduates Apple top blur with an adaptive tint',
+      'UiPageScaffold protects fixed chrome before the Apple edge tint',
       (tester) async {
         final previous = debugDefaultTargetPlatformOverride;
         try {
@@ -1084,14 +1082,14 @@ void main() {
           expect(
             find.byKey(const Key('ui_scroll_edge_progressive_blur')),
             findsOneWidget,
-            reason: 'Apple should use one continuous shader-driven blur.',
+            reason: 'Apple retains its historical progressive top blur.',
           );
           expect(find.byType(BackdropFilter), findsNothing);
           expect(find.byType(ShaderMask), findsNothing);
           expect(
             topFade.colors.first,
-            const Color(0xFFFFFFFF).withValues(alpha: 0.84),
-            reason: 'Light appearance should use a translucent white material.',
+            const Color(0xFFFFFFFF).withValues(alpha: .84),
+            reason: 'Chrome protection must remain translucent over media.',
           );
           expect(
             bottomFade.colors,
@@ -1126,8 +1124,9 @@ void main() {
               .singleWhere((gradient) => gradient.begin == Alignment.topCenter);
           expect(
             darkTopFade.colors.first,
-            const Color(0xFF000000).withValues(alpha: 0.84),
-            reason: 'Dark appearance should use a translucent black material.',
+            const Color(0xFF000000).withValues(alpha: .84),
+            reason:
+                'Dark chrome needs the same renderer-independent protection.',
           );
         } finally {
           debugDefaultTargetPlatformOverride = previous;
@@ -1178,7 +1177,7 @@ void main() {
         expect(
           find.byKey(const Key('ui_scroll_edge_progressive_blur')),
           findsOneWidget,
-          reason: 'Tablet layouts should retain the adaptive Apple top blur.',
+          reason: 'Apple tablet layouts retain progressive top blur.',
         );
         final navigationSurface = tester.widget<AnimatedContainer>(
           find
@@ -1612,8 +1611,11 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.byKey(const Key('ui_navigation_tracking_actions_shadow')),
-          findsOneWidget,
+          find.ancestor(
+            of: find.byKey(const Key('tracked-title-action')),
+            matching: find.byType(UiLegibilityShadow),
+          ),
+          findsNothing,
         );
 
         final resting = tester.getTopRight(

@@ -11,3 +11,4 @@ export 'ui_safe_viewport.dart';
 export 'ui_scroll_edge_fade.dart';
 export 'ui_surface_region.dart';
 export 'ui_system_bars.dart';
+export 'ui_media_viewer_page.dart';

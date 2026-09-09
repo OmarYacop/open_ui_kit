@@ -37,6 +37,10 @@ class UiSheetSnap {
 class UiSheetController<T> {
   UiSheetController._(this._dismiss);
 
+  /// Creates a controller for a custom presentation such as
+  /// `showUiFluidSheet`. Prefer [UiSheetScope.show] for standard sheets.
+  UiSheetController.custom(this._dismiss);
+
   final void Function([T? result]) _dismiss;
 
   /// Dismiss the sheet, optionally completing the presentation future

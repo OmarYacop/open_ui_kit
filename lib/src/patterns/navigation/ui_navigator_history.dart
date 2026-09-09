@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/layout/ui_active_page_scope.dart';
 import 'ui_navigation_back_button.dart';
 
 /// Tracks the full stack of top-level [PageRoute]s pushed through whichever
@@ -31,7 +32,9 @@ class UiNavigatorHistoryObserver extends NavigatorObserver with ChangeNotifier {
   /// turn into a synchronous rebuild request) is invalid. The title is
   /// still current by the time anything else reads [historyItems].
   void registerTitle(Route<dynamic> route, String title) {
-    _titles[route] = title;
+    if (_stack.contains(route) && title.trim().isNotEmpty) {
+      _titles[route] = title;
+    }
   }
 
   /// Entries *behind* the current top, newest first — the shape a
@@ -39,16 +42,22 @@ class UiNavigatorHistoryObserver extends NavigatorObserver with ChangeNotifier {
   /// and no [RouteSettings.name] is omitted from the menu but still counted
   /// toward the [UiNavigationBackPopTarget.count] of entries behind it, so
   /// selecting one of those still pops the correct number of times.
-  List<UiNavigationBackHistoryItem> historyItems() {
+  List<UiNavigationBackHistoryItem> historyItems({
+    Route<dynamic>? currentRoute,
+  }) {
+    final currentIndex = currentRoute == null
+        ? _stack.length - 1
+        : _stack.indexWhere((route) => identical(route, currentRoute));
+    if (currentIndex < 1) return const [];
     if (_stack.length <= 1) return const [];
     final items = <UiNavigationBackHistoryItem>[];
-    for (var i = _stack.length - 2; i >= 0; i--) {
+    for (var i = currentIndex - 1; i >= 0; i--) {
       final title = _titleFor(_stack[i]);
       if (title == null) continue;
       items.add(
         UiNavigationBackHistoryItem(
           title: title,
-          value: UiNavigationBackPopTarget(_stack.length - 1 - i),
+          value: UiNavigationBackPopTarget(currentIndex - i, route: _stack[i]),
         ),
       );
     }
@@ -78,13 +87,17 @@ class UiNavigatorHistoryObserver extends NavigatorObserver with ChangeNotifier {
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    var changed = false;
-    if (oldRoute != null) changed = _removeFromStack(oldRoute) || changed;
+    final index = oldRoute == null
+        ? -1
+        : _stack.indexWhere((route) => identical(route, oldRoute));
+    if (index < 0) return;
+    _titles.remove(oldRoute);
     if (newRoute is PageRoute<dynamic>) {
-      _stack.add(newRoute);
-      changed = true;
+      _stack[index] = newRoute;
+    } else {
+      _stack.removeAt(index);
     }
-    if (changed) _scheduleNotify();
+    _scheduleNotify();
   }
 
   bool _removeFromStack(Route<dynamic> route) {
@@ -121,5 +134,25 @@ class UiNavigatorHistoryScope
     return context
         .dependOnInheritedWidgetOfExactType<UiNavigatorHistoryScope>()
         ?.notifier;
+  }
+
+  /// Publishes [title] as the history-menu entry for the route enclosing
+  /// [context]. Page chrome ([UiSliverNavigationBar], [UiChatHeader]) calls
+  /// this from `build` so titles stay accurate without app-side wiring.
+  ///
+  /// A no-op — returning `false` — when there is no observer or route, when
+  /// the subtree is hidden, or when it is not the active page: an inactive
+  /// tab of a preserved stack, or an inline pane of a wider layout such as
+  /// [UiDualPane]'s detail. Those share a route with the visible page and
+  /// must never rename its entry.
+  static bool registerPageTitle(BuildContext context, String title) {
+    final observer = maybeOf(context);
+    final route = ModalRoute.of(context);
+    if (observer == null || route == null) return false;
+    if (!Visibility.of(context) || !UiActivePageScope.isActiveOf(context)) {
+      return false;
+    }
+    observer.registerTitle(route, title);
+    return true;
   }
 }

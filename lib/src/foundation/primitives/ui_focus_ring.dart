@@ -42,7 +42,7 @@ class UiFocusRing extends StatelessWidget {
     final ringColor = color ?? tokens.colors.ring;
     final radius = borderRadius ?? tokens.radius.mdAll;
     final outline = DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: tokens.radius.decoration(
         borderRadius: _inflateRadius(radius, offset),
         border: Border.all(color: ringColor, width: width),
       ),

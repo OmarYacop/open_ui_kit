@@ -62,7 +62,18 @@ class UiSystemBarsStyle {
     return color.computeLuminance() < 0.42 ? dark : light;
   }
 
+  /// The style for an app whose appearance has already been resolved to
+  /// [brightness] — the usual case at the app root, where the theme, not a
+  /// particular surface, decides what sits under the bars.
+  static SystemUiOverlayStyle forBrightness(Brightness brightness) {
+    return brightness == Brightness.dark ? dark : light;
+  }
+
   /// Icons optimized for a light surface (dark icons).
+  ///
+  /// Bars are transparent so page content, which already reserves the
+  /// insets, shows through; Android's contrast enforcement is switched off
+  /// so it never paints an opaque strip over that content.
   static const SystemUiOverlayStyle light = SystemUiOverlayStyle(
     statusBarColor: Color(0x00000000),
     statusBarIconBrightness: Brightness.dark,
@@ -70,9 +81,12 @@ class UiSystemBarsStyle {
     systemNavigationBarColor: Color(0x00000000),
     systemNavigationBarIconBrightness: Brightness.dark,
     systemNavigationBarDividerColor: Color(0x00000000),
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarContrastEnforced: false,
   );
 
-  /// Icons optimized for a dark surface (light icons).
+  /// Icons optimized for a dark surface (light icons). See [light] for the
+  /// transparency and contrast policy.
   static const SystemUiOverlayStyle dark = SystemUiOverlayStyle(
     statusBarColor: Color(0x00000000),
     statusBarIconBrightness: Brightness.light,
@@ -80,5 +94,7 @@ class UiSystemBarsStyle {
     systemNavigationBarColor: Color(0x00000000),
     systemNavigationBarIconBrightness: Brightness.light,
     systemNavigationBarDividerColor: Color(0x00000000),
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarContrastEnforced: false,
   );
 }

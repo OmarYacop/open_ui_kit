@@ -1,3 +1,62 @@
+## Linear tracking (primary work tracker)
+
+Use the connected Linear plugin for features, bug fixes, improvements, tasks,
+refactoring, documentation, maintenance, and release work in this repository.
+
+- Repository: `open_ui_kit`
+- Linear project: [Open UI Kit](https://linear.app/omar-yacop/project/open-ui-kit-a2ac6baa8107)
+- Project ID: `3dbd6f88-49a2-4228-ba9d-bfb1ab62219f`
+- Team: `Omar Yacop` (`OMA`), ID `9e2ee7cb-679a-4403-b156-e6ca4f8d69ec`
+
+### Working agreement
+
+1. Before material work, search this Linear project for an existing issue. Reuse
+   the matching issue; otherwise create one in the project above. One issue tracks
+   one coherent outcome, not every edit, command, or conversation. Read-only questions
+   need no issue unless they produce actionable follow-up work.
+2. Record the problem, scope, observable acceptance criteria, affected repository
+   and platforms/clients, dependencies, and verification plan. For bugs, include
+   reproduction, expected/actual behavior, and impact. Never include secrets or
+   customer data. Do not invent priority, deadlines, or completion evidence.
+3. Use the existing Linear labels: `Feature`, `Bug`, `Improvement`, `Maintenance`,
+   or `Documentation`. Use native priority and milestone fields where appropriate;
+   record affected areas in the description. GitHub's `type:*`, `area:*`, and
+   `priority:*` taxonomy still applies to GitHub artifacts, not to Linear issues.
+4. Move planned work through `Backlog` or `Todo` to `In Progress` when it starts.
+   Record meaningful scope changes, blockers, verification results, and PR links
+   on the issue using the plugin. Use `Blocked` and explicit dependency relations
+   when blocked; remove the label when resolved. Avoid repetitive status updates.
+5. Move implemented work awaiting review/merge to `In Review`. Mark `Done` only
+   after acceptance criteria and required verification pass and the change is
+   merged, or the user explicitly accepts local-only delivery. Documentation edits
+   left in a working tree are still awaiting review. Report skipped/failed checks
+   accurately and keep unfinished work open.
+6. Include the full `OMA-123` identifier and Linear issue URL in the PR description
+   and final handoff. Link the PR back to Linear. Keep existing branch validators:
+   use the numeric part of the Linear identifier in `<type>/<number>-<description>`,
+   e.g. `fix/123-login-retry` for `OMA-123`. The full identifier and URL disambiguate
+   it from a GitHub issue. Preserve Conventional Commits and existing stack rules.
+7. In stacks, identify partial work with `Part of OMA-123` and its URL. Record
+   completion only after all required layers are merged and verified. Do not use
+   `Closes #123` for a Linear issue or assume GitHub/Linear auto-sync is configured;
+   explicitly verify and update Linear through the plugin.
+8. For work spanning repositories, create or reuse an issue in each affected
+   Linear project and link them with dependencies/related issues. Do not create
+   duplicate records for the same outcome within one project.
+9. Existing GitHub issues and historical `#N` references remain valid. When continuing
+   one, search Linear for a linked counterpart, create it only if absent, and retain
+   the GitHub URL and acceptance criteria. Do not bulk import, close, or rewrite the
+   legacy backlog. Existing GitHub PR links remain intact.
+10. If the plugin is unavailable, continue independent local work, report the
+    tracking failure and pending update in the handoff, and retry when available.
+    Never claim an issue was created or updated without a successful tool result.
+
+This section supersedes older GitHub-Issues-only instructions, issue-number examples,
+and issue-label requirements for new work. Existing architecture/scope, CI, review,
+privacy, merge, and release-authorization rules continue to apply. Historical plan
+files remain reference material; do not run legacy GitHub backlog sync in apply mode
+to track new work. Linear is the source of current work status and acceptance criteria.
+
 <repository-workflow>
 
 # Open UI Kit repository workflow

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -7,7 +9,6 @@ import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../../foundation/layout/ui_keyboard_geometry.dart';
-import '../../foundation/layout/ui_navigation_chrome_scope.dart';
 import '../../foundation/effects/ui_component_shadow.dart';
 import 'ui_safe_viewport.dart';
 import 'ui_scroll_edge_fade.dart';
@@ -58,6 +59,8 @@ class UiPageScaffold extends StatelessWidget {
     this.scrollFadeHorizontalInset = 0,
     this.scrollFadeMaxOpacity = 0.84,
     this.scrollFadeUsesSafeArea = true,
+    this.scrollFadeTopClearance,
+    this.scrollFadeBottomClearance,
     this.resizeBodyForKeyboard = false,
     this.onRefresh,
     this.refreshController,
@@ -66,7 +69,11 @@ class UiPageScaffold extends StatelessWidget {
     this.onRefreshError,
     this.refreshEnabled = true,
     this.refreshEdgeOffset = 0,
-  }) : assert(refreshEdgeOffset >= 0);
+  }) : assert(refreshEdgeOffset >= 0),
+       assert(scrollFadeTopClearance == null || scrollFadeTopClearance >= 0),
+       assert(
+         scrollFadeBottomClearance == null || scrollFadeBottomClearance >= 0,
+       );
 
   final Widget body;
   final Widget? topBar;
@@ -159,6 +166,17 @@ class UiPageScaffold extends StatelessWidget {
   /// [UiSafeViewport] instead.
   final bool scrollFadeUsesSafeArea;
 
+  /// Resting content clearance from the top faded edge. Defaults to the active
+  /// top fade extent. Combined with the system inset using max, not addition.
+  /// Set to zero when in-scroll chrome already clears the fade. Requires
+  /// [scrollFadeUsesSafeArea]; scrollables must consume [UiPageBodyInsets].
+  final double? scrollFadeTopClearance;
+
+  /// Resting content clearance from the bottom faded edge. Defaults to
+  /// [scrollFadeBottomExtent]. Overrides never reduce the system safe inset.
+  /// Only applies while the bottom fade and [scrollFadeUsesSafeArea] are enabled.
+  final double? scrollFadeBottomClearance;
+
   /// Reduces the body's layout height by the live keyboard inset.
   ///
   /// This is useful for search and selection pages whose centered empty state
@@ -196,9 +214,6 @@ class UiPageScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final bg = backgroundColor ?? tokens.colors.background;
-    final hasPersistentRail = UiNavigationChromeScope.hasPersistentRailOf(
-      context,
-    );
     final effectiveTopFadeExtent =
         MediaQuery.sizeOf(context).shortestSide >= 600
         ? scrollFadeWideExtent
@@ -233,21 +248,22 @@ class UiPageScaffold extends StatelessWidget {
     final safeTopBodyInset = consumeFadeTopInset
         ? _effectiveTopSafeInset(media)
         : 0.0;
-    final railFadeTopBodyInset =
-        hasPersistentRail &&
-            scrollFade &&
-            scrollFadeUsesSafeArea &&
-            scrollFadeTop
-        ? effectiveTopFadeExtent
-        : 0.0;
-    final effectiveTopBodyInset = safeTopBodyInset > railFadeTopBodyInset
-        ? safeTopBodyInset
-        : railFadeTopBodyInset;
+    final fadeContentInsets = scrollFade && scrollFadeUsesSafeArea;
     final scrollFadeSafePadding = EdgeInsets.only(
-      top: effectiveTopBodyInset,
-      bottom: consumeFadeBottomInset
-          ? _effectiveBottomSafeInset(context, media, safeViewportMode)
-          : 0,
+      top: math.max(
+        safeTopBodyInset,
+        fadeContentInsets && scrollFadeTop
+            ? scrollFadeTopClearance ?? effectiveTopFadeExtent
+            : 0,
+      ),
+      bottom: math.max(
+        consumeFadeBottomInset
+            ? _effectiveBottomSafeInset(context, media, safeViewportMode)
+            : 0,
+        fadeContentInsets && scrollFadeBottom
+            ? scrollFadeBottomClearance ?? scrollFadeBottomExtent
+            : 0,
+      ),
     );
 
     Widget pageBody = UiPageBodyInsets(
@@ -265,14 +281,16 @@ class UiPageScaffold extends StatelessWidget {
             )
           : body,
     );
-    if (resizeBodyForKeyboard) {
-      pageBody = Padding(
-        padding: EdgeInsets.only(
-          bottom: UiKeyboardGeometry.currentInsetOf(context),
-        ),
-        child: pageBody,
-      );
-    }
+    // Keep the subtree stable when search enables keyboard avoidance. Inserting
+    // this wrapper conditionally remounts scroll positions and header animations.
+    pageBody = Padding(
+      padding: EdgeInsets.only(
+        bottom: resizeBodyForKeyboard
+            ? UiKeyboardGeometry.currentInsetOf(context)
+            : 0,
+      ),
+      child: pageBody,
+    );
 
     Widget content = Column(
       mainAxisSize: MainAxisSize.max,
@@ -458,8 +476,8 @@ class UiPageScaffold extends StatelessWidget {
 /// content padding when [UiPageScaffold.scrollFadeUsesSafeArea] is enabled.
 ///
 /// The scaffold itself stays visually full-bleed. Scrollable page patterns use
-/// these values to keep content clear of hardware insets and, beside a
-/// persistent rail, the top scroll-fade region while the fade remains painted
+/// these values to keep content clear of hardware insets and active top/bottom
+/// scroll-fade regions while the fade remains painted
 /// at the physical edges.
 enum UiPageBodyInsetsAspect { top, right, bottom, left }
 

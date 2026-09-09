@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -6,21 +7,19 @@ import 'package:flutter/widgets.dart';
 import '../../foundation/effects/ui_shader_sampler.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
-const _appleBlurSigma = 14.0;
-const _appleFadeHold = 0.12;
-// Keep the Apple material visibly translucent even when callers request a
+const _progressiveBlurSigma = 14.0;
+const _materialFadeHold = 0.12;
+// Keep the progressive material visibly translucent even when callers request a
 // stronger edge fade. The progressive blur supplies the remaining separation.
-const _appleMaxTintOpacity = 0.84;
+const _materialMaxTintOpacity = 0.84;
 const _progressiveBlurShader =
     'packages/open_ui_kit/lib/src/patterns/layout/shaders/'
     'ui_progressive_blur.frag';
 
-/// Paints platform-adaptive fades over the vertical edges of [child].
+/// Paints platform-adaptive fades over scrolling content.
 ///
-/// This is the standard Open UI treatment for scrollable content moving below
-/// floating chrome. Apple platforms use a light/dark adaptive material with a
-/// continuous, shader-driven top-edge blur. The bottom edge mirrors the tint
-/// transition without blur; other platforms use inexpensive surface gradients.
+/// Android and Apple platforms use continuous progressive top blur and adaptive
+/// tint by default, with tint alone at the bottom. Other platforms use gradients.
 class UiScrollEdgeFade extends StatelessWidget {
   const UiScrollEdgeFade({
     super.key,
@@ -34,7 +33,10 @@ class UiScrollEdgeFade extends StatelessWidget {
     this.showTop = true,
     this.showBottom = true,
     this.paintOverChild = true,
+    this.enableProgressiveBlur = true,
+    this.topProtectionExtent = 0,
   }) : assert(extent >= 0),
+       assert(topProtectionExtent >= 0),
        assert(maxOpacity >= 0 && maxOpacity <= 1);
 
   final Widget child;
@@ -48,29 +50,39 @@ class UiScrollEdgeFade extends StatelessWidget {
   final bool showBottom;
   final bool paintOverChild;
 
+  /// Enables progressive top blur on Android, iOS and macOS. Set false to
+  /// retain tint without blur.
+  final bool enableProgressiveBlur;
+
+  /// Translucent chrome protection before the remaining top fade tapers away.
+  /// Keeps bright media from competing with system icons and fixed titles.
+  final double topProtectionExtent;
+
   @override
   Widget build(BuildContext context) {
-    final isApplePlatform = switch (defaultTargetPlatform) {
-      TargetPlatform.iOS || TargetPlatform.macOS => true,
+    final usesProgressiveMaterial = switch (defaultTargetPlatform) {
+      TargetPlatform.iOS ||
+      TargetPlatform.macOS ||
+      TargetPlatform.android => true,
       _ => false,
     };
     final brightness = UiThemeTokens.brightnessOf(context);
-    final appleFadeColor = brightness == Brightness.dark
+    final materialFadeColor = brightness == Brightness.dark
         ? const Color(0xFF000000)
         : const Color(0xFFFFFFFF);
-    final appleEdgeOpacity = maxOpacity > _appleMaxTintOpacity
-        ? _appleMaxTintOpacity
+    final materialEdgeOpacity = maxOpacity > _materialMaxTintOpacity
+        ? _materialMaxTintOpacity
         : maxOpacity;
-    final topEdgeColor = isApplePlatform
-        ? appleFadeColor.withValues(alpha: appleEdgeOpacity)
+    final topEdgeColor = usesProgressiveMaterial
+        ? materialFadeColor.withValues(alpha: materialEdgeOpacity)
         : backgroundColor.withValues(alpha: maxOpacity);
-    final transparentTopEdgeColor = isApplePlatform
-        ? appleFadeColor.withValues(alpha: 0)
+    final transparentTopEdgeColor = usesProgressiveMaterial
+        ? materialFadeColor.withValues(alpha: 0)
         : backgroundColor.withValues(alpha: 0);
     final bottomEdgeColor = topEdgeColor;
     final transparentBottomEdgeColor = transparentTopEdgeColor;
-    final topBlurSigma = isApplePlatform
-        ? UiThemeTokens.effectsOf(context).scaleBlur(_appleBlurSigma)
+    final topBlurSigma = enableProgressiveBlur && usesProgressiveMaterial
+        ? UiThemeTokens.effectsOf(context).scaleBlur(_progressiveBlurSigma)
         : 0.0;
     final effectiveTopExtent = topExtent ?? extent;
     final direction = Directionality.maybeOf(context) ?? TextDirection.ltr;
@@ -84,6 +96,9 @@ class UiScrollEdgeFade extends StatelessWidget {
         ? rightSafeBleed
         : leftSafeBleed;
 
+    final protectedFraction = effectiveTopExtent <= 0
+        ? 0.0
+        : (topProtectionExtent / effectiveTopExtent).clamp(0.0, 0.75);
     final fades = <Widget>[
       if (showTop)
         PositionedDirectional(
@@ -96,8 +111,9 @@ class UiScrollEdgeFade extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               edgeColor: topEdgeColor,
+              holdFraction: protectedFraction > 0 ? protectedFraction : null,
               transparentEdgeColor: transparentTopEdgeColor,
-              holdsEdgeColor: isApplePlatform,
+              holdsEdgeColor: usesProgressiveMaterial,
             ),
           ),
         ),
@@ -113,7 +129,7 @@ class UiScrollEdgeFade extends StatelessWidget {
               end: Alignment.topCenter,
               edgeColor: bottomEdgeColor,
               transparentEdgeColor: transparentBottomEdgeColor,
-              holdsEdgeColor: isApplePlatform,
+              holdsEdgeColor: usesProgressiveMaterial,
             ),
           ),
         ),
@@ -148,6 +164,7 @@ class _EdgeFadeMaterial extends StatelessWidget {
     required this.edgeColor,
     required this.transparentEdgeColor,
     this.holdsEdgeColor = false,
+    this.holdFraction,
   });
 
   final Alignment begin;
@@ -155,6 +172,7 @@ class _EdgeFadeMaterial extends StatelessWidget {
   final Color edgeColor;
   final Color transparentEdgeColor;
   final bool holdsEdgeColor;
+  final double? holdFraction;
 
   @override
   Widget build(BuildContext context) {
@@ -163,10 +181,12 @@ class _EdgeFadeMaterial extends StatelessWidget {
         gradient: LinearGradient(
           begin: begin,
           end: end,
-          colors: holdsEdgeColor
+          colors: holdsEdgeColor || holdFraction != null
               ? [edgeColor, edgeColor, transparentEdgeColor]
               : [edgeColor, transparentEdgeColor],
-          stops: holdsEdgeColor ? const [0, _appleFadeHold, 1] : null,
+          stops: holdsEdgeColor || holdFraction != null
+              ? [0, holdFraction ?? _materialFadeHold, 1]
+              : null,
         ),
       ),
     );
@@ -187,12 +207,34 @@ class _ContinuousProgressiveBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    // Both complementary clips must meet on the same physical pixel. An
+    // antialiased shader clip leaves a dark seam against the hard-edged child
+    // clip on Android when the measured header height is fractional.
+    final alignedExtent = (extent * pixelRatio).roundToDouble() / pixelRatio;
     return RepaintBoundary(
       child: UiShaderBuilder(
         assetKey: _progressiveBlurShader,
         child: child,
         builder: (context, shader, sampledChild) => UiShaderSampler(
           key: const Key('ui_scroll_edge_progressive_blur'),
+          paintChild: true,
+          childPaintBounds: (size) => ui.Rect.fromLTRB(
+            0,
+            math.min(alignedExtent, size.height),
+            size.width,
+            size.height,
+          ),
+          // Preserve full-resolution sampling and the full Gaussian kernel.
+          // The apron supplies vertical taps below the visible fade boundary.
+          sampleBounds: (size) => ui.Rect.fromLTWH(
+            0,
+            0,
+            size.width,
+            math.min(
+              size.height,
+              alignedExtent + (3 * sigma).ceil() / pixelRatio,
+            ),
+          ),
           painter: (image, size, canvas) {
             final pixelSize = size * pixelRatio;
             final firstPassRecorder = ui.PictureRecorder();
@@ -222,6 +264,15 @@ class _ContinuousProgressiveBlur extends StatelessWidget {
                 pixelRatio: pixelRatio,
               );
               canvas.scale(1 / pixelRatio);
+              canvas.clipRect(
+                ui.Rect.fromLTWH(
+                  0,
+                  0,
+                  pixelSize.width,
+                  math.min(pixelSize.height, alignedExtent * pixelRatio),
+                ),
+                doAntiAlias: false,
+              );
               canvas.drawRect(ui.Offset.zero & pixelSize, paint);
             } finally {
               firstPassImage.dispose();
@@ -247,6 +298,6 @@ class _ContinuousProgressiveBlur extends StatelessWidget {
     shader.setFloat(2, sigma);
     shader.setFloat(3, direction);
     shader.setFloat(4, extent * pixelRatio);
-    shader.setFloat(5, _appleFadeHold);
+    shader.setFloat(5, _materialFadeHold);
   }
 }

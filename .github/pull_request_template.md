@@ -14,7 +14,7 @@
 
 - Stack: `<bottom branch>` → `<this branch>` → `<top branch>`
 - This PR's base: `<branch>`
-- Part of #<issue> <!-- Use "Closes #<issue>" only on the layer that completes the issue. -->
+- Part of OMA-<number> — <issue URL>
 
 ## Scope
 
@@ -46,3 +46,5 @@ $ ./scripts/ci changed
 - [ ] Public API changes follow `doc/deprecation_policy.md` and update `CHANGELOG.md`
 - [ ] Golden changes are intentional, narrowly scoped, and requested
 - [ ] Full diff reviewed; no secrets, local artifacts, generated diagnostics, or unrelated changes are staged
+
+<!-- Update Linear with this PR URL and verification evidence. Use In Review while awaiting merge; Done only after all acceptance criteria and required checks pass and the required changes are merged. Legacy GitHub issues may retain their original #N links. -->

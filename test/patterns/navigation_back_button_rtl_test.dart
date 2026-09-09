@@ -134,7 +134,7 @@ void main() {
       );
     });
 
-    testWidgets('entrance fades and scales in rather than snapping open', (
+    testWidgets('history uses the shared interruptible menu morph', (
       tester,
     ) async {
       const history = [UiNavigationBackHistoryItem(title: 'Root')];
@@ -153,16 +153,11 @@ void main() {
       await tester.longPress(find.bySemanticsLabel('Library'));
       await tester.pump();
 
-      final transitionFinder = find.ancestor(
-        of: find.text('Root'),
-        matching: find.byType(FadeTransition),
-      );
-      final transition = tester.widget<FadeTransition>(transitionFinder);
-      expect(transition.opacity.value, lessThan(1.0));
-
+      final morph = tester.widget<UiFluidMorph>(find.byType(UiFluidMorph));
+      expect(morph.controller.value, lessThan(1));
+      expect(morph.controller.retargeting, isTrue);
       await tester.pumpAndSettle();
-      final settled = tester.widget<FadeTransition>(transitionFinder);
-      expect(settled.opacity.value, 1.0);
+      expect(morph.controller.value, 1);
     });
 
     testWidgets('a tall history list scrolls instead of overflowing', (
@@ -201,7 +196,14 @@ void main() {
           .getSize(find.byType(SingleChildScrollView))
           .height;
       final contentHeight = tester
-          .getSize(find.byKey(const Key('ui_navigation_back_history_content')))
+          .getSize(
+            find
+                .descendant(
+                  of: find.byType(SingleChildScrollView),
+                  matching: find.byType(Column),
+                )
+                .first,
+          )
           .height;
       expect(scrollViewHeight, lessThan(contentHeight));
     });
@@ -239,10 +241,14 @@ void main() {
         find.text('Extremely long parent page title'),
       );
       final titleRect = tester.getRect(find.text('Current title'));
-      final screenCenter = tester.getSize(find.byType(MaterialApp)).width / 2;
+      final backRect = tester.getRect(find.byType(UiNavigationBackButton));
+      final screenWidth = tester.getSize(find.byType(MaterialApp)).width;
 
       expect(labelRect.width, lessThanOrEqualTo(112));
-      expect(titleRect.center.dx, closeTo(screenCenter, 1));
+      // A long title may shift into the unused trailing space instead of
+      // truncating solely to preserve the screen center.
+      expect(titleRect.left, greaterThanOrEqualTo(backRect.right + 8));
+      expect(titleRect.right, lessThanOrEqualTo(screenWidth - 12));
     });
 
     testWidgets('sliver nav lets back labels use tablet width when available', (

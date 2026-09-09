@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'internal/ui_field_frame.dart';
 
 import 'package:flutter/services.dart';
@@ -9,6 +11,7 @@ import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiSize, UiButtonMetrics;
 import 'text_selection/ui_text_selection_controls.dart';
+import 'text_selection/ui_text_selection_toolbar.dart';
 
 typedef UiInputValidator = String? Function(String value);
 
@@ -35,6 +38,7 @@ class UiInput extends StatefulWidget {
     this.errorText,
     this.validator,
     this.onChanged,
+    this.debounceDuration,
     this.onSubmitted,
     this.focusNode,
     this.keyboardType,
@@ -67,6 +71,10 @@ class UiInput extends StatefulWidget {
   final String? errorText;
   final UiInputValidator? validator;
   final ValueChanged<String>? onChanged;
+
+  /// Delay for change callbacks. Search actions default to 300 ms; other
+  /// inputs remain immediate. Editor text always updates immediately.
+  final Duration? debounceDuration;
   final ValueChanged<String>? onSubmitted;
   final FocusNode? focusNode;
   final TextInputType? keyboardType;
@@ -93,6 +101,7 @@ class UiInput extends StatefulWidget {
 
 class UiInputState extends State<UiInput>
     implements TextSelectionGestureDetectorBuilderDelegate {
+  Timer? _changeTimer;
   TextEditingController? _ownController;
   FocusNode? _ownFocusNode;
   String? _internalError;
@@ -151,6 +160,10 @@ class UiInputState extends State<UiInput>
   void didUpdateWidget(covariant UiInput oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    if (oldWidget.controller != widget.controller ||
+        oldWidget.debounceDuration != widget.debounceDuration) {
+      _changeTimer?.cancel();
+    }
     if (oldWidget.controller != widget.controller) {
       final previousController = oldWidget.controller ?? _ownController;
       previousController?.removeListener(_handleTextChange);
@@ -176,6 +189,7 @@ class UiInputState extends State<UiInput>
 
   @override
   void dispose() {
+    _changeTimer?.cancel();
     _focusNode.removeListener(_handleFocusChange);
     _controller.removeListener(_handleTextChange);
     _ownController?.dispose();
@@ -209,7 +223,19 @@ class UiInputState extends State<UiInput>
     if (_internalError != null) {
       setState(() => _internalError = null);
     }
-    widget.onChanged?.call(value);
+    _changeTimer?.cancel();
+    final delay =
+        widget.debounceDuration ??
+        (widget.textInputAction == TextInputAction.search
+            ? const Duration(milliseconds: 300)
+            : Duration.zero);
+    if (delay == Duration.zero || value.isEmpty) {
+      widget.onChanged?.call(value);
+    } else {
+      _changeTimer = Timer(delay, () {
+        if (mounted && _controller.text == value) widget.onChanged?.call(value);
+      });
+    }
   }
 
   // Ported from Material's `_TextFieldState._shouldShowSelectionHandles` so
@@ -344,10 +370,14 @@ class UiInputState extends State<UiInput>
       selectionControls: uiAdaptiveTextSelectionControls,
       showSelectionHandles: _showSelectionHandles,
       onSelectionChanged: _handleSelectionChanged,
+      // iOS shows the OS context menu; elsewhere the kit draws the standard
+      // Material-style floating toolbar rather than a custom action sheet.
       contextMenuBuilder: (_, editableTextState) =>
           SystemContextMenu.isSupportedByField(editableTextState)
           ? SystemContextMenu.editableText(editableTextState: editableTextState)
-          : _UiTextSelectionMenu(editableTextState: editableTextState),
+          : UiTextSelectionToolbar.editableText(
+              editableTextState: editableTextState,
+            ),
       // Gesture handling is owned by the surrounding
       // TextSelectionGestureDetectorBuilder. Leaving this false lets
       // RenderEditable consume its basic gestures too, which prevents the
@@ -450,59 +480,5 @@ class UiInputState extends State<UiInput>
     // UiSelect/UiButton); multiline gets vertical breathing room.
     final vertical = (maxLines == 1) ? 0.0 : t.spacing.x2;
     return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
-  }
-}
-
-class _UiTextSelectionMenu extends StatelessWidget {
-  const _UiTextSelectionMenu({required this.editableTextState});
-
-  final EditableTextState editableTextState;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = UiThemeTokens.of(context);
-    final buttons = editableTextState.contextMenuButtonItems;
-    if (buttons.isEmpty) return const SizedBox.shrink();
-
-    return CustomSingleChildLayout(
-      delegate: TextSelectionToolbarLayoutDelegate(
-        anchorAbove: editableTextState.contextMenuAnchors.primaryAnchor,
-        anchorBelow:
-            editableTextState.contextMenuAnchors.secondaryAnchor ??
-            editableTextState.contextMenuAnchors.primaryAnchor,
-        fitsAbove: true,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: tokens.colors.card,
-          border: Border.all(color: tokens.colors.border),
-          borderRadius: tokens.radius.mdAll,
-          boxShadow: tokens.shadows.md,
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.x1),
-          child: Wrap(
-            spacing: tokens.spacing.x1,
-            children: [
-              for (final button in buttons)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: button.onPressed,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spacing.x3,
-                      vertical: tokens.spacing.x2,
-                    ),
-                    child: UiText(
-                      button.label ?? button.type.name,
-                      variant: UiTextVariant.label,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -20,6 +20,8 @@ void main() {
             child: StatefulBuilder(
               builder: (context, setState) {
                 return UiBottomTabScaffold(
+                  overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+                  maxVisibleBottomItems: 3,
                   items: _items,
                   currentIndex: index,
                   onChanged: (i) => setState(() => index = i),

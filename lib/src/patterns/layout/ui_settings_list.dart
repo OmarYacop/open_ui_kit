@@ -7,6 +7,7 @@ import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_divider.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/theme/ui_text_scale.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
 /// Grouped settings/action list pattern.
@@ -205,6 +206,9 @@ class _SettingsItemRow extends StatelessWidget {
     final effectiveSelected =
         selected &&
         (item.showSelectedOnPhone || formFactor != UiFormFactor.phone);
+    // The leading tile is chrome: it and its icon grow together up to
+    // [kUiChromeScaleMax]. Trailing icons ride the full text scale.
+    final chromeScale = uiChromeScale(context);
 
     final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 76),
@@ -223,8 +227,8 @@ class _SettingsItemRow extends StatelessWidget {
               children: [
                 if (item.leading != null) ...[
                   UiBox(
-                    width: 36,
-                    height: 36,
+                    width: 36 * chromeScale,
+                    height: 36 * chromeScale,
                     background: effectiveSelected
                         ? tokens.colors.primary
                         : tokens.colors.surfaceMuted,
@@ -235,7 +239,8 @@ class _SettingsItemRow extends StatelessWidget {
                         color: effectiveSelected
                             ? tokens.colors.onPrimary
                             : tokens.colors.textPrimary,
-                        size: 20,
+                        size: 20 * chromeScale,
+                        applyTextScaling: false,
                       ),
                       child: item.leading!,
                     ),
@@ -276,12 +281,21 @@ class _SettingsItemRow extends StatelessWidget {
                   ),
                 ],
                 SizedBox(width: tokens.spacing.x2),
-                item.trailing ??
-                    Icon(
-                      UiDirectionalIcons.chevronForward(context),
-                      size: 20,
-                      color: tokens.colors.textMuted,
-                    ),
+                // Custom trailing widgets inherit a themed icon color, like
+                // leading icons, so bare check marks adapt to the theme.
+                IconTheme.merge(
+                  data: IconThemeData(
+                    color: item.trailing == null
+                        ? tokens.colors.textMuted
+                        : effectiveSelected
+                        ? tokens.colors.primary
+                        : tokens.colors.textPrimary,
+                    size: 20,
+                  ),
+                  child:
+                      item.trailing ??
+                      Icon(UiDirectionalIcons.chevronForward(context)),
+                ),
               ],
             ),
             if (item.actions.isNotEmpty) ...[

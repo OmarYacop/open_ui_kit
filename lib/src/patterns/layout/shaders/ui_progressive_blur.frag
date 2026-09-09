@@ -26,14 +26,14 @@ void main() {
     1.0
   );
   // The tint begins fading at edge_progress == 1.0 and reaches full strength
-  // at 0.12. Use those same boundaries, with a sub-linear exponent so blur
-  // becomes perceptible quickly as content enters the fade.
+  // at 0.12. Ease gently into and out of the same range so content does not
+  // acquire noticeable blur immediately upon crossing the fade boundary.
   float fade_value = clamp(
     (1.0 - edge_progress) / max(1.0 - fade_hold, 0.001),
     0.0,
     1.0
   );
-  float blur_value = pow(fade_value, 0.55);
+  float blur_value = smoothstep(0.0, 1.0, fade_value);
 
   float sigma = blur_sigma * blur_value;
   if (sigma < 1e-5) {

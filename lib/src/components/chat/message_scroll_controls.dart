@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter/physics.dart';
 
@@ -5,6 +7,20 @@ import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
+
+// Keep visual chrome separate from the accessible touch target. Both controls
+// use the same height, including when larger text needs extra room.
+double _scrollControlExtent(BuildContext context) {
+  final style = UiThemeTokens.of(context).typography.bodySm;
+  final textHeight =
+      MediaQuery.textScalerOf(context).scale(style.fontSize ?? 14) *
+      (style.height ?? 1.4);
+  return math.max(34, textHeight.ceilToDouble() + 8);
+}
+
+// Space already reserved around the surface by the 44px touch target.
+double _scrollControlHitInset(BuildContext context) =>
+    math.max(0, (44 - _scrollControlExtent(context)) / 2);
 
 /// Circular control that returns a conversation to its live edge.
 class UiMessageScrollToBottomButton extends StatelessWidget {
@@ -27,27 +43,38 @@ class UiMessageScrollToBottomButton extends StatelessWidget {
     return UiPressable(
       onPressed: onPressed,
       semanticsLabel: semanticLabel,
-      minTapSize: 32,
-      builder: (context, state, child) => AnimatedScale(
-        scale: state.pressed ? .94 : 1,
-        duration: tokens.motion.fast,
-        curve: tokens.motion.standardCurve,
-        child: child,
+      minTapSize: 44,
+      builder: (context, state, child) => Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: AnimatedScale(
+          scale: state.pressed ? .96 : 1,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : tokens.motion.fast,
+          curve: tokens.motion.standardCurve,
+          child: child,
+        ),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           UiBox(
-            width: 32,
-            height: 32,
+            width: _scrollControlExtent(context),
+            height: _scrollControlExtent(context),
             alignment: Alignment.center,
             background: tokens.colors.secondary,
+            border: tokens.brightness == Brightness.light
+                ? Border.all(color: tokens.colors.border)
+                : null,
             borderRadius: tokens.radius.pillAll,
-            boxShadow: tokens.shadows.sm,
+            boxShadow: tokens.brightness == Brightness.light
+                ? null
+                : tokens.shadows.sm,
             child: SizedBox.square(
-              dimension: 16,
+              dimension: 20,
               child: CustomPaint(
-                painter: _DownArrowPainter(tokens.colors.primary),
+                painter: _DownArrowPainter(tokens.colors.textPrimary),
               ),
             ),
           ),
@@ -119,13 +146,13 @@ class UiMessageQueueBadge extends StatelessWidget {
         child: UiBox(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 5),
-          background: tokens.colors.primary,
+          background: tokens.colors.surfaceMuted,
           borderRadius: tokens.radius.pillAll,
           child: UiText(
             label,
             variant: UiTextVariant.caption,
             style: TextStyle(
-              color: tokens.colors.onPrimary,
+              color: tokens.colors.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -154,15 +181,28 @@ class UiMessageReplyReturnButton extends StatelessWidget {
     return UiPressable(
       onPressed: onPressed,
       semanticsLabel: semanticLabel,
-      minTapSize: 32,
-      builder: (context, state, child) => AnimatedScale(
-        scale: state.pressed ? .96 : 1,
-        duration: tokens.motion.fast,
-        curve: tokens.motion.standardCurve,
-        child: child,
+      minTapSize: 44,
+      builder: (context, state, child) => Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: AnimatedScale(
+          scale: state.pressed ? .96 : 1,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : tokens.motion.fast,
+          curve: tokens.motion.standardCurve,
+          child: Padding(
+            // Give the wide reply control the same invisible horizontal inset
+            // as the circular latest control, without changing its surface.
+            padding: EdgeInsets.symmetric(
+              horizontal: _scrollControlHitInset(context),
+            ),
+            child: child,
+          ),
+        ),
       ),
       child: UiBox(
-        height: 32,
+        height: _scrollControlExtent(context),
         padding: const EdgeInsets.symmetric(horizontal: 10),
         alignment: Alignment.center,
         background: tokens.colors.secondary,
@@ -173,18 +213,18 @@ class UiMessageReplyReturnButton extends StatelessWidget {
           children: [
             UiText(
               '@',
-              variant: UiTextVariant.label,
+              variant: UiTextVariant.bodySm,
               style: TextStyle(
-                color: tokens.colors.primary,
+                color: tokens.colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(width: 4),
             UiText(
               '$count',
-              variant: UiTextVariant.label,
+              variant: UiTextVariant.bodySm,
               style: TextStyle(
-                color: tokens.colors.primary,
+                color: tokens.colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -222,10 +262,17 @@ class UiMessageScrollControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final showReplyReturn = replyReturnCount > 0 && onReplyReturn != null;
+    final hitInset = _scrollControlHitInset(context);
+    final chromePadding = math.max(0.0, tokens.spacing.x1 - hitInset);
+    final controlGap = math.max(0.0, tokens.spacing.x2 - 2 * hitInset);
     const standardCurve = Cubic(.4, 0, .2, 1);
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
+      reverseDuration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
       switchInCurve: standardCurve,
       switchOutCurve: standardCurve,
       transitionBuilder: (child, animation) {
@@ -251,11 +298,13 @@ class UiMessageScrollControls extends StatelessWidget {
           ? TweenAnimationBuilder<double>(
               key: const ValueKey('message-scroll-controls'),
               tween: Tween<double>(begin: 0, end: showReplyReturn ? 1 : 0),
-              duration: Duration(milliseconds: showReplyReturn ? 200 : 150),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : Duration(milliseconds: showReplyReturn ? 200 : 150),
               curve: showReplyReturn ? Curves.easeOutCubic : Curves.easeIn,
               builder: (context, chromeProgress, child) => UiBox(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: EdgeInsets.all(4 * chromeProgress),
+                padding: EdgeInsets.all(chromePadding * chromeProgress),
                 background: tokens.colors.background.withValues(
                   alpha: .7 * chromeProgress,
                 ),
@@ -285,7 +334,7 @@ class UiMessageScrollControls extends StatelessWidget {
                     child: showReplyReturn
                         ? Padding(
                             padding: EdgeInsetsDirectional.only(
-                              end: tokens.spacing.x2,
+                              end: controlGap,
                             ),
                             child: UiMessageReplyReturnButton(
                               count: replyReturnCount,
@@ -340,8 +389,13 @@ class _ReplyReturnTransitionState extends State<_ReplyReturnTransition>
     super.didUpdateWidget(oldWidget);
     if (widget.child != null) {
       _retainedChild = widget.child;
-      _animateIn();
+      if (oldWidget.child == null) _animateIn();
     } else if (oldWidget.child != null) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.value = 0;
+        _retainedChild = null;
+        return;
+      }
       _controller
           .animateWith(
             SpringSimulation(
@@ -360,6 +414,10 @@ class _ReplyReturnTransitionState extends State<_ReplyReturnTransition>
   }
 
   void _animateIn() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+      return;
+    }
     _controller.animateWith(
       SpringSimulation(
         const SpringDescription(mass: 1, stiffness: 320, damping: 26),
@@ -391,6 +449,7 @@ class _ReplyReturnTransitionState extends State<_ReplyReturnTransition>
           child: Align(
             alignment: revealAlignment,
             widthFactor: progress,
+            heightFactor: 1,
             child: Opacity(
               opacity: _controller.value.clamp(0.0, 1.0),
               child: Transform.scale(

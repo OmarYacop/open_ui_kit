@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../foundation/primitives/ui_box.dart';
+import '../../foundation/primitives/ui_action_surface_owner.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_progress.dart';
@@ -75,7 +76,11 @@ class UiButton extends StatelessWidget {
     this.semanticsLabel,
     this.boxShadow,
     this.showBorder = true,
+    this.borderRadius,
   });
+
+  /// Optional shape override; defaults to the theme button radius.
+  final BorderRadius? borderRadius;
 
   /// Visible button text.
   final String label;
@@ -127,7 +132,7 @@ class UiButton extends StatelessWidget {
     final tokens = UiThemeTokens.of(context);
     final padding = _paddingFor(size, tokens.spacing);
     final minHeight = _minHeightFor(size);
-    final radius = tokens.radius.mdAll;
+    final radius = borderRadius ?? tokens.radius.mdAll;
     final textStyle = _textStyleFor(size, tokens);
 
     final button = UiPressable(
@@ -139,6 +144,7 @@ class UiButton extends StatelessWidget {
       minTapSize: 44,
       builder: (context, state, _) {
         final style = _resolveStyle(tokens.colors, intent, state);
+        final owned = UiActionSurfaceOwner.owns(context, style.background);
         final reduceMotion =
             MediaQuery.maybeDisableAnimationsOf(context) ?? false;
         final scale = state.pressed && !reduceMotion ? 0.97 : 1.0;
@@ -153,12 +159,14 @@ class UiButton extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: minHeight),
                 child: UiBox(
-                  background: style.background,
+                  background: owned
+                      ? const Color(0x00000000)
+                      : style.background,
                   borderRadius: radius,
-                  border: showBorder && style.border != null
+                  border: !owned && showBorder && style.border != null
                       ? Border.all(color: style.border!, width: 1)
                       : null,
-                  boxShadow: boxShadow,
+                  boxShadow: owned ? null : boxShadow,
                   padding: padding,
                   alignment: expand ? Alignment.center : null,
                   width: expand ? double.infinity : null,
