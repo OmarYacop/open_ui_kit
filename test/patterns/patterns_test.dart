@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:open_ui_kit/open_ui_kit.dart';
 
 Widget _host(Widget child) {
@@ -42,6 +43,26 @@ class _LifecycleProbeState extends State<_LifecycleProbe> {
 
 void main() {
   group('UiMessageBubble', () {
+    testWidgets('renders image and video attachment payloads', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const UiMessageBubble(
+            text: '',
+            author: UiMessageAuthor.outgoing,
+            attachments: [
+              UiChatAttachment(name: 'photo.jpg', mimeType: 'image/jpeg'),
+              UiChatAttachment(name: 'clip.mp4', mimeType: 'video/mp4'),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('photo.jpg'), findsOneWidget);
+      expect(find.text('clip.mp4'), findsOneWidget);
+      expect(find.byIcon(LucideIcons.video), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('outgoing uses primary background; incoming uses muted', (
       tester,
     ) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_pressable.dart';
@@ -10,6 +11,59 @@ enum UiAttachmentState { idle, uploading, processing, error, done }
 enum UiAttachmentSize { sm, md, lg }
 
 enum UiAttachmentOrientation { horizontal, vertical }
+
+/// The UI-facing attachment payload expected by chat components.
+///
+/// The host owns selection, upload, authentication, and playback. `mimeType`
+/// should be the server-provided MIME type (for example `video/mp4`), while
+/// [media] is an optional already-authorized thumbnail or preview widget.
+class UiChatAttachment {
+  const UiChatAttachment({
+    required this.name,
+    required this.mimeType,
+    this.id,
+    this.sizeBytes,
+    this.media,
+    this.description,
+    this.state = UiAttachmentState.done,
+    this.progress,
+  }) : assert(progress == null || (progress >= 0 && progress <= 1));
+
+  final String name;
+  final String mimeType;
+  final String? id;
+  final int? sizeBytes;
+  final Widget? media;
+  final String? description;
+  final UiAttachmentState state;
+  final double? progress;
+
+  UiChatAttachmentKind get kind => UiChatAttachmentKind.fromMimeType(mimeType);
+}
+
+enum UiChatAttachmentKind {
+  image,
+  video,
+  audio,
+  file;
+
+  static UiChatAttachmentKind fromMimeType(String mimeType) {
+    final normalized = mimeType.trim().toLowerCase();
+    if (normalized.startsWith('image/')) return UiChatAttachmentKind.image;
+    if (normalized.startsWith('video/')) return UiChatAttachmentKind.video;
+    if (normalized.startsWith('audio/')) return UiChatAttachmentKind.audio;
+    return UiChatAttachmentKind.file;
+  }
+
+  IconData get icon {
+    return switch (this) {
+      UiChatAttachmentKind.image => LucideIcons.image,
+      UiChatAttachmentKind.video => LucideIcons.video,
+      UiChatAttachmentKind.audio => LucideIcons.audioLines,
+      UiChatAttachmentKind.file => LucideIcons.file,
+    };
+  }
+}
 
 /// A media attachment with metadata and deterministic transfer state.
 ///
@@ -209,6 +263,47 @@ class _AttachmentProgress extends StatelessWidget {
                 ),
               ),
       ),
+    );
+  }
+}
+
+/// Renders a chat attachment payload with a type-appropriate fallback.
+class UiChatAttachmentPreview extends StatelessWidget {
+  const UiChatAttachmentPreview({
+    super.key,
+    required this.attachment,
+    this.size = UiAttachmentSize.md,
+    this.orientation = UiAttachmentOrientation.horizontal,
+    this.actions = const [],
+    this.onPressed,
+    this.onLongPress,
+    this.semanticLabel,
+  });
+
+  final UiChatAttachment attachment;
+  final UiAttachmentSize size;
+  final UiAttachmentOrientation orientation;
+  final List<Widget> actions;
+  final VoidCallback? onPressed;
+  final VoidCallback? onLongPress;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final description = attachment.description ?? attachment.mimeType;
+    final media = attachment.media ?? Icon(attachment.kind.icon);
+    return UiAttachment(
+      title: attachment.name,
+      description: description,
+      media: media,
+      actions: actions,
+      state: attachment.state,
+      progress: attachment.progress,
+      size: size,
+      orientation: orientation,
+      onPressed: onPressed,
+      onLongPress: onLongPress,
+      semanticLabel: semanticLabel,
     );
   }
 }

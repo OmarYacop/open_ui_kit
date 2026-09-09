@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../components/chat/bubble.dart';
+import '../../components/chat/attachment.dart';
 import '../../components/chat/message.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -23,6 +24,7 @@ class UiMessageBubble extends StatelessWidget {
     this.status = UiMessageStatus.sent,
     this.timestamp,
     this.leading,
+    this.attachments = const [],
   });
 
   final String text;
@@ -30,6 +32,12 @@ class UiMessageBubble extends StatelessWidget {
   final UiMessageStatus status;
   final String? timestamp;
   final Widget? leading;
+
+  /// Attachments are rendered in their supplied order above the message text.
+  ///
+  /// Selection and upload remain host-owned; each payload must provide a
+  /// normalized MIME type and may provide an authorized preview widget.
+  final List<UiChatAttachment> attachments;
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +66,32 @@ class UiMessageBubble extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 320),
           child: Opacity(
             opacity: status == UiMessageStatus.pending ? .7 : 1,
-            child: UiText(
-              text,
-              variant: UiTextVariant.body,
-              style: TextStyle(
-                color: isOutgoing ? colors.onPrimary : colors.onSecondary,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (attachments.isNotEmpty)
+                  UiAttachmentGroup(
+                    itemWidth: 280,
+                    children: [
+                      for (final attachment in attachments)
+                        UiChatAttachmentPreview(
+                          attachment: attachment,
+                          size: UiAttachmentSize.sm,
+                        ),
+                    ],
+                  ),
+                if (attachments.isNotEmpty && text.isNotEmpty)
+                  const SizedBox(height: 8),
+                if (text.isNotEmpty)
+                  UiText(
+                    text,
+                    variant: UiTextVariant.body,
+                    style: TextStyle(
+                      color: isOutgoing ? colors.onPrimary : colors.onSecondary,
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

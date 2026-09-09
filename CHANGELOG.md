@@ -36,6 +36,11 @@
 
 ### Added
 
+- Add MIME-aware `UiChatAttachment` payloads and video/audio/file fallbacks,
+  plus attachment rendering in `UiMessageBubble`. Selection and upload remain
+  host-owned; payloads use normalized MIME types and optional authorized
+  preview widgets.
+
 - Separate success/warning foreground color tokens for readable tinted surfaces.
 - Compatible English/Arabic localization hooks for alert, table, rating, slider,
   and calendar text.
