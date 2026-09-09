@@ -32,8 +32,9 @@ class UiNavigatorHistoryObserver extends NavigatorObserver with ChangeNotifier {
   /// turn into a synchronous rebuild request) is invalid. The title is
   /// still current by the time anything else reads [historyItems].
   void registerTitle(Route<dynamic> route, String title) {
-    if (_stack.contains(route) && title.trim().isNotEmpty) {
-      _titles[route] = title;
+    final normalizedTitle = title.trim();
+    if (_stack.contains(route) && normalizedTitle.isNotEmpty) {
+      _titles[route] = normalizedTitle;
     }
   }
 

@@ -6,6 +6,22 @@ import 'package:open_ui_kit/open_ui_kit.dart';
 /// its title to the back-history stack, and a page that suppresses its large
 /// title still contributes its compact title.
 void main() {
+  testWidgets('registered history titles trim surrounding whitespace', (
+    tester,
+  ) async {
+    final observer = UiNavigatorHistoryObserver();
+    final first = MaterialPageRoute<void>(builder: (_) => const SizedBox());
+    final second = MaterialPageRoute<void>(builder: (_) => const SizedBox());
+    observer.didPush(first, null);
+    observer.registerTitle(first, '  Account  ');
+    observer.didPush(second, first);
+    expect(observer.historyItems().single.title, 'Account');
+    observer.registerTitle(first, '   ');
+    expect(observer.historyItems().single.title, 'Account');
+    await tester.pump();
+    observer.dispose();
+  });
+
   testWidgets(
     'history behind a page pushed from a tab names that tab, not a sibling',
     (tester) async {
