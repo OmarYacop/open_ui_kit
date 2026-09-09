@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import '../effects/ui_effects_tokens.dart';
 import '../motion/ui_motion_tokens.dart';
 import '../tokens/ui_color_tokens.dart';
+import '../tokens/ui_menu_tokens.dart';
+import '../tokens/ui_bottom_navigation_tokens.dart';
 import '../tokens/ui_radius_tokens.dart';
 import '../tokens/ui_shadow_tokens.dart';
 import '../tokens/ui_spacing_tokens.dart';
@@ -17,6 +19,8 @@ enum UiThemeAspect {
   typography,
   motion,
   effects,
+  menu,
+  bottomNavigation,
   brightness,
 }
 
@@ -31,6 +35,8 @@ class UiThemeTokens {
     required this.typography,
     required this.motion,
     this.effects = UiEffectsTokens.adaptive,
+    this.menu = UiMenuTokens.defaults,
+    this.bottomNavigation = UiBottomNavigationTokens.defaults,
     this.brightness = Brightness.light,
   });
 
@@ -41,6 +47,8 @@ class UiThemeTokens {
   final UiTypographyTokens typography;
   final UiMotionTokens motion;
   final UiEffectsTokens effects;
+  final UiMenuTokens menu;
+  final UiBottomNavigationTokens bottomNavigation;
   final Brightness brightness;
 
   static UiThemeTokens light = UiThemeTokens(
@@ -99,6 +107,12 @@ class UiThemeTokens {
   static UiTypographyTokens typographyOf(BuildContext context) =>
       _ofAspect(context, UiThemeAspect.typography).typography;
 
+  /// Resolves menu defaults and rebuilds when menu tokens change.
+  static UiMenuTokens menuOf(BuildContext context) =>
+      _ofAspect(context, UiThemeAspect.menu).menu;
+  static UiBottomNavigationTokens bottomNavigationOf(BuildContext context) =>
+      _ofAspect(context, UiThemeAspect.bottomNavigation).bottomNavigation;
+
   /// Resolves motion tokens and only the accessibility preference they use.
   static UiMotionTokens motionOf(BuildContext context) {
     final motion = _ofAspect(context, UiThemeAspect.motion).motion;
@@ -150,6 +164,8 @@ class UiThemeTokens {
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
     UiEffectsTokens? effects,
+    UiMenuTokens? menu,
+    UiBottomNavigationTokens? bottomNavigation,
     Brightness? brightness,
   }) {
     return UiThemeTokens(
@@ -160,6 +176,8 @@ class UiThemeTokens {
       typography: typography ?? this.typography,
       motion: motion ?? this.motion,
       effects: effects ?? this.effects,
+      menu: menu ?? this.menu,
+      bottomNavigation: bottomNavigation ?? this.bottomNavigation,
       brightness: brightness ?? this.brightness,
     );
   }
@@ -173,6 +191,12 @@ class UiThemeTokens {
       typography: UiTypographyTokens.lerp(typography, other.typography, t),
       motion: UiMotionTokens.lerp(motion, other.motion, t),
       effects: UiEffectsTokens.lerp(effects, other.effects, t),
+      menu: UiMenuTokens.lerp(menu, other.menu, t),
+      bottomNavigation: UiBottomNavigationTokens.lerp(
+        bottomNavigation,
+        other.bottomNavigation,
+        t,
+      ),
       brightness: t < 0.5 ? brightness : other.brightness,
     );
   }
@@ -188,6 +212,8 @@ class UiThemeTokens {
           typography == other.typography &&
           motion == other.motion &&
           effects == other.effects &&
+          menu == other.menu &&
+          bottomNavigation == other.bottomNavigation &&
           brightness == other.brightness;
 
   @override
@@ -199,6 +225,8 @@ class UiThemeTokens {
     typography,
     motion,
     effects,
+    menu,
+    bottomNavigation,
     brightness,
   );
 }
@@ -231,6 +259,9 @@ class UiTheme extends InheritedModel<UiThemeAspect> {
         UiThemeAspect.typography => tokens.typography != old.typography,
         UiThemeAspect.motion => tokens.motion != old.motion,
         UiThemeAspect.effects => tokens.effects != old.effects,
+        UiThemeAspect.menu => tokens.menu != old.menu,
+        UiThemeAspect.bottomNavigation =>
+          tokens.bottomNavigation != old.bottomNavigation,
         UiThemeAspect.brightness => tokens.brightness != old.brightness,
       },
     );

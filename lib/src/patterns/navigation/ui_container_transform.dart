@@ -3,8 +3,11 @@ import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/motion/ui_fluid_motion.dart';
+import '../../foundation/motion/ui_fluid_route_motion.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/motion/ui_shared_morph.dart';
+import '../../foundation/primitives/ui_corner_clip.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 
@@ -167,6 +170,13 @@ enum UiContainerTransformStyle {
   /// Expands a colored source plate while revealing full-size destination
   /// content through an animated rounded clip.
   iosZoom,
+
+  /// Experimental: the [iosZoom] Hero rig driven by the kit's fluid sampler
+  /// ([UiFluidRouteMotion]). The source briefly gathers, then springs into
+  /// the page with a bounded overshoot; content cross-fades on the same
+  /// clock and corners use the continuous [UiCornerClip]. Pops and
+  /// edge-swipe gestures fly back on a monotonic ease. See ADR 0006.
+  fluidZoom,
 }
 
 /// How the route behind an iOS-style container transform is separated from
@@ -440,6 +450,7 @@ class UiOpenContainer extends StatefulWidget {
     this.centerPullStrength = 0.65,
     this.iosZoomSourceRadiusFraction =
         UiContainerTransformGeometry.iosSourceCornerFraction,
+    this.fluidMotion = const UiFluidRouteMotion(),
     this.useRootNavigator = false,
   }) : assert(
          iosZoomSourceRadiusFraction > 0 && iosZoomSourceRadiusFraction <= 0.5,
@@ -488,6 +499,10 @@ class UiOpenContainer extends StatefulWidget {
   /// Controls the compact source's normalized corner geometry when
   /// [sourceBorderRadius] is not supplied.
   final double iosZoomSourceRadiusFraction;
+
+  /// Experimental: sampler tuning for [UiContainerTransformStyle.fluidZoom].
+  /// Ignored by the other styles.
+  final UiFluidRouteMotion fluidMotion;
   final bool useRootNavigator;
 
   @override
@@ -533,7 +548,7 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
     final origin = source.localToGlobal(Offset.zero, ancestor: overlay);
     final sourceRect = origin & source.size;
     final tokens = UiThemeTokens.of(context);
-    final usesIosZoom = widget.style == UiContainerTransformStyle.iosZoom;
+    final usesIosZoom = widget.style != UiContainerTransformStyle.container;
     final sourceBorderRadius =
         widget.sourceBorderRadius ??
         (usesIosZoom
@@ -567,6 +582,7 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
             sourceFlightLayout: widget.sourceFlightLayout,
             pathMotion: widget.pathMotion,
             centerPullStrength: widget.centerPullStrength,
+            fluidMotion: _fluidMotion,
             pageBuilder: widget.pageBuilder,
           ),
         );
@@ -590,6 +606,11 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
       if (mounted) setState(() {});
     }
   }
+
+  UiFluidRouteMotion? get _fluidMotion =>
+      widget.style == UiContainerTransformStyle.fluidZoom
+      ? widget.fluidMotion
+      : null;
 
   _ResolvedContainerBackdrop _resolveBackdrop(UiThemeTokens tokens) {
     final legacySigma = widget.backdropBlurSigma;
@@ -644,7 +665,7 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.style == UiContainerTransformStyle.iosZoom) {
+    if (widget.style != UiContainerTransformStyle.container) {
       final tokens = UiThemeTokens.of(context);
       final motion = _resolveMotion(context);
       final contentOcclusion = _resolveContentOcclusion(tokens);
@@ -690,6 +711,7 @@ class _UiOpenContainerState extends State<UiOpenContainer> {
                 sourceFlightLayout: widget.sourceFlightLayout,
                 pathMotion: widget.pathMotion,
                 centerPullStrength: widget.centerPullStrength,
+                fluidMotion: _fluidMotion,
                 child: UiPressable(
                   minTapSize: 0,
                   onPressed: _open,
@@ -842,6 +864,7 @@ class _UiSharedContainerHero extends StatelessWidget {
     required this.pathMotion,
     required this.centerPullStrength,
     required this.child,
+    this.fluidMotion,
     this.border,
     this.boxShadow,
   });
@@ -858,24 +881,34 @@ class _UiSharedContainerHero extends StatelessWidget {
   final UiContainerSourceFlightLayout sourceFlightLayout;
   final UiContainerPathMotion pathMotion;
   final double centerPullStrength;
+
+  /// Non-null for [UiContainerTransformStyle.fluidZoom].
+  final UiFluidRouteMotion? fluidMotion;
   final Border? border;
   final List<BoxShadow>? boxShadow;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final fluidMotion = this.fluidMotion;
     return Hero(
       tag: tag,
       transitionOnUserGestures: true,
       curve: Curves.linear,
       reverseCurve: Curves.linear,
-      createRectTween: (begin, end) => _UiSharedContainerRectTween(
-        begin: begin,
-        end: end,
-        curve: curve,
-        pathMotion: pathMotion,
-        centerPullStrength: centerPullStrength,
-      ),
+      createRectTween: (begin, end) => fluidMotion != null
+          ? _UiFluidContainerRectTween(
+              begin: begin,
+              end: end,
+              motion: fluidMotion,
+            )
+          : _UiSharedContainerRectTween(
+              begin: begin,
+              end: end,
+              curve: curve,
+              pathMotion: pathMotion,
+              centerPullStrength: centerPullStrength,
+            ),
       flightShuttleBuilder: _buildFlight,
       child: _UiSharedContainerSurface(
         role: role,
@@ -885,6 +918,7 @@ class _UiSharedContainerHero extends StatelessWidget {
         backgroundColor: backgroundColor,
         border: border,
         boxShadow: boxShadow,
+        continuousCorners: fluidMotion != null,
         child: child,
       ),
     );
@@ -904,6 +938,17 @@ class _UiSharedContainerHero extends StatelessWidget {
     final compact = from.role == _UiSharedContainerRole.compact ? from : to;
     final expanded = from.role == _UiSharedContainerRole.expanded ? from : to;
 
+    final fluidMotion = this.fluidMotion;
+    if (fluidMotion != null) {
+      return _UiFluidContainerFlight(
+        animation: animation,
+        compact: compact,
+        expanded: expanded,
+        direction: direction,
+        motion: fluidMotion,
+        sourceFlightLayout: sourceFlightLayout,
+      );
+    }
     return _UiSharedContainerFlight(
       animation: animation,
       compact: compact,
@@ -930,6 +975,7 @@ class _UiSharedContainerSurface extends StatelessWidget {
     required this.child,
     this.border,
     this.boxShadow,
+    this.continuousCorners = false,
   });
 
   final _UiSharedContainerRole role;
@@ -939,10 +985,33 @@ class _UiSharedContainerSurface extends StatelessWidget {
   final Color backgroundColor;
   final Border? border;
   final List<BoxShadow>? boxShadow;
+
+  /// Fluid zoom paints and clips with the token corner style so the resting
+  /// surface matches its in-flight [UiCornerClip] outline.
+  final bool continuousCorners;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final scope = UiContainerFlightScope(
+      progress: role == _UiSharedContainerRole.compact ? 0 : 1,
+      size: naturalSize,
+      borderRadius: borderRadius,
+      inFlight: false,
+      direction: null,
+      child: child,
+    );
+    if (continuousCorners) {
+      return DecoratedBox(
+        decoration: UiThemeTokens.radiusOf(context).decoration(
+          color: backgroundColor,
+          borderRadius: borderRadius,
+          border: border,
+          boxShadow: boxShadow,
+        ),
+        child: UiCornerClip(borderRadius: borderRadius, child: scope),
+      );
+    }
     return DecoratedBox(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -953,14 +1022,7 @@ class _UiSharedContainerSurface extends StatelessWidget {
       child: ClipRRect(
         borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
-        child: UiContainerFlightScope(
-          progress: role == _UiSharedContainerRole.compact ? 0 : 1,
-          size: naturalSize,
-          borderRadius: borderRadius,
-          inFlight: false,
-          direction: null,
-          child: child,
-        ),
+        child: scope,
       ),
     );
   }
@@ -1354,6 +1416,169 @@ class _UiSharedContainerRectTween extends RectTween {
   }
 }
 
+/// Experimental: Hero rect tween for [UiContainerTransformStyle.fluidZoom].
+///
+/// Hero evaluates its rect tween from `begin` to `end` along the flight, so
+/// on pop `begin` is the expanded page rect. The compact rect is always the
+/// smaller one; direction is inferred from that and closing samples the
+/// monotonic path so the page never overshoots its source or the viewport.
+class _UiFluidContainerRectTween extends RectTween {
+  _UiFluidContainerRectTween({
+    required super.begin,
+    required super.end,
+    required this.motion,
+  });
+
+  final UiFluidRouteMotion motion;
+
+  @override
+  Rect lerp(double t) {
+    final a = begin!;
+    final b = end!;
+    final popping = a.width * a.height > b.width * b.height;
+    final source = popping ? b : a;
+    final destination = popping ? a : b;
+    // Corners never influence the sampled rect; the shuttle owns them.
+    return motion
+        .sample(
+          source: UiFluidGeometry(source, 0),
+          destination: UiFluidGeometry(destination, 0),
+          progress: popping ? 1 - t : t,
+          monotonic: popping,
+          bounds: a.expandToInclude(b),
+        )
+        .geometry
+        .rect;
+  }
+}
+
+/// Experimental shuttle for [UiContainerTransformStyle.fluidZoom]. Corners
+/// and the content cross-fade come from the same sampled frame that drives
+/// the Hero rect, so outline and content never drift apart.
+class _UiFluidContainerFlight extends StatelessWidget {
+  const _UiFluidContainerFlight({
+    required this.animation,
+    required this.compact,
+    required this.expanded,
+    required this.direction,
+    required this.motion,
+    required this.sourceFlightLayout,
+  });
+
+  final Animation<double> animation;
+  final _UiSharedContainerSurface compact;
+  final _UiSharedContainerSurface expanded;
+  final HeroFlightDirection direction;
+  final UiFluidRouteMotion motion;
+  final UiContainerSourceFlightLayout sourceFlightLayout;
+
+  @override
+  Widget build(BuildContext context) {
+    final source = UiFluidGeometry(
+      Offset.zero & compact.naturalSize,
+      0,
+      corners: compact.borderRadius,
+    );
+    final destination = UiFluidGeometry(
+      Offset.zero & expanded.naturalSize,
+      0,
+      corners: expanded.borderRadius,
+    );
+    final radiusTokens = UiThemeTokens.radiusOf(context);
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        // The shuttle animation is route-driven: 1 is fully open in both
+        // directions, unlike the rect tween's flight-relative clock.
+        final progress = animation.value.clamp(0.0, 1.0);
+        final frame = motion.sample(
+          source: source,
+          destination: destination,
+          progress: progress,
+          monotonic: direction == HeroFlightDirection.pop,
+        );
+        final radius = frame.geometry.borderRadius;
+        final lift = math.sin(progress * math.pi);
+        return LayoutBuilder(
+          builder: (context, constraints) => DecoratedBox(
+            key: const Key('ui_fluid_zoom_plate'),
+            decoration: radiusTokens.decoration(
+              color: Color.lerp(
+                compact.backgroundColor,
+                expanded.backgroundColor,
+                progress,
+              ),
+              borderRadius: radius,
+              border: Border.lerp(compact.border, expanded.border, progress),
+              boxShadow: [
+                ...?BoxShadow.lerpList(
+                  compact.boxShadow,
+                  expanded.boxShadow,
+                  progress,
+                ),
+                BoxShadow(
+                  color: const Color(0x26000000).withValues(alpha: 0.15 * lift),
+                  blurRadius: 28 * lift,
+                  offset: Offset(0, 10 * lift),
+                ),
+              ],
+            ),
+            child: UiCornerClip(
+              borderRadius: radius,
+              child: UiContainerFlightScope(
+                progress: progress,
+                size: constraints.biggest,
+                borderRadius: radius,
+                inFlight: true,
+                direction: direction == HeroFlightDirection.push
+                    ? UiContainerFlightDirection.opening
+                    : UiContainerFlightDirection.closing,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (frame.destinationOpacity > 0)
+                      _fluidLayer(
+                        const Key('ui_fluid_zoom_destination_opacity'),
+                        frame.destinationOpacity,
+                        _UiNaturalSizeLayer(
+                          size: expanded.naturalSize,
+                          child: expanded.child,
+                        ),
+                      ),
+                    if (frame.sourceOpacity > 0)
+                      _fluidLayer(
+                        const Key('ui_fluid_zoom_source_opacity'),
+                        frame.sourceOpacity,
+                        sourceFlightLayout ==
+                                UiContainerSourceFlightLayout.responsive
+                            ? SizedBox.expand(child: compact.child)
+                            : _UiNaturalSizeLayer(
+                                size: compact.naturalSize,
+                                child: compact.child,
+                              ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _fluidLayer(Key key, double opacity, Widget child) =>
+      IgnorePointer(
+        key: key,
+        child: ExcludeSemantics(
+          child: Opacity(
+            opacity: opacity,
+            child: RepaintBoundary(child: child),
+          ),
+        ),
+      );
+}
+
 @immutable
 class _ResolvedContainerBackdrop {
   const _ResolvedContainerBackdrop({
@@ -1389,6 +1614,7 @@ class _UiSharedContainerRoute<T> extends PageRoute<T> {
     required this.pathMotion,
     required this.centerPullStrength,
     required this.pageBuilder,
+    this.fluidMotion,
     super.settings,
   });
 
@@ -1402,6 +1628,7 @@ class _UiSharedContainerRoute<T> extends PageRoute<T> {
   final UiContainerPathMotion pathMotion;
   final double centerPullStrength;
   final UiContainerPageBuilder pageBuilder;
+  final UiFluidRouteMotion? fluidMotion;
 
   @override
   bool get opaque => false;
@@ -1444,6 +1671,7 @@ class _UiSharedContainerRoute<T> extends PageRoute<T> {
       sourceFlightLayout: sourceFlightLayout,
       pathMotion: pathMotion,
       centerPullStrength: centerPullStrength,
+      fluidMotion: fluidMotion,
       child: pageBuilder(context),
     );
   }

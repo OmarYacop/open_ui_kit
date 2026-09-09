@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import '../motion/ui_motion_tokens.dart';
 import '../effects/ui_effects_tokens.dart';
 import '../tokens/ui_color_tokens.dart';
+import '../tokens/ui_menu_tokens.dart';
+import '../tokens/ui_bottom_navigation_tokens.dart';
 import '../tokens/ui_radius_tokens.dart';
 import '../tokens/ui_shadow_tokens.dart';
 import '../tokens/ui_spacing_tokens.dart';
@@ -23,6 +25,8 @@ class UiThemeData {
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
     UiEffectsTokens? effects,
+    UiMenuTokens? menu,
+    UiBottomNavigationTokens? bottomNavigation,
   }) {
     return UiThemeTokens(
       colors: colors ?? UiColorTokens.light,
@@ -32,6 +36,8 @@ class UiThemeData {
       typography: typography ?? UiTypographyTokens.standard,
       motion: motion ?? UiMotionTokens.defaults,
       effects: effects ?? UiEffectsTokens.adaptive,
+      menu: menu ?? UiMenuTokens.defaults,
+      bottomNavigation: bottomNavigation ?? UiBottomNavigationTokens.defaults,
       brightness: Brightness.light,
     );
   }
@@ -45,6 +51,8 @@ class UiThemeData {
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
     UiEffectsTokens? effects,
+    UiMenuTokens? menu,
+    UiBottomNavigationTokens? bottomNavigation,
   }) {
     return UiThemeTokens(
       colors: colors ?? UiColorTokens.dark,
@@ -54,6 +62,8 @@ class UiThemeData {
       typography: typography ?? UiTypographyTokens.standard,
       motion: motion ?? UiMotionTokens.defaults,
       effects: effects ?? UiEffectsTokens.adaptive,
+      menu: menu ?? UiMenuTokens.defaults,
+      bottomNavigation: bottomNavigation ?? UiBottomNavigationTokens.defaults,
       brightness: Brightness.dark,
     );
   }
@@ -73,6 +83,8 @@ class UiThemeData {
     UiTypographyTokens? typography,
     UiMotionTokens? motion,
     UiEffectsTokens? effects,
+    UiMenuTokens? menu,
+    UiBottomNavigationTokens? bottomNavigation,
   }) {
     final colors = brand.colorTokens(brightness);
     return brightness == Brightness.dark
@@ -84,6 +96,8 @@ class UiThemeData {
             typography: typography,
             motion: motion,
             effects: effects,
+            menu: menu,
+            bottomNavigation: bottomNavigation,
           )
         : light(
             colors: colors,
@@ -93,6 +107,8 @@ class UiThemeData {
             typography: typography,
             motion: motion,
             effects: effects,
+            menu: menu,
+            bottomNavigation: bottomNavigation,
           );
   }
 

@@ -258,6 +258,9 @@ class _RealBottomTabAccessoryDemoState
           width: 360,
           height: 280,
           child: UiBottomTabScaffold(
+            // Retain the legacy accessory showcase and its visual baselines.
+            overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+            maxVisibleBottomItems: 3,
             items: _items,
             currentIndex: _currentIndex,
             onChanged: (i) => setState(() {
@@ -288,6 +291,7 @@ class _RealBottomTabAccessoryDemoState
             bottomAccessory: _currentIndex == 0
                 ? null
                 : UiBottomTabAccessory(
+                    contentKey: searchIcon,
                     expanded: _searchExpanded,
                     leadingItem: _items[_currentIndex],
                     onLeadingPressed: () =>

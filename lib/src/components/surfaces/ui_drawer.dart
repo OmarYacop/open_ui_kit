@@ -281,15 +281,18 @@ class UiDrawer extends StatelessWidget {
     final effectiveWidth = isBottom
         ? double.infinity
         : effectiveLayoutMetrics.sideWidth;
-    final sizeBox = isBottom
-        ? ConstrainedBox(
-            constraints: BoxConstraints(
+    // Keep the same element path across side/bottom placement changes.
+    // Swapping ConstrainedBox for SizedBox here disposed the form subtree
+    // on rotation, losing locally owned controllers, focus and scroll state.
+    final sizeBox = ConstrainedBox(
+      constraints: isBottom
+          ? BoxConstraints(
               maxWidth: effectiveLayoutMetrics.bottomMaxWidth,
               maxHeight: effectiveLayoutMetrics.bottomMaxHeight,
-            ),
-            child: SizedBox(width: effectiveWidth, child: content),
-          )
-        : SizedBox(width: effectiveWidth, child: content);
+            )
+          : const BoxConstraints(),
+      child: SizedBox(width: effectiveWidth, child: content),
+    );
     Widget drawer = Padding(
       padding: floating ? resolvedMargin : EdgeInsets.zero,
       child: ConstrainedBox(

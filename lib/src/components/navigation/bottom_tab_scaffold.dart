@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
@@ -14,6 +13,7 @@ import '../../foundation/theme/ui_theme_extensions.dart';
 import '../surfaces/ui_drawer.dart';
 import '../surfaces/ui_responsive_navigation_scaffold.dart';
 import 'bottom_tab_bar.dart';
+import 'bottom_tab_accessory_identity.dart';
 import 'bottom_tab_metrics.dart';
 import 'ui_navigation_drawer.dart';
 
@@ -28,6 +28,18 @@ const _kBottomTabScaffoldAccessoryGap = 12.0;
 const _kAccessoryContentFadeDuration = UiMotionDuration.custom(
   Duration(milliseconds: 420),
 );
+
+/// How canonical destinations beyond the visible bottom set are reached.
+enum UiBottomTabOverflowBehavior {
+  /// Existing More drawer, retained for compatibility.
+  drawer,
+
+  /// Floating page sets with Contour arrow and contextual accessories.
+  paged,
+
+  /// Expand the dock itself into a customizable destination grid.
+  expanding,
+}
 
 class UiBottomTabRailConfig {
   const UiBottomTabRailConfig({
@@ -77,10 +89,13 @@ class UiBottomTabScaffold extends StatelessWidget {
     this.bottomItems,
     this.bottomCurrentIndex,
     this.onBottomChanged,
-    this.maxVisibleBottomItems = 3,
+    this.maxVisibleBottomItems = 4,
+    this.overflowBehavior = UiBottomTabOverflowBehavior.expanding,
+    this.navigationIndicatorIdleDuration = const Duration(milliseconds: 1200),
     this.moreLabel,
     this.overflowDrawerBuilder,
     this.bottomAccessory,
+    this.drawerController,
   }) : assert(
          items.length == pages.length,
          'items and pages must have the same length',
@@ -125,12 +140,22 @@ class UiBottomTabScaffold extends StatelessWidget {
 
   /// Maximum canonical app destinations shown directly in the bottom bar.
   ///
-  /// If [items] exceeds this count while the bottom bar is active, Open UI Kit
+  /// With [UiBottomTabOverflowBehavior.paged], this is the maximum set size.
+  /// With expanding navigation, this is the compact slot count. With the legacy
+  /// drawer mode, if [items] exceeds this count while the bottom bar is active, Open UI Kit
   /// automatically appends a localized "More" control. Tapping it opens a
   /// [UiDrawer] containing every canonical item. This does not affect rail
   /// layouts; once [railBreakpoint] is reached, [railBuilder] receives the full
   /// canonical item list.
   final int maxVisibleBottomItems;
+
+  /// Expanding navigation is the default. Explicit [bottomItems],
+  /// [bottomCurrentIndex], or [onBottomChanged] retain manual navigation.
+  /// Rail layouts always receive the full canonical destination list.
+  final UiBottomTabOverflowBehavior overflowBehavior;
+
+  /// Idle delay before the paged dock's subtle position indicator disappears.
+  final Duration navigationIndicatorIdleDuration;
 
   /// Label used by the automatic overflow control and default overflow drawer.
   ///
@@ -145,6 +170,7 @@ class UiBottomTabScaffold extends StatelessWidget {
   /// only supplies the structured drawer content.
   final UiBottomTabOverflowDrawerBuilder? overflowDrawerBuilder;
   final UiBottomTabAccessory? bottomAccessory;
+  final UiBottomTabDrawerController? drawerController;
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +220,8 @@ class UiBottomTabScaffold extends StatelessWidget {
             onCanonicalChanged: onChanged,
             automaticOverflow: !hasManualBottomItems,
             maxVisibleItems: maxVisibleBottomItems,
+            overflowBehavior: overflowBehavior,
+            indicatorIdleDuration: navigationIndicatorIdleDuration,
             backgroundColor: tabBarBackgroundColor,
             layout: tabBarLayout,
             adaptiveBreakpoint: tabBarAdaptiveBreakpoint,
@@ -203,6 +231,7 @@ class UiBottomTabScaffold extends StatelessWidget {
             moreLabel: moreLabel,
             overflowDrawerBuilder: overflowDrawerBuilder,
             accessory: bottomAccessory,
+            drawerController: drawerController,
           );
         },
       );
@@ -218,6 +247,8 @@ class UiBottomTabScaffold extends StatelessWidget {
       onCanonicalChanged: onChanged,
       automaticOverflow: !hasManualBottomItems,
       maxVisibleItems: maxVisibleBottomItems,
+      overflowBehavior: overflowBehavior,
+      indicatorIdleDuration: navigationIndicatorIdleDuration,
       backgroundColor: tabBarBackgroundColor,
       layout: tabBarLayout,
       adaptiveBreakpoint: tabBarAdaptiveBreakpoint,
@@ -227,6 +258,7 @@ class UiBottomTabScaffold extends StatelessWidget {
       moreLabel: moreLabel,
       overflowDrawerBuilder: overflowDrawerBuilder,
       accessory: bottomAccessory,
+      drawerController: drawerController,
     );
   }
 
@@ -235,13 +267,11 @@ class UiBottomTabScaffold extends StatelessWidget {
   }
 }
 
-/// Keeps every visited page mounted while allowing only the selected page's
-/// render subtree to participate in layout.
+/// Keeps every page mounted while only painting the selected page.
 ///
-/// A regular [IndexedStack] lays out every child whenever its constraints
-/// change. That is unnecessary for app-shell pages whose body is tightly
-/// constrained, and becomes especially costly while a navigation rail is
-/// animating the body's width.
+/// Hidden pages must still participate in layout when dirty. Skipping their
+/// layout while marking this parent clean leaves descendant relayout-boundary
+/// flags inconsistent after repeated controller or viewport updates.
 class _PreservedPageStack extends StatelessWidget {
   const _PreservedPageStack({required this.index, required this.pages});
 
@@ -254,63 +284,12 @@ class _PreservedPageStack extends StatelessWidget {
       index: index,
       children: [
         for (var pageIndex = 0; pageIndex < pages.length; pageIndex++)
-          _ActivePageLayout(
+          UiActivePageScope(
             active: pageIndex == index,
             child: pages[pageIndex],
           ),
       ],
     );
-  }
-}
-
-class _ActivePageLayout extends SingleChildRenderObjectWidget {
-  const _ActivePageLayout({required this.active, required super.child});
-
-  final bool active;
-
-  @override
-  _RenderActivePageLayout createRenderObject(BuildContext context) {
-    return _RenderActivePageLayout(active: active);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderActivePageLayout renderObject,
-  ) {
-    renderObject.active = active;
-  }
-}
-
-class _RenderActivePageLayout extends RenderProxyBox {
-  _RenderActivePageLayout({required this._active});
-
-  bool _active;
-
-  set active(bool value) {
-    if (_active == value) return;
-    _active = value;
-    markNeedsLayoutForSizedByParentChange();
-  }
-
-  @override
-  bool get sizedByParent => !_active;
-
-  @override
-  Size computeDryLayout(covariant BoxConstraints constraints) {
-    if (!_active) return constraints.smallest;
-    return super.computeDryLayout(constraints);
-  }
-
-  @override
-  void performResize() {
-    assert(!_active);
-    size = constraints.smallest;
-  }
-
-  @override
-  void performLayout() {
-    if (_active) super.performLayout();
   }
 }
 
@@ -325,6 +304,8 @@ class _BottomTabBody extends StatefulWidget {
     required this.onCanonicalChanged,
     required this.automaticOverflow,
     required this.maxVisibleItems,
+    required this.overflowBehavior,
+    required this.indicatorIdleDuration,
     required this.backgroundColor,
     required this.layout,
     required this.adaptiveBreakpoint,
@@ -334,6 +315,7 @@ class _BottomTabBody extends StatefulWidget {
     required this.moreLabel,
     required this.overflowDrawerBuilder,
     required this.accessory,
+    this.drawerController,
   });
 
   final Widget body;
@@ -345,6 +327,8 @@ class _BottomTabBody extends StatefulWidget {
   final ValueChanged<int> onCanonicalChanged;
   final bool automaticOverflow;
   final int maxVisibleItems;
+  final UiBottomTabOverflowBehavior overflowBehavior;
+  final Duration indicatorIdleDuration;
   final Color? backgroundColor;
   final UiBottomTabBarLayout layout;
   final double adaptiveBreakpoint;
@@ -354,6 +338,7 @@ class _BottomTabBody extends StatefulWidget {
   final String? moreLabel;
   final UiBottomTabOverflowDrawerBuilder? overflowDrawerBuilder;
   final UiBottomTabAccessory? accessory;
+  final UiBottomTabDrawerController? drawerController;
 
   @override
   State<_BottomTabBody> createState() => _BottomTabBodyState();
@@ -362,6 +347,13 @@ class _BottomTabBody extends StatefulWidget {
 class _BottomTabBodyState extends State<_BottomTabBody>
     with TickerProviderStateMixin {
   bool _moreDrawerOpen = false;
+  bool get _expanding =>
+      widget.automaticOverflow &&
+      widget.overflowBehavior == UiBottomTabOverflowBehavior.expanding;
+  bool get _paged =>
+      widget.automaticOverflow &&
+      (widget.overflowBehavior == UiBottomTabOverflowBehavior.paged ||
+          _expanding);
 
   // The abstract Contour presence layer (see ui_contour_presence.dart):
   // owns a single progress timeline for "does the accessory exist right
@@ -381,9 +373,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   // not cover — switching from one tab's accessory straight to a different
   // tab's accessory, both non-null, so presence never leaves `expanded` and
   // never animates. Without this the accessory's inner content hard-cut.
-  // Identity is keyed by leading-item label rather than object equality
-  // because a fresh `UiBottomTabAccessory` is normally rebuilt every frame
-  // even when it represents the same logical tab.
+  // Compare visible content, independent of the destination and callbacks.
   late final UiContourCrossfadeController<UiBottomTabAccessory>
   _accessoryContentFade = UiContourCrossfadeController<UiBottomTabAccessory>(
     vsync: this,
@@ -392,11 +382,12 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_paged) return;
     _accessoryPresence.update(context, widget.accessory);
     _accessoryContentFade.update(
       context,
       widget.accessory,
-      identity: widget.accessory?.leadingItem?.label,
+      identity: bottomTabAccessoryIdentity(widget.accessory),
       duration: _kAccessoryContentFadeDuration,
     );
   }
@@ -404,6 +395,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   @override
   void didUpdateWidget(covariant _BottomTabBody oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (_paged) return;
     _accessoryPresence.update(
       context,
       widget.accessory,
@@ -413,7 +405,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     _accessoryContentFade.update(
       context,
       widget.accessory,
-      identity: widget.accessory?.leadingItem?.label,
+      identity: bottomTabAccessoryIdentity(widget.accessory),
       duration: _kAccessoryContentFadeDuration,
     );
   }
@@ -463,7 +455,7 @@ class _BottomTabBodyState extends State<_BottomTabBody>
   Widget build(BuildContext context) {
     final content = LayoutBuilder(
       builder: (context, constraints) {
-        final overflow = widget.automaticOverflow
+        final overflow = widget.automaticOverflow && !_paged
             ? _resolveOverflowLayout(context, constraints)
             : null;
         final resolvedItems = overflow?.items ?? widget.items;
@@ -487,7 +479,9 @@ class _BottomTabBodyState extends State<_BottomTabBody>
           ),
           child: widget.body,
         );
-        final keyboardInset = (_accessoryPresence.value?.expanded ?? false)
+        final keyboardInset =
+            ((_paged ? widget.accessory : _accessoryPresence.value)?.expanded ??
+                false)
             ? UiKeyboardGeometry.currentInsetOf(context)
             : 0.0;
 
@@ -501,29 +495,60 @@ class _BottomTabBodyState extends State<_BottomTabBody>
               // Position the navigation chrome in its real hit-test location.
               // Translating it visually above the keyboard leaves the parent
               // hit region at the screen bottom on iOS, allowing taps through.
-              bottom: keyboardInset,
+              top: _expanding ? 0 : null,
+              bottom: _expanding ? 0 : keyboardInset,
               child: SizedBox(
-                height: bodyBottomInset,
+                height: _paged ? null : bodyBottomInset,
                 child: UiLayeredOverlayPortal(
                   layer: UiOverlayLayer.navigationChrome,
                   child: Align(
+                    heightFactor: _paged && !_expanding ? 1 : null,
                     alignment: Alignment.bottomCenter,
                     child: RepaintBoundary(
-                      child: UiBottomTabBar(
-                        items: resolvedItems,
-                        currentIndex: resolvedCurrentIndex,
-                        onChanged: resolvedChanged,
-                        backgroundColor: widget.backgroundColor,
-                        layout: widget.layout,
-                        adaptiveBreakpoint: widget.adaptiveBreakpoint,
-                        floatingMaxWidth: widget.floatingMaxWidth,
-                        floatingHorizontalMargin:
-                            widget.floatingHorizontalMargin,
-                        floatingBottomMargin: widget.floatingBottomMargin,
-                        equalWidthsWhenLastSelected: overflow != null,
-                        accessory: _resolveRenderedAccessory(context),
-                        accessoryPresence: _accessoryPresence.progress,
-                      ),
+                      child: _expanding
+                          ? UiExpandingBottomTabBar(
+                              items: widget.canonicalItems,
+                              currentIndex: widget.canonicalCurrentIndex,
+                              onChanged: widget.onCanonicalChanged,
+                              controller: widget.drawerController,
+                              maxVisibleItems: widget.maxVisibleItems,
+                              backgroundColor: widget.backgroundColor,
+                              floatingMaxWidth: widget.floatingMaxWidth,
+                              floatingHorizontalMargin:
+                                  widget.floatingHorizontalMargin,
+                              floatingBottomMargin: widget.floatingBottomMargin,
+                              accessory: widget.accessory,
+                            )
+                          : _paged
+                          ? UiPagedBottomTabBar(
+                              items: widget.canonicalItems,
+                              currentIndex: widget.canonicalCurrentIndex,
+                              onChanged: widget.onCanonicalChanged,
+                              maxVisibleItems: widget.maxVisibleItems,
+                              indicatorIdleDuration:
+                                  widget.indicatorIdleDuration,
+                              backgroundColor: widget.backgroundColor,
+                              floatingMaxWidth: widget.floatingMaxWidth,
+                              floatingHorizontalMargin:
+                                  widget.floatingHorizontalMargin,
+                              floatingBottomMargin: widget.floatingBottomMargin,
+                              accessory: widget.accessory,
+                            )
+                          : UiBottomTabBar(
+                              items: resolvedItems,
+                              currentIndex: resolvedCurrentIndex,
+                              onChanged: resolvedChanged,
+                              backgroundColor: widget.backgroundColor,
+                              layout: widget.layout,
+                              adaptiveBreakpoint: widget.adaptiveBreakpoint,
+                              floatingMaxWidth: widget.floatingMaxWidth,
+                              floatingHorizontalMargin:
+                                  widget.floatingHorizontalMargin,
+                              floatingBottomMargin: widget.floatingBottomMargin,
+                              equalWidthsWhenLastSelected: overflow != null,
+                              accessory: _resolveRenderedAccessory(context),
+                              accessoryPresence: _accessoryPresence.progress,
+                            ),
                     ),
                   ),
                 ),
@@ -623,6 +648,33 @@ class _BottomTabBodyState extends State<_BottomTabBody>
     BoxConstraints constraints,
     List<UiBottomTabItem> items,
   ) {
+    if (_expanding) {
+      return resolveScaledBottomNavigationTokens(context).compactHeight +
+          (widget.accessory == null
+              ? 0
+              : widget.accessory!.height +
+                    UiThemeTokens.of(context).bottomNavigation.accessoryGap) +
+          resolveUiEdgeAwareBottomOffset(
+            context,
+            minimum:
+                widget.floatingBottomMargin +
+                UiThemeTokens.of(context).spacing.x1,
+            reduceSafeArea: true,
+          );
+    }
+    if (_paged) {
+      final tokens = UiThemeTokens.of(context);
+      return UiPagedBottomTabBar.contentHeight(
+            context,
+            widget.canonicalItems,
+            accessory: _accessoryPresence.value,
+          ) +
+          resolveUiEdgeAwareBottomOffset(
+            context,
+            minimum: widget.floatingBottomMargin + tokens.spacing.x1,
+            reduceSafeArea: false,
+          );
+    }
     final isWide =
         constraints.maxWidth.isFinite &&
         constraints.maxWidth >= widget.adaptiveBreakpoint;

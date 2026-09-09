@@ -6,3 +6,6 @@ export 'message_scroller.dart';
 export 'message_scroll_controls.dart';
 export 'message_utility_strip.dart';
 export 'typing_indicator.dart';
+export 'conversation_tile.dart';
+export 'message_receipt.dart';
+export 'reply_preview.dart';

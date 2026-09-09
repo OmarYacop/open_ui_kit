@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -32,6 +33,9 @@ class UiMessageScrollerController extends ChangeNotifier {
   String? _firstUnseenMessageId;
 
   bool get isAtLiveEdge => _isAtLiveEdge;
+
+  /// Whether a user drag or fling currently owns the viewport.
+  bool get isScrolling => _state?._userScrolling ?? false;
   int get unseenCount => _unseenCount;
   String? get firstUnseenMessageId => _firstUnseenMessageId;
   bool get hasUnreadMarker => _state?._showsUnreadMarker ?? false;
@@ -40,8 +44,21 @@ class UiMessageScrollerController extends ChangeNotifier {
     await _state?._jumpToLatest(animated: animated);
   }
 
-  Future<bool> jumpToMessage(String id, {bool animated = true}) async {
-    return await _state?._jumpToMessage(id, animated: animated) ?? false;
+  /// Whether the row is already visible inside the padded reading area.
+  bool isMessageVisible(String id) => _state?._isMessageVisible(id) ?? false;
+
+  /// Set [onlyIfNeeded] to reveal a reply without repositioning a visible row.
+  Future<bool> jumpToMessage(
+    String id, {
+    bool animated = true,
+    bool onlyIfNeeded = false,
+  }) async {
+    return await _state?._jumpToMessage(
+          id,
+          animated: animated,
+          onlyIfNeeded: onlyIfNeeded,
+        ) ??
+        false;
   }
 
   Future<bool> jumpToFirstUnseen({bool animated = true}) async {
@@ -139,17 +156,28 @@ class UiMessageScroller extends StatefulWidget {
   State<UiMessageScroller> createState() => _UiMessageScrollerState();
 }
 
-class _UiMessageScrollerState extends State<UiMessageScroller> {
-  final ScrollController _scrollController = ScrollController();
+class _UiMessageScrollerState extends State<UiMessageScroller>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _seekVisibility = AnimationController(
+    vsync: this,
+    value: 1,
+    duration: const Duration(milliseconds: 140),
+  );
+  late final ScrollController _scrollController = _MessageScrollController(
+    _layoutCorrection,
+  );
+  (String, double)? _pendingReadingAnchor;
+  final Set<int> _activePointers = {};
+  int _positionRevision = 0;
   final Map<String, GlobalKey> _keys = {};
   late UiMessageScrollerController _publicController;
   bool _initialized = false;
+  bool _programmaticScroll = false;
+  int _scrollCommandRevision = 0;
   bool _ownsPublicController = false;
   bool _loadingEarlier = false;
   bool _loadEarlierInFlight = false;
-  bool _wasAtLiveEdge = true;
-  double _oldMaxExtent = 0;
-  double _oldPixels = 0;
+
   late final String? _unreadBoundaryId = widget.initialUnreadMessageId;
   late bool _showsUnreadMarker = _unreadBoundaryId != null;
 
@@ -164,11 +192,23 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
   @override
   void didUpdateWidget(UiMessageScroller oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!_programmaticScroll &&
+        (!_publicController.isAtLiveEdge ||
+            !widget.autoFollow ||
+            _userScrolling) &&
+        !listEquals(
+          oldWidget.items.map((i) => i.id).toList(),
+          widget.items.map((i) => i.id).toList(),
+        )) {
+      _pendingReadingAnchor ??= _captureReadingAnchor(oldWidget.items);
+    }
     final activeIds = widget.items.map((item) => item.id).toSet();
     if (_showsUnreadMarker && _unreadBoundaryId != null) {
       activeIds.add(_unreadMarkerId);
     }
-    if (_showsUnreadMarker && !activeIds.contains(_unreadBoundaryId)) {
+    if (_initialized &&
+        _showsUnreadMarker &&
+        !activeIds.contains(_unreadBoundaryId)) {
       _showsUnreadMarker = false;
     }
     _keys.removeWhere((id, _) => !activeIds.contains(id));
@@ -185,11 +225,9 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
         firstUnseenMessageId: previousController.firstUnseenMessageId,
       );
     }
-    _wasAtLiveEdge = _publicController.isAtLiveEdge;
-    if (_scrollController.hasClients) {
-      _oldMaxExtent = _scrollController.position.maxScrollExtent;
-      _oldPixels = _scrollController.position.pixels;
-    }
+    final wasAtLiveEdge = _publicController.isAtLiveEdge;
+    final revision = ++_positionRevision;
+    final scrollCommand = _scrollCommandRevision;
     final oldIds = oldWidget.items.map((item) => item.id).toSet();
     final oldLastIndex = oldWidget.items.isEmpty
         ? -1
@@ -209,31 +247,20 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
         .where((item) => !item.isOutgoing)
         .toList(growable: false);
     if (appendedOutgoing) _dismissUnreadMarker(notify: false);
-    final oldFirstIndex = oldWidget.items.isEmpty
-        ? -1
-        : widget.items.indexWhere(
-            (item) => item.id == oldWidget.items.first.id,
-          );
-    final prepended =
-        oldFirstIndex > 0 &&
-        widget.items
-            .take(oldFirstIndex)
-            .any((item) => !oldIds.contains(item.id));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_scrollController.hasClients) return;
-      if (prepended && !_wasAtLiveEdge) {
-        final delta =
-            _scrollController.position.maxScrollExtent - _oldMaxExtent;
-        _scrollController.jumpTo(
-          (_oldPixels + delta).clamp(
-            0,
-            _scrollController.position.maxScrollExtent,
-          ),
-        );
+      if (revision != _positionRevision) return;
+      if (!_initialized && widget.items.isNotEmpty) {
+        await _initialPosition();
+        return;
       }
-      if (appendedOutgoing && widget.autoFollow) {
+      final mayFollow =
+          widget.autoFollow &&
+          !_userScrolling &&
+          scrollCommand == _scrollCommandRevision;
+      if (appendedOutgoing && mayFollow) {
         await _jumpToLatest();
-      } else if (appended > 0 && _wasAtLiveEdge && widget.autoFollow) {
+      } else if (appended > 0 && wasAtLiveEdge && mayFollow) {
         await _jumpToLatest();
       } else if (appendedIncoming.isNotEmpty) {
         _publicController._update(
@@ -246,6 +273,12 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
       }
     });
   }
+
+  bool get _userScrolling =>
+      _activePointers.isNotEmpty ||
+      (!_programmaticScroll &&
+          _scrollController.hasClients &&
+          _scrollController.position.isScrollingNotifier.value);
 
   void _dismissUnreadMarker({bool notify = true}) {
     if (!_showsUnreadMarker) return;
@@ -286,26 +319,45 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
   }
 
   Future<void> _initialPosition() async {
-    if (!mounted || _initialized) return;
+    if (!mounted || _initialized || widget.items.isEmpty) return;
     _initialized = true;
     if (widget.initialMessageId != null) {
       await _jumpToMessage(widget.initialMessageId!, animated: false);
     } else if (widget.startAtEnd) {
       await _jumpToLatest(animated: false);
+    } else {
+      await _jumpToMessage(widget.items.first.id, animated: false);
     }
   }
 
-  void _handleScroll() {
+  void _handleScroll({bool metricsOnly = false}) {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
+    final lastBox = widget.items.isEmpty
+        ? null
+        : _laidOutBox(widget.items.last.id);
+    final viewport = lastBox == null
+        ? null
+        : RenderAbstractViewport.maybeOf(lastBox);
     final atEdge =
-        position.maxScrollExtent - position.pixels <= widget.liveEdgeThreshold;
-    _publicController._update(
-      atLiveEdge: atEdge,
-      unseenCount: atEdge ? 0 : null,
-      clearFirstUnseen: atEdge,
-    );
-    if (position.pixels > widget.loadEarlierThreshold &&
+        lastBox is RenderBox &&
+        viewport is RenderBox &&
+        lastBox
+                .localToGlobal(
+                  Offset(0, lastBox.size.height),
+                  ancestor: viewport,
+                )
+                .dy <=
+            (viewport as RenderBox).size.height + widget.liveEdgeThreshold;
+    if (!metricsOnly || _publicController.unseenCount == 0) {
+      _publicController._update(
+        atLiveEdge: atEdge,
+        unseenCount: atEdge ? 0 : null,
+        clearFirstUnseen: atEdge,
+      );
+    }
+    if (position.maxScrollExtent - position.pixels >
+            widget.loadEarlierThreshold &&
         !_loadEarlierInFlight) {
       _loadingEarlier = false;
     } else if (!_loadingEarlier && widget.onLoadEarlier != null) {
@@ -331,25 +383,53 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
       _loadEarlierInFlight = false;
       if (mounted &&
           _scrollController.hasClients &&
-          _scrollController.position.pixels > widget.loadEarlierThreshold) {
+          _scrollController.position.maxScrollExtent -
+                  _scrollController.position.pixels >
+              widget.loadEarlierThreshold) {
         _loadingEarlier = false;
       }
     }
   }
 
-  Future<void> _jumpToLatest({bool animated = true}) async {
-    if (!_scrollController.hasClients) return;
-    final target = _scrollController.position.maxScrollExtent;
-    if (animated) {
-      final motion = UiThemeTokens.motionOf(context);
-      await _scrollController.animateTo(
-        target,
-        duration: motion.standard,
-        curve: motion.standardCurve,
-      );
-    } else {
-      _scrollController.jumpTo(target);
+  (String, double)? _captureReadingAnchor(List<UiMessageScrollerItem> items) {
+    for (final item in items) {
+      final row = _laidOutBox(item.id);
+      if (row == null) continue;
+      final viewport = RenderAbstractViewport.of(row);
+      final view = viewport as RenderBox;
+      final top = row.localToGlobal(Offset.zero, ancestor: view).dy;
+      if (top < view.size.height && top + row.size.height > 0) {
+        return (item.id, _rowLayoutOffset(row));
+      }
     }
+    return null;
+  }
+
+  double _rowLayoutOffset(RenderBox row) {
+    RenderObject child = row;
+    while (child.parent is! RenderSliverMultiBoxAdaptor) {
+      child = child.parent!;
+    }
+    return (child.parentData! as SliverMultiBoxAdaptorParentData).layoutOffset!;
+  }
+
+  double _layoutCorrection() {
+    final anchor = _pendingReadingAnchor;
+    _pendingReadingAnchor = null;
+    if (anchor == null) return 0;
+    final row = _laidOutBox(anchor.$1);
+    if (row == null) return 0;
+    return _rowLayoutOffset(row) - anchor.$2;
+  }
+
+  Future<void> _jumpToLatest({bool animated = true}) async {
+    if (!_scrollController.hasClients || widget.items.isEmpty) return;
+    final command = ++_scrollCommandRevision;
+    _seekVisibility.value = 1;
+    _programmaticScroll = true;
+    await _moveTo(0, animated: animated);
+    if (!mounted || command != _scrollCommandRevision) return;
+    _programmaticScroll = false;
     _publicController._update(
       atLiveEdge: true,
       unseenCount: 0,
@@ -357,60 +437,181 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     );
   }
 
-  Future<bool> _jumpToMessage(String id, {bool animated = true}) async {
-    final displayItems = _displayItems();
-    final index = displayItems.indexWhere((item) => item.id == id);
-    if (index < 0 || !_scrollController.hasClients) return false;
-    var targetContext = _keys[id]?.currentContext;
-    for (var attempt = 0; targetContext == null && attempt < 12; attempt++) {
-      final position = _scrollController.position;
-      final averageExtent = widget.items.length <= 1
-          ? position.viewportDimension
-          : (position.maxScrollExtent + position.viewportDimension) /
-                widget.items.length;
-      final mountedEntries = <(int, BuildContext)>[];
-      for (var builtIndex = 0; builtIndex < displayItems.length; builtIndex++) {
-        final builtContext = _keys[displayItems[builtIndex].id]?.currentContext;
-        if (builtContext != null && builtContext.mounted) {
-          mountedEntries.add((builtIndex, builtContext));
+  Future<void> _moveTo(double offset, {required bool animated}) async {
+    final position = _scrollController.position;
+    final target = offset.clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if (animated && !MediaQuery.disableAnimationsOf(context)) {
+      await _scrollController.animateTo(
+        target,
+        duration: UiThemeTokens.motionOf(context).standard,
+        curve: UiThemeTokens.motionOf(context).standardCurve,
+      );
+    } else {
+      _scrollController.jumpTo(target);
+    }
+    // Explicitly request layout even when the requested offset is unchanged.
+    // endOfFrame also schedules a frame when called between frames.
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
+  // Only use rows in the sliver's current layout. A kept-alive row can retain
+  // a RenderBox and a stale reveal offset after leaving the laid-out range.
+  RenderBox? _laidOutBox(String id) {
+    final box = _keys[id]?.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return null;
+    RenderObject child = box;
+    while (child.parent != null &&
+        child.parent is! RenderSliverMultiBoxAdaptor) {
+      child = child.parent!;
+    }
+    final data = child.parentData;
+    if (data is! SliverMultiBoxAdaptorParentData ||
+        data.keptAlive ||
+        data.layoutOffset == null) {
+      return null;
+    }
+    return box;
+  }
+
+  bool _isMessageVisible(String id) {
+    final row = _laidOutBox(id);
+    if (row == null) return false;
+    final view = RenderAbstractViewport.of(row) as RenderBox;
+    final padding = widget.padding.resolve(Directionality.of(context));
+    final top = row.localToGlobal(Offset.zero, ancestor: view).dy;
+    final bottom = top + row.size.height;
+    final availableBottom = view.size.height - padding.bottom;
+    if (row.size.height > availableBottom - padding.top) {
+      return top <= padding.top + 1 && bottom >= availableBottom - 1;
+    }
+    return top >= padding.top - 1 && bottom <= availableBottom + 1;
+  }
+
+  Future<bool> _jumpToMessage(
+    String id, {
+    bool animated = true,
+    bool onlyIfNeeded = false,
+  }) async {
+    if (!_scrollController.hasClients ||
+        !_displayItems().any((item) => item.id == id)) {
+      return false;
+    }
+    if (onlyIfNeeded && _isMessageVisible(id)) {
+      _scrollCommandRevision++;
+      _seekVisibility.value = 1;
+      _scrollController.jumpTo(_scrollController.offset);
+      _programmaticScroll = false;
+      return true;
+    }
+    final command = ++_scrollCommandRevision;
+    _programmaticScroll = true;
+    final distant = _laidOutBox(id) == null;
+    final fadeSeek =
+        distant && animated && !MediaQuery.disableAnimationsOf(context);
+    if (!fadeSeek) _seekVisibility.value = 1;
+    try {
+      if (fadeSeek) {
+        await _seekVisibility.animateTo(0, curve: Curves.easeOutCubic).orCancel;
+        if (!mounted || command != _scrollCommandRevision) return false;
+      }
+      // Unknown variable-height targets use a single fade-through. Offset
+      // estimates run while hidden; only measured nearby targets scroll.
+      // ListView has no index-to-offset API for unknown variable-height rows.
+      // Seek using its current measured range, then reveal the actual target.
+      // This work runs only for an explicit command, never during user scrolling.
+      final limit = widget.items.length + 10;
+      for (var attempt = 0; attempt < limit; attempt++) {
+        if (!mounted || command != _scrollCommandRevision) return false;
+        final items = _displayItems();
+        final index = items.indexWhere((item) => item.id == id);
+        if (index < 0) return false;
+        final box = _laidOutBox(id);
+        if (box != null) {
+          final viewport = RenderAbstractViewport.of(box);
+          // In an upward list, alignment .5 centers the whole row. Public
+          // message jumps retain the leading-edge-at-mid-viewport contract.
+          final reveal = viewport.getOffsetToReveal(box, 0).offset;
+          var target =
+              reveal -
+              _scrollController.position.viewportDimension / 2 +
+              box.size.height;
+          if (onlyIfNeeded) {
+            // Once a reveal is needed, settle the measured row in the clear
+            // viewport instead of stopping at an estimate beside floating UI.
+            final view = viewport as RenderBox;
+            final padding = widget.padding.resolve(Directionality.of(context));
+            final top = box.localToGlobal(Offset.zero, ancestor: view).dy;
+            final available = (view.size.height - padding.vertical).clamp(
+              0.0,
+              double.infinity,
+            );
+            final desiredTop =
+                padding.top +
+                (available - box.size.height).clamp(0.0, double.infinity) / 2;
+            target = _scrollController.offset + desiredTop - top;
+          }
+          await _moveTo(target, animated: animated && !distant);
+          if (!mounted || command != _scrollCommandRevision) return false;
+          final result = _laidOutBox(id);
+          if (result == null) continue;
+          final view = RenderAbstractViewport.of(result) as RenderBox;
+          final top = result.localToGlobal(Offset.zero, ancestor: view).dy;
+          if (top < view.size.height && top + result.size.height > 0) {
+            return true;
+          }
+          continue;
+        }
+        double totalHeight = 0;
+        var count = 0;
+        int? nearestIndex;
+        double? nearestOffset;
+        for (var i = 0; i < items.length; i++) {
+          final row = _laidOutBox(items[i].id);
+          if (row == null) continue;
+          totalHeight += row.size.height;
+          count++;
+          if (nearestIndex == null ||
+              (i - index).abs() < (nearestIndex - index).abs()) {
+            nearestIndex = i;
+            nearestOffset = RenderAbstractViewport.of(row)
+                .getOffsetToReveal(row, 0)
+                .offset;
+          }
+        }
+        final position = _scrollController.position;
+        final estimate = nearestIndex == null
+            ? position.maxScrollExtent
+            : nearestOffset! + (nearestIndex - index) * (totalHeight / count);
+        await _moveTo(estimate, animated: false);
+      }
+      return false;
+    } on TickerCanceled {
+      return false;
+    } finally {
+      if (mounted && command == _scrollCommandRevision) {
+        if (fadeSeek) {
+          try {
+            await _seekVisibility
+                .animateTo(1, curve: Curves.easeOutCubic)
+                .orCancel;
+          } on TickerCanceled {
+            // A newer navigation or touch owns the viewport now.
+          }
+        }
+        if (mounted && command == _scrollCommandRevision) {
+          _programmaticScroll = false;
+          _handleScroll();
         }
       }
-      double estimate;
-      if (mountedEntries.isEmpty) {
-        estimate = averageExtent * index;
-      } else {
-        mountedEntries.sort(
-          (a, b) => (a.$1 - index).abs().compareTo((b.$1 - index).abs()),
-        );
-        final nearest = mountedEntries.first;
-        final renderObject = nearest.$2.findRenderObject();
-        final viewport = renderObject == null
-            ? null
-            : RenderAbstractViewport.maybeOf(renderObject);
-        final nearestOffset = viewport == null
-            ? position.pixels
-            : viewport.getOffsetToReveal(renderObject!, 0).offset;
-        estimate = nearestOffset + (index - nearest.$1) * averageExtent;
-      }
-      _scrollController.jumpTo(estimate.clamp(0, position.maxScrollExtent));
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) return false;
-      targetContext = _keys[id]?.currentContext;
     }
-    if (targetContext == null || !targetContext.mounted) return false;
-    await Scrollable.ensureVisible(
-      targetContext,
-      duration: animated
-          ? UiThemeTokens.motionOf(context).standard
-          : Duration.zero,
-      curve: UiThemeTokens.motionOf(context).standardCurve,
-      alignment: .5,
-    );
-    return true;
   }
 
   @override
   void dispose() {
+    _seekVisibility.dispose();
     _publicController._detach(this);
     if (_ownsPublicController) _publicController.dispose();
     _scrollController
@@ -428,48 +629,115 @@ class _UiMessageScrollerState extends State<UiMessageScroller> {
     final tokens = UiThemeTokens.of(context);
     final displayItems = _displayItems();
 
-    return AnimatedBuilder(
-      animation: _publicController,
-      builder: (context, _) {
-        return Stack(
-          children: [
-            ListView.builder(
-              controller: _scrollController,
-              padding: widget.padding,
-              itemCount: displayItems.length,
-              itemBuilder: (context, index) {
-                final item = displayItems[index];
-                final key = _keys.putIfAbsent(item.id, GlobalKey.new);
-                return Padding(
-                  key: key,
-                  padding: EdgeInsets.only(
-                    bottom: index == displayItems.length - 1
-                        ? 0
-                        : widget.itemSpacing,
-                  ),
-                  child: item.child,
-                );
-              },
+    final indices = <Key, int>{};
+    for (var i = 0; i < displayItems.length; i++) {
+      indices[_keys.putIfAbsent(displayItems[i].id, GlobalKey.new)] =
+          displayItems.length - i - 1;
+    }
+    return Stack(
+      children: [
+        Listener(
+          onPointerDown: (event) {
+            _activePointers.add(event.pointer);
+            _scrollCommandRevision++;
+            _seekVisibility.value = 1;
+            _programmaticScroll = false;
+          },
+          onPointerUp: (event) => _activePointers.remove(event.pointer),
+          onPointerCancel: (event) => _activePointers.remove(event.pointer),
+          child: NotificationListener<ScrollMetricsNotification>(
+            onNotification: (notification) {
+              if (notification.depth == 0) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _handleScroll(metricsOnly: true);
+                });
+              }
+              return false;
+            },
+            child: FadeTransition(
+              opacity: _seekVisibility,
+              child: ListView.builder(
+                controller: _scrollController,
+                reverse: true,
+                padding: widget.padding,
+                itemCount: displayItems.length,
+                findChildIndexCallback: (key) => indices[key],
+                itemBuilder: (context, index) {
+                  final item = displayItems[displayItems.length - index - 1];
+                  return Padding(
+                    key: _keys[item.id],
+                    padding: EdgeInsets.only(
+                      bottom: index == 0 ? 0 : widget.itemSpacing,
+                    ),
+                    child: item.child,
+                  );
+                },
+              ),
             ),
-            PositionedDirectional(
-              end: tokens.spacing.x3,
-              bottom: tokens.spacing.x3,
-              child:
-                  widget.scrollControlsBuilder?.call(
-                    context,
-                    _publicController,
-                  ) ??
-                  UiMessageScrollControls(
-                    show: !_publicController.isAtLiveEdge,
-                    queuedMessageCount: _publicController.unseenCount,
-                    onScrollToBottom: _jumpToLatest,
-                    scrollToBottomLabel: widget.jumpToLatestLabel,
-                    queueLabelBuilder: widget.newMessagesLabelBuilder,
-                  ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+        AnimatedBuilder(
+          animation: _publicController,
+          builder: (context, _) => PositionedDirectional(
+            end: tokens.spacing.x3,
+            bottom: tokens.spacing.x3,
+            child:
+                widget.scrollControlsBuilder?.call(
+                  context,
+                  _publicController,
+                ) ??
+                UiMessageScrollControls(
+                  show: !_publicController.isAtLiveEdge,
+                  queuedMessageCount: _publicController.unseenCount,
+                  onScrollToBottom: _jumpToLatest,
+                  scrollToBottomLabel: widget.jumpToLatestLabel,
+                  queueLabelBuilder: widget.newMessagesLabelBuilder,
+                ),
+          ),
+        ),
+      ],
     );
+  }
+}
+
+// Content changes may shift a visible row's layout offset. Apply that one
+// correction during viewport layout, preserving Flutter's current drag/fling
+// activity. All input, physics and ballistic behavior remain Flutter's defaults.
+class _MessageScrollController extends ScrollController {
+  _MessageScrollController(this.layoutCorrection);
+
+  final double Function() layoutCorrection;
+
+  @override
+  ScrollPosition createScrollPosition(
+    ScrollPhysics physics,
+    ScrollContext context,
+    ScrollPosition? oldPosition,
+  ) => _MessageScrollPosition(
+    physics: physics,
+    context: context,
+    oldPosition: oldPosition,
+    layoutCorrection: layoutCorrection,
+  );
+}
+
+class _MessageScrollPosition extends ScrollPositionWithSingleContext {
+  _MessageScrollPosition({
+    required super.physics,
+    required super.context,
+    super.oldPosition,
+    required this.layoutCorrection,
+  });
+
+  final double Function() layoutCorrection;
+
+  @override
+  bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
+    final correction = layoutCorrection();
+    if (correction.abs() > .01) {
+      correctBy(correction);
+      return false;
+    }
+    return super.applyContentDimensions(minScrollExtent, maxScrollExtent);
   }
 }

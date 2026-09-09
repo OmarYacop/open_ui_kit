@@ -170,10 +170,11 @@ class _RenderUiMeasuredMorph extends RenderBox
       paintChildren(context, offset);
       return;
     }
+    // pushClipRect applies the paint offset to this local clip rectangle.
     context.pushClipRect(
       needsCompositing,
       offset,
-      offset & size,
+      Offset.zero & size,
       paintChildren,
       clipBehavior: _clipBehavior,
     );

@@ -1,2 +1,9 @@
 export 'chat_composer.dart';
+export 'chat_attachment_tray.dart';
+export 'conversation_layout.dart';
 export 'message_bubble.dart';
+export 'chat_scaffold.dart';
+export 'chat_header.dart';
+export 'chat_workspace.dart';
+export 'chat_message.dart';
+export 'chat_timeline.dart';

@@ -1225,6 +1225,12 @@ flows.
 
 ### 13. Bottom tabs
 
+The scaffold defaults to four compact icon slots in an expandable dock. Hold a
+slot to reorder with insertion and shifting neighbors. Customize spacing and
+motion with `UiThemeData.light(bottomNavigation: UiBottomNavigationTokens(...))`.
+See [bottom navigation](doc/expanding_bottom_navigation.md) for persistence,
+accessories, tokens and legacy compatibility.
+
 ```dart
 UiBottomTabScaffold(
   items: const [

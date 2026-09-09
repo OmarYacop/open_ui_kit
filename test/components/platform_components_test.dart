@@ -175,6 +175,8 @@ void main() {
         _host(
           StatefulBuilder(
             builder: (ctx, setState) => UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat', badge: 3),
@@ -207,6 +209,8 @@ void main() {
         _host(
           StatefulBuilder(
             builder: (ctx, setState) => UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat'),
@@ -244,6 +248,8 @@ void main() {
         _host(
           StatefulBuilder(
             builder: (ctx, setState) => UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat'),
@@ -277,6 +283,8 @@ void main() {
         _host(
           StatefulBuilder(
             builder: (ctx, setState) => UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'A'),
                 UiBottomTabItem(label: 'B'),
@@ -296,64 +304,73 @@ void main() {
       expect(find.byKey(const Key('pb'), skipOffstage: false), findsOneWidget);
     });
 
-    testWidgets('preserveState only lays out the selected page', (
-      tester,
-    ) async {
-      var index = 0;
-      var firstPageLayouts = 0;
-      var secondPageLayouts = 0;
+    testWidgets(
+      'preserveState lays out dirty hidden pages without showing them',
+      (tester) async {
+        var index = 0;
+        var firstPageLayouts = 0;
+        var secondPageLayouts = 0;
 
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (ctx, setState) => UiBottomTabScaffold(
-              items: const [
-                UiBottomTabItem(label: 'First'),
-                UiBottomTabItem(label: 'Second'),
-              ],
-              pages: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    firstPageLayouts += 1;
-                    return const SizedBox.expand(
-                      child: Text('first-page', key: Key('first-layout-page')),
-                    );
-                  },
-                ),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    secondPageLayouts += 1;
-                    return const SizedBox.expand(child: Text('second-page'));
-                  },
-                ),
-              ],
-              currentIndex: index,
-              onChanged: (value) => setState(() => index = value),
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (ctx, setState) => UiBottomTabScaffold(
+                overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+                maxVisibleBottomItems: 3,
+                items: const [
+                  UiBottomTabItem(label: 'First'),
+                  UiBottomTabItem(label: 'Second'),
+                ],
+                pages: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      firstPageLayouts += 1;
+                      return const SizedBox.expand(
+                        child: Text(
+                          'first-page',
+                          key: Key('first-layout-page'),
+                        ),
+                      );
+                    },
+                  ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      secondPageLayouts += 1;
+                      return const SizedBox.expand(child: Text('second-page'));
+                    },
+                  ),
+                ],
+                currentIndex: index,
+                onChanged: (value) => setState(() => index = value),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(firstPageLayouts, greaterThan(0));
-      expect(secondPageLayouts, 0);
+        expect(firstPageLayouts, greaterThan(0));
+        expect(secondPageLayouts, greaterThan(0));
+        expect(find.text('second-page'), findsNothing);
 
-      await tester.tap(find.text('Second'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Second'));
+        await tester.pumpAndSettle();
 
-      expect(secondPageLayouts, greaterThan(0));
-      final firstPageLayoutsAfterSwitch = firstPageLayouts;
+        expect(secondPageLayouts, greaterThan(0));
+        final firstPageLayoutsAfterSwitch = firstPageLayouts;
 
-      tester.view.physicalSize = const Size(760, 600);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pump();
+        tester.view.physicalSize = const Size(760, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pump();
 
-      expect(firstPageLayouts, firstPageLayoutsAfterSwitch);
-      expect(
-        find.byKey(const Key('first-layout-page'), skipOffstage: false),
-        findsOneWidget,
-      );
-    });
+        expect(firstPageLayouts, greaterThan(firstPageLayoutsAfterSwitch));
+        expect(find.text('first-page'), findsNothing);
+        expect(find.text('second-page'), findsOneWidget);
+        expect(
+          find.byKey(const Key('first-layout-page'), skipOffstage: false),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('floating scaffold adds body padding for the dock', (
       tester,
@@ -368,6 +385,8 @@ void main() {
             width: 390,
             height: 700,
             child: UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat'),
@@ -451,6 +470,8 @@ void main() {
           _host(
             StatefulBuilder(
               builder: (ctx, setState) => UiBottomTabScaffold(
+                overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+                maxVisibleBottomItems: 3,
                 items: const [
                   UiBottomTabItem(label: 'Home'),
                   UiBottomTabItem(label: 'Schedule'),
@@ -563,6 +584,8 @@ void main() {
           MediaQuery(
             data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
             child: UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'Home', icon: Icon(Icons.home)),
                 UiBottomTabItem(label: 'Chat', icon: Icon(Icons.chat)),
@@ -595,6 +618,8 @@ void main() {
       await tester.pumpWidget(
         _host(
           UiBottomTabScaffold(
+            overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+            maxVisibleBottomItems: 3,
             items: const [
               UiBottomTabItem(label: 'Home'),
               UiBottomTabItem(label: 'Schedule'),
@@ -634,6 +659,8 @@ void main() {
       await tester.pumpWidget(
         _host(
           UiBottomTabScaffold(
+            overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+            maxVisibleBottomItems: 3,
             items: const [
               UiBottomTabItem(label: 'Home'),
               UiBottomTabItem(label: 'Chat'),
@@ -669,6 +696,8 @@ void main() {
         await tester.pumpWidget(
           _host(
             UiBottomTabScaffold(
+              overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+              maxVisibleBottomItems: 3,
               items: const [
                 UiBottomTabItem(label: 'Home'),
                 UiBottomTabItem(label: 'Chat'),
@@ -705,6 +734,8 @@ void main() {
       await tester.pumpWidget(
         _host(
           UiBottomTabScaffold(
+            overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+            maxVisibleBottomItems: 3,
             items: const [
               UiBottomTabItem(label: 'Home'),
               UiBottomTabItem(label: 'Schedule'),
@@ -993,6 +1024,8 @@ void main() {
           _host(
             StatefulBuilder(
               builder: (context, setState) => UiBottomTabScaffold(
+                overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+                maxVisibleBottomItems: 3,
                 items: items,
                 currentIndex: currentIndex,
                 onChanged: (i) => setState(() => currentIndex = i),
@@ -1086,6 +1119,8 @@ void main() {
       await tester.pumpWidget(
         _host(
           UiBottomTabScaffold(
+            overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+            maxVisibleBottomItems: 3,
             items: const [
               UiBottomTabItem(label: 'Home'),
               UiBottomTabItem(label: 'Chat'),
@@ -1210,6 +1245,8 @@ void main() {
             builder: (context, setState) {
               update = setState;
               return UiBottomTabScaffold(
+                overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+                maxVisibleBottomItems: 3,
                 items: const [UiBottomTabItem(label: 'Home')],
                 currentIndex: 0,
                 onChanged: (_) {},
@@ -1248,6 +1285,8 @@ void main() {
               builder: (context, setState) {
                 update = setState;
                 return UiBottomTabScaffold(
+                  overflowBehavior: UiBottomTabOverflowBehavior.drawer,
+
                   items: const [
                     UiBottomTabItem(label: 'First'),
                     UiBottomTabItem(label: 'Second'),

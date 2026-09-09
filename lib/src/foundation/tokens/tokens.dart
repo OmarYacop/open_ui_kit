@@ -5,3 +5,6 @@ export 'ui_shadow_tokens.dart';
 export 'ui_typography_tokens.dart';
 export 'ui_palette.dart';
 export 'ui_migration_palettes.dart';
+export 'ui_menu_tokens.dart';
+
+export 'ui_bottom_navigation_tokens.dart';

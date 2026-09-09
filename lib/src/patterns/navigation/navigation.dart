@@ -2,6 +2,7 @@ export 'ui_navigation_back_button.dart';
 export 'ui_container_transform.dart';
 export 'ui_cupertino_back_gesture.dart';
 export 'ui_edge_swipe_pop_region.dart';
+export 'ui_fluid_page_route.dart';
 export 'ui_navigation_controller.dart';
 export 'ui_navigation_history.dart';
 export 'ui_navigation_host.dart';

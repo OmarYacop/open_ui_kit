@@ -222,6 +222,8 @@ class _UiContourReleaseState extends State<UiContourRelease>
                   icon: action.icon,
                   semanticsLabel: action.semanticsLabel,
                   size: widget.size,
+                  visualExtent: 36,
+                  iconSize: widget.size == UiSize.md ? 20 : null,
                   onPressed: action.onPressed == null
                       ? null
                       : () => _handleAction(action),

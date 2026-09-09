@@ -46,6 +46,7 @@ class UiMediaGallery extends StatefulWidget {
     required this.items,
     required this.dismissLabel,
     this.initialIndex = 0,
+    this.showChrome = true,
     this.actionsBuilder,
     this.bottomActionsBuilder,
     this.onDismiss,
@@ -65,6 +66,10 @@ class UiMediaGallery extends StatefulWidget {
   /// Reuse item instances or hero tags to preserve selection across reordering.
   final List<UiMediaGalleryItem> items;
   final String dismissLabel;
+
+  /// Disable when a surrounding media page owns navigation and actions.
+  /// Paging, zoom and swipe dismissal remain active.
+  final bool showChrome;
   final int initialIndex;
   final List<UiMediaGalleryAction> Function(BuildContext, int)? actionsBuilder;
   final List<UiMediaGalleryAction> Function(BuildContext, int)?
@@ -155,7 +160,9 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
         children: [
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => setState(() => _chromeVisible = !_chromeVisible),
+            onTap: widget.showChrome
+                ? () => setState(() => _chromeVisible = !_chromeVisible)
+                : null,
             onVerticalDragStart: _zoomed ? null : (_) => _verticalDrag = 0,
             onVerticalDragUpdate: _zoomed
                 ? null
@@ -201,62 +208,66 @@ class _UiMediaGalleryState extends State<UiMediaGallery> {
               },
             ),
           ),
-          _ChromeVisibility(
-            visible: _chromeVisible,
-            duration: duration,
-            alignment: Alignment.topCenter,
-            child: _UiMediaChrome(
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 12, 20),
-                  child: Row(
-                    children: [
-                      _UiMediaAction(
-                        action: UiMediaGalleryAction(
-                          icon: UiDirectionalIcons.back(context),
-                          label: widget.dismissLabel,
-                          onPressed: _dismiss,
+          if (widget.showChrome)
+            _ChromeVisibility(
+              visible: _chromeVisible,
+              duration: duration,
+              alignment: Alignment.topCenter,
+              child: _UiMediaChrome(
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 12, 20),
+                    child: Row(
+                      children: [
+                        _UiMediaAction(
+                          action: UiMediaGalleryAction(
+                            icon: UiDirectionalIcons.back(context),
+                            label: widget.dismissLabel,
+                            onPressed: _dismiss,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (item?.title case final title?)
-                              UiText(
-                                title,
-                                variant: UiTextVariant.label,
-                                style: const TextStyle(color: UiPalette.white),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            if (item?.subtitle case final subtitle?) ...[
-                              const SizedBox(height: 2),
-                              UiText(
-                                subtitle,
-                                variant: UiTextVariant.caption,
-                                style: const TextStyle(
-                                  color: UiPalette.white70,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (item?.title case final title?)
+                                UiText(
+                                  title,
+                                  variant: UiTextVariant.label,
+                                  style: const TextStyle(
+                                    color: UiPalette.white,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              if (item?.subtitle case final subtitle?) ...[
+                                const SizedBox(height: 2),
+                                UiText(
+                                  subtitle,
+                                  variant: UiTextVariant.caption,
+                                  style: const TextStyle(
+                                    color: UiPalette.white70,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                      for (final action in topActions)
-                        _UiMediaAction(action: action),
-                    ],
+                        for (final action in topActions)
+                          _UiMediaAction(action: action),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          if (bottomActions.isNotEmpty || widget.items.length > 1)
+          if (widget.showChrome &&
+              (bottomActions.isNotEmpty || widget.items.length > 1))
             _ChromeVisibility(
               visible: _chromeVisible,
               duration: duration,

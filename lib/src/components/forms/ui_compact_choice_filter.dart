@@ -9,6 +9,7 @@ import '../../foundation/overlay/ui_layered_overlay.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/theme/ui_text_scale.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart' show UiButtonMetrics, UiSize;
 
@@ -409,7 +410,9 @@ class _MorphContent<T> extends StatelessWidget {
       progress: progress,
       alignment: isRtl ? Alignment.centerLeft : Alignment.centerRight,
       collapsed: SizedBox(
-        height: 36,
+        // Collapsed chip is chrome: grows with the font size up to
+        // [kUiChromeScaleMax] so a scaled icon/label still fits.
+        height: 36 * uiChromeScale(context),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x1),
           child: Center(

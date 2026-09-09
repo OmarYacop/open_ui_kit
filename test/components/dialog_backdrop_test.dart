@@ -106,7 +106,7 @@ void main() {
         contains(
           const EdgeInsetsDirectional.only(
             top: 20,
-            start: 20,
+            start: 12,
             bottom: 12,
             end: 12,
           ),

@@ -76,10 +76,12 @@ class UiRadio<T> extends StatelessWidget {
               ),
               if (label != null) ...[
                 SizedBox(width: tokens.spacing.x2),
-                UiText(
-                  label!,
-                  variant: UiTextVariant.body,
-                  tone: _interactive ? UiTextTone.primary : UiTextTone.muted,
+                Flexible(
+                  child: UiText(
+                    label!,
+                    variant: UiTextVariant.body,
+                    tone: _interactive ? UiTextTone.primary : UiTextTone.muted,
+                  ),
                 ),
               ],
             ],

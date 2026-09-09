@@ -9,3 +9,5 @@ export 'ui_motion_tokens.dart';
 export 'ui_motion_transitions.dart';
 export 'ui_shared_morph.dart';
 export 'ui_stacked_motion.dart';
+export 'ui_fluid_motion.dart';
+export 'ui_fluid_route_motion.dart';

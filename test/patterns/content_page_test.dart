@@ -34,6 +34,35 @@ void main() {
     );
   });
 
+  testWidgets('content below sliver navigation clears the phone top fade', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const MediaQuery(
+          data: MediaQueryData(
+            size: Size(390, 844),
+            padding: EdgeInsets.only(top: 24),
+          ),
+          child: SizedBox(
+            width: 390,
+            height: 700,
+            child: UiContentPage(
+              title: 'Dashboard',
+              children: [Text('First row')],
+            ),
+          ),
+        ),
+      ),
+    );
+    final pageTop = tester.getTopLeft(find.byType(UiPageScaffold)).dy;
+    expect(
+      tester.getTopLeft(find.text('First row')).dy,
+      greaterThanOrEqualTo(pageTop + 128),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('UiContentPage delegates refresh feedback to its scaffold', (
     tester,
   ) async {

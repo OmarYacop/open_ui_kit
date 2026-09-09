@@ -5,6 +5,7 @@ import '../../foundation/motion/ui_motion_transitions.dart';
 import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
+import '../../foundation/theme/ui_text_scale.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'tab_layout.dart';
 
@@ -258,7 +259,7 @@ class _TabStackState extends State<_TabStack> {
     final dragging = _drag.isActive;
 
     return SizedBox(
-      height: _kLiquidTabHeight,
+      height: _kLiquidTabHeight * uiChromeScaleFor(textScaler),
       child: Stack(
         key: _stackKey,
         children: [
@@ -365,7 +366,8 @@ class _TabStackState extends State<_TabStack> {
     )..layout();
     final iconWidth = tab.icon == null
         ? 0.0
-        : _kLiquidTabIconSize + _kLiquidTabIconGap;
+        : _kLiquidTabIconSize * uiChromeScaleFor(textScaler) +
+              _kLiquidTabIconGap;
     return painter.width + iconWidth + _kLiquidTabHorizontalPadding * 2;
   }
 }
@@ -425,7 +427,8 @@ class _TabButton extends StatelessWidget {
                       IconTheme.merge(
                         data: IconThemeData(
                           color: selected ? c.textPrimary : c.textMuted,
-                          size: _kLiquidTabIconSize,
+                          size: _kLiquidTabIconSize * uiChromeScale(context),
+                          applyTextScaling: false,
                         ),
                         child: tab.icon!,
                       ),

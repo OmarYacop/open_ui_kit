@@ -1,3 +1,9 @@
+> **Tracking update:** Use the repository's [Linear tracking agreement](../AGENTS.md#linear-tracking-primary-work-tracker)
+> for new work. It defines the project, labels, statuses, and Linear issue links.
+> GitHub issue forms, numeric `#N` references, and backlog sync instructions below
+> describe legacy tracking; retain them for existing issues. Do not create a parallel
+> GitHub issue for new Linear work. Branch, CI, review, and release rules still apply.
+
 # Open UI Kit development workflow
 
 This is the source of truth for issues, labels, branches, pull requests, local checks, package

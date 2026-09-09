@@ -17,20 +17,55 @@ class UiDialog extends StatelessWidget {
     this.description,
     this.content,
     this.actions = const [],
-  });
+    this.headerAction,
+    this.maxWidth = 420,
+    this.scrollable = false,
+  }) : assert(maxWidth > 0);
 
   final String? title;
   final String? description;
   final Widget? content;
   final List<Widget> actions;
 
+  /// Trailing control on the title row, typically a close button. Shown
+  /// even without a [title].
+  final Widget? headerAction;
+
+  /// Widest the surface grows; it still shrinks to fit narrow viewports.
+  final double maxWidth;
+
+  /// Lets [content] scroll inside the viewport instead of overflowing when
+  /// it is taller than the space the dialog is given. Title, description
+  /// and [actions] stay pinned.
+  final bool scrollable;
+
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
+    final titleRow = title == null && headerAction == null
+        ? null
+        : Row(
+            children: [
+              Expanded(
+                child: title == null
+                    ? const SizedBox.shrink()
+                    : UiText(title!, variant: UiTextVariant.heading),
+              ),
+              if (headerAction != null) ...[
+                SizedBox(width: tokens.spacing.x3),
+                headerAction!,
+              ],
+            ],
+          );
+    final body = content == null
+        ? null
+        : scrollable
+        ? Flexible(child: SingleChildScrollView(child: content))
+        : content!;
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: UiBox(
           background: c.card,
           border: Border.all(color: c.border),
@@ -41,7 +76,7 @@ class UiDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (title != null) UiText(title!, variant: UiTextVariant.heading),
+              if (titleRow != null) titleRow,
               if (description != null) ...[
                 SizedBox(height: tokens.spacing.x2),
                 UiText(
@@ -50,9 +85,10 @@ class UiDialog extends StatelessWidget {
                   tone: UiTextTone.muted,
                 ),
               ],
-              if (content != null) ...[
-                SizedBox(height: tokens.spacing.x4),
-                content!,
+              if (body != null) ...[
+                if (titleRow != null || description != null)
+                  SizedBox(height: tokens.spacing.x4),
+                body,
               ],
               if (actions.isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.x6),

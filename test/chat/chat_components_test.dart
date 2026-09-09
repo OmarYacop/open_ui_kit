@@ -436,6 +436,47 @@ void main() {
     expect(latestPressed, isTrue);
   });
 
+  for (final scale in [1.0, 1.15, 2.0]) {
+    testWidgets('scroll control surfaces match at text scale $scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+            child: UiMessageScrollControls(
+              show: true,
+              queuedMessageCount: 4,
+              replyReturnCount: 2,
+              onScrollToBottom: () {},
+              onReplyReturn: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final latest = find.byType(UiMessageScrollToBottomButton);
+      final reply = find.byType(UiMessageReplyReturnButton);
+      final latestSurface = tester.getRect(
+        find.descendant(of: latest, matching: find.byType(UiBox)).first,
+      );
+      final replySurface = tester.getRect(
+        find.descendant(of: reply, matching: find.byType(UiBox)).first,
+      );
+      expect(latestSurface.height, closeTo(replySurface.height, .01));
+      expect(latestSurface.width, latestSurface.height);
+      expect(latestSurface.center.dy, closeTo(replySurface.center.dy, .01));
+      expect(latestSurface.height, scale < 2 ? 34 : greaterThan(34));
+      for (final control in [latest, reply]) {
+        final hitSize = tester.getSize(control);
+        expect(hitSize.width, greaterThanOrEqualTo(44));
+        expect(hitSize.height, greaterThanOrEqualTo(44));
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('reply action springs in when controls mount with a stack', (
     tester,
   ) async {

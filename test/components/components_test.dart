@@ -837,6 +837,7 @@ void main() {
           tester.getCenter(find.byIcon(Icons.close_rounded)),
         );
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
 
         final transforms = tester
             .widgetList<Transform>(find.byType(Transform))
@@ -853,6 +854,7 @@ void main() {
 
         await gesture.up();
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
       },
     );
 
@@ -879,6 +881,7 @@ void main() {
             tester.getCenter(find.byIcon(Icons.close_rounded)),
           );
           await tester.pump();
+          await tester.pump(const Duration(milliseconds: 60));
 
           final transforms = tester
               .widgetList<Transform>(find.byType(Transform))
@@ -892,6 +895,7 @@ void main() {
 
           await gesture.up();
           await tester.pump();
+          await tester.pump(const Duration(milliseconds: 60));
         }
       },
     );
@@ -2026,7 +2030,9 @@ void main() {
       expect(find.text('Option 499'), findsNothing);
 
       await tester.enterText(find.byType(EditableText), '499');
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 299));
+      expect(find.text('Option 499'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
 
       expect(find.text('Option 499'), findsOneWidget);
       await tester.tap(find.text('Option 499'));

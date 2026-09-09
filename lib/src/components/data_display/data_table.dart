@@ -8,6 +8,7 @@ import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../forms/button.dart';
+import '../drag_drop/ui_reorderable_list.dart';
 
 @immutable
 class UiDataColumn {
@@ -40,7 +41,17 @@ class UiDataColumn {
 
 @immutable
 class UiDataRow {
-  const UiDataRow({required this.cells, this.selected = false, this.onTap});
+  const UiDataRow({
+    required this.cells,
+    this.selected = false,
+    this.onTap,
+    this.key,
+    this.semanticLabel,
+  });
+
+  /// Stable identity required when the containing table enables reordering.
+  final LocalKey? key;
+  final String? semanticLabel;
 
   final List<Widget> cells;
   final bool selected;
@@ -62,7 +73,13 @@ class UiDataTable extends StatelessWidget {
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  }) : rowCount = null,
+    this.onReorder,
+    this.reorderEnabled = true,
+    this.moveUpLabel = 'Move up',
+    this.moveDownLabel = 'Move down',
+  }) : rowKeyBuilder = null,
+       rowLabelBuilder = null,
+       rowCount = null,
        rowBuilder = null;
 
   const UiDataTable.lazy({
@@ -77,8 +94,27 @@ class UiDataTable extends StatelessWidget {
     this.maxBodyHeight = 360,
     this.rowExtent = 44,
     this.scrollable = true,
-  }) : rows = const [],
+    this.onReorder,
+    this.reorderEnabled = true,
+    this.rowKeyBuilder,
+    this.rowLabelBuilder,
+    this.moveUpLabel = 'Move up',
+    this.moveDownLabel = 'Move down',
+  }) : assert(onReorder == null || rowKeyBuilder != null),
+       rows = const [],
        lazyRowThreshold = 0;
+
+  /// Opts into row sorting. Receives final indices after removal; update the
+  /// backing data synchronously. Null retains the original rendering path.
+  final void Function(int from, int to)? onReorder;
+  final bool reorderEnabled;
+
+  /// Required for lazy reordering; must return stable identity without building
+  /// cells. This preserves lazy row construction even when dragging.
+  final LocalKey Function(int index)? rowKeyBuilder;
+  final String Function(int index)? rowLabelBuilder;
+  final String moveUpLabel;
+  final String moveDownLabel;
 
   final List<UiDataColumn> columns;
   final List<UiDataRow> rows;
@@ -149,6 +185,64 @@ class UiDataTable extends StatelessWidget {
           variant: UiTextVariant.body,
           tone: UiTextTone.muted,
         ),
+      );
+    } else if (onReorder != null) {
+      final list = UiReorderableList<int>.builder(
+        itemCount: _effectiveRowCount,
+        itemExtent: math.max(44, rowExtent),
+        itemAt: (index) => index,
+        itemKey: (index) {
+          final key = _isLazy ? rowKeyBuilder?.call(index) : rows[index].key;
+          if (key == null) {
+            throw FlutterError(
+              'Reorderable UiDataTable rows require stable keys.',
+            );
+          }
+          return key;
+        },
+        itemLabel: (index) =>
+            rowLabelBuilder?.call(index) ??
+            (!_isLazy ? rows[index].semanticLabel : null) ??
+            'Row ${index + 1}',
+        onReorder: onReorder!,
+        enabled: reorderEnabled,
+        moveUpLabel: moveUpLabel,
+        moveDownLabel: moveDownLabel,
+        shrinkWrap: !scrollable,
+        physics: scrollable ? null : const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index, _, handle) => Row(
+          children: [
+            handle,
+            Expanded(
+              child: _DataRow(
+                columns: columns,
+                row: rowBuilder?.call(context, index) ?? rows[index],
+                showTopBorder: index > 0,
+              ),
+            ),
+          ],
+        ),
+      );
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 44),
+              Expanded(child: _HeaderRow(columns: columns)),
+            ],
+          ),
+          if (scrollable)
+            SizedBox(
+              height: math.min(
+                maxBodyHeight,
+                _effectiveRowCount * math.max(44, rowExtent),
+              ),
+              child: list,
+            )
+          else
+            list,
+        ],
       );
     } else if (_isLazy || rows.length > lazyRowThreshold) {
       body = _LazyRowsTableBody(

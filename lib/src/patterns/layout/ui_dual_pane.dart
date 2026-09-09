@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../../foundation/layout/ui_active_page_scope.dart';
 import '../../foundation/layout/ui_form_factor.dart';
 import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
@@ -453,6 +454,12 @@ class _SelectedPane<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return builder(context, selected, controller.select);
+    // An inline detail shares its route with the primary pane, which owns
+    // the page-level chrome. Mark it inactive so a navigation bar or chat
+    // header inside it never renames the page's history entry.
+    return UiActivePageScope(
+      active: false,
+      child: builder(context, selected, controller.select),
+    );
   }
 }

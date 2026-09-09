@@ -1,0 +1,15 @@
+# Chat interaction
+
+`UiChatComposer` contains the editable field and send/idle action inside a shared input surface. The leading attachment control stays outside. Applications can use `UiDropdownMenu` with a `UiIconButton` trigger and Camera, media and file actions.
+
+`UiMessageScroller` accepts chronological items with stable unique IDs. It renders a standard reversed `ListView.builder`: Flutter owns gestures, platform scroll physics, momentum, and lazy layout. Older history grows at the far end of the reversed list, leaving the current offset unchanged. The controller and viewport remain stable; ordinary scrolling does not trigger reanchoring. When insertions move a visible row, a layout-only offset correction preserves that row without cancelling an active drag or fling.
+
+The chat layer retains message-ID jumps, latest/unseen controls, unread boundaries, pagination, asynchronous initial loading, and composer padding. Latest maps directly to offset zero. An offscreen message jump seeks using measured rows and finishes against the actual target; it can require multiple layouts for unknown variable heights. This is an explicit-command cost, not work performed during ordinary scrolling. A normal ListView may build intervening rows during a distant jump, so this is not constant-time indexed access. New commands and pointer input cancel older positioning work. Missing or interrupted targets return false.
+
+Only viewport/cache rows are mounted in normal use, subject to child keep-alive requests. The public `items` API still requires callers to allocate item and child widget objects; wrap expensive message composition in `Builder` so it runs when mounted. Streaming at the live edge follows naturally as the bottom row grows.
+
+Search `UiInput` callbacks default to a 300 ms debounce when `textInputAction` is `TextInputAction.search`; use `debounceDuration` for other search fields or `Duration.zero` for immediate callbacks. Clearing is immediate and pending callbacks are cancelled on disposal. Controller listeners still receive immediate editor updates; application query state must debounce independently. `UiCombobox` also debounces its result filtering.
+
+Navigator history is scoped to the current route. A back label is an accessibility label, not an additional destination. Observer-generated targets retain route identity, so removed destinations cannot accidentally pop a different stack.
+
+For reply navigation, use `controller.isMessageVisible(id)` before recording a return location and `jumpToMessage(id, onlyIfNeeded: true)` to reveal clipped/offscreen targets with minimal movement. Visibility uses the padded reading area and excludes cached offscreen rows. The default jump alignment remains unchanged. Record a return only after a successful jump, and remove it only after a successful return; approaching the live edge alone should not clear the stack. `controller.isScrolling` lets application-managed arrival handling avoid interrupting user drags or flings.

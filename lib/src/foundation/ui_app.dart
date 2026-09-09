@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'motion/ui_motion_spec.dart';
 import 'reactive/ui_clock.dart';
 import 'scrolling/ui_scroll_configuration.dart';
+import 'theme/ui_text_scale.dart';
 import 'theme/ui_theme_extensions.dart';
 import '../patterns/navigation/ui_navigation_transition.dart';
 import '../patterns/navigation/ui_navigator_history.dart';
@@ -54,7 +55,8 @@ class UiApp extends StatefulWidget {
     this.clockController,
     this.clockTickMode = UiClockTickMode.minute,
     this.clockTickInterval,
-  });
+    this.maxTextScale,
+  }) : assert(maxTextScale == null || maxTextScale >= 1);
 
   final Widget? home;
   final UiThemeTokens? lightTokens;
@@ -96,6 +98,18 @@ class UiApp extends StatefulWidget {
   final UiClockController? clockController;
   final UiClockTickMode clockTickMode;
   final Duration? clockTickInterval;
+
+  /// Upper bound for the system text scale inside this app, or `null`
+  /// (the default) to honour whatever the platform reports.
+  ///
+  /// When set, the app's [MediaQuery] text scaler is clamped so text *and*
+  /// icons stop growing together at this factor — the root `IconTheme` of
+  /// [UiApp] applies text scaling to every `Icon`, so a bare
+  /// `Icon` grows with the user's font size exactly like a `Text` does. Kit
+  /// chrome (icon buttons, tab bars, rails) independently caps its own
+  /// growth at [kUiChromeScaleMax] via [uiChromeScale]; this clamp is for
+  /// apps whose layouts cannot absorb larger accessibility sizes at all.
+  final double? maxTextScale;
 
   @override
   State<UiApp> createState() => _UiAppState();
@@ -182,22 +196,43 @@ class _UiAppState extends State<UiApp> {
             title: widget.title,
             child: UiTheme(
               tokens: tokens,
-              child: UiPageRouteDefaults(
-                transitionStyle: widget.defaultPageTransitionStyle,
-                swipeBackEnabled: widget.defaultPageSwipeBackEnabled,
-                child: UiNavigatorHistoryScope(
-                  observer: _historyObserver,
-                  child: UiScrollConfiguration(
-                    child: child ?? const SizedBox.shrink(),
+              // Bare `Icon`s outside kit slots would otherwise fall back to
+              // Flutter's opaque-black default in both themes, and — without
+              // `applyTextScaling` — stay 24pt while the text beside them
+              // grows with the system font size. Kit slots that only merge a
+              // colour/size inherit the scaling from here.
+              child: IconTheme(
+                data: IconThemeData(
+                  color: tokens.colors.textPrimary,
+                  size: 24,
+                  applyTextScaling: true,
+                ),
+                child: UiPageRouteDefaults(
+                  transitionStyle: widget.defaultPageTransitionStyle,
+                  swipeBackEnabled: widget.defaultPageSwipeBackEnabled,
+                  child: UiNavigatorHistoryScope(
+                    observer: _historyObserver,
+                    child: UiScrollConfiguration(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         );
-        return widget.builder == null
+        final built = widget.builder == null
             ? themed
             : widget.builder!(context, themed);
+        final maxTextScale = widget.maxTextScale;
+        if (maxTextScale == null) return built;
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: MediaQuery.textScalerOf(context)
+                .clamp(maxScaleFactor: maxTextScale),
+          ),
+          child: built,
+        );
       },
       home: widget.home,
     );

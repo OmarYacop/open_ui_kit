@@ -1,29 +1,57 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:lucide_flutter/lucide_flutter.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 
 import '../../foundation/layout/layout.dart';
+import '../../foundation/icons/ui_directional_icons.dart';
+import '../../foundation/intl/intl.dart';
+import '../../foundation/motion/ui_contour_controller.dart';
+import '../../foundation/motion/ui_contour_crossfade.dart';
+import '../../foundation/motion/ui_fluid_motion.dart';
+import '../surfaces/ui_fluid_surface.dart';
+import '../surfaces/fluid_bridge_path.dart';
+import '../../foundation/motion/ui_motion_spec.dart';
+import '../forms/icon_button.dart';
+import '../forms/button.dart';
+import '../drag_drop/ui_draggable.dart';
 import '../../foundation/primitives/ui_box.dart';
+import '../../foundation/primitives/ui_action_surface_owner.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/theme/ui_text_scale.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'bottom_tab_metrics.dart';
 import 'tab_layout.dart';
+
+import 'bottom_tab_accessory_identity.dart';
+
+part 'bottom_dock_accessory.dart';
+part 'paged_bottom_tab_bar.dart';
+part 'expanding_bottom_tab_bar.dart';
 
 /// One slot in a [UiBottomTabBar].
 @immutable
 class UiBottomTabItem {
   const UiBottomTabItem({
     required this.label,
+    this.id,
     this.icon,
     this.activeIcon,
     this.badge,
   });
 
   final String label;
+
+  /// Stable identity for drawer ordering, independent of the translated label.
+  final String? id;
 
   /// Idle-state icon.
   final Widget? icon;
@@ -46,6 +74,7 @@ class UiBottomTabItem {
 class UiBottomTabAccessory {
   const UiBottomTabAccessory({
     required this.child,
+    this.contentKey,
     this.expanded = false,
     this.leadingItem,
     this.onLeadingPressed,
@@ -58,6 +87,15 @@ class UiBottomTabAccessory {
        );
 
   final Widget child;
+
+  /// Identity of the visible content, independent of the selected destination.
+  ///
+  /// Keep this equal across pages that show the same control; change it when
+  /// custom content should dissolve. By default, icons (including those in
+  /// [UiIconButton]) use their icon data, and other widgets use type and key.
+  /// Callbacks and semantics still update when this identity stays equal.
+  final Object? contentKey;
+
   final bool expanded;
   final UiBottomTabItem? leadingItem;
   final VoidCallback? onLeadingPressed;
@@ -75,6 +113,7 @@ class UiBottomTabAccessory {
 
   UiBottomTabAccessory copyWith({
     Widget? child,
+    Object? contentKey,
     bool? expanded,
     UiBottomTabItem? leadingItem,
     VoidCallback? onLeadingPressed,
@@ -84,6 +123,7 @@ class UiBottomTabAccessory {
   }) {
     return UiBottomTabAccessory(
       child: child ?? this.child,
+      contentKey: contentKey ?? this.contentKey,
       expanded: expanded ?? this.expanded,
       leadingItem: leadingItem ?? this.leadingItem,
       onLeadingPressed: onLeadingPressed ?? this.onLeadingPressed,
@@ -447,23 +487,43 @@ class UiBottomTabBar extends StatelessWidget {
     Key? key,
     EdgeInsetsGeometry padding = const EdgeInsets.all(_kLiquidDockPadding),
   }) {
-    final tokens = UiThemeTokens.of(context);
-    final colors = tokens.colors;
-    final resolvedBlurSigma = tokens.effects.scaleBlur(blurSigma);
-    return _BlurredTabSurface(
+    return _buildBottomTabSurface(
+      context,
       key: key,
-      background: (backgroundColor ?? colors.surface).withValues(
-        alpha: tokens.brightness == Brightness.dark ? 0.72 : 0.68,
-      ),
-      borderColor: colors.border.withValues(alpha: 0.78),
-      borderRadius: tokens.radius.pillAll,
-      boxShadow: tokens.shadows.lg,
-      blurred: blurred && resolvedBlurSigma > 0,
-      blurSigma: resolvedBlurSigma,
       padding: padding,
+      backgroundColor: backgroundColor,
+      blurred: blurred,
+      blurSigma: blurSigma,
       child: child,
     );
   }
+}
+
+Widget _buildBottomTabSurface(
+  BuildContext context, {
+  required Widget child,
+  Key? key,
+  EdgeInsetsGeometry padding = const EdgeInsets.all(_kLiquidDockPadding),
+  Color? backgroundColor,
+  bool blurred = true,
+  double blurSigma = 8,
+}) {
+  final tokens = UiThemeTokens.of(context);
+  final colors = tokens.colors;
+  final resolvedBlurSigma = tokens.effects.scaleBlur(blurSigma);
+  return _BlurredTabSurface(
+    key: key,
+    background: (backgroundColor ?? colors.surface).withValues(
+      alpha: tokens.brightness == Brightness.dark ? 0.72 : 0.68,
+    ),
+    borderColor: colors.border.withValues(alpha: 0.78),
+    borderRadius: tokens.radius.pillAll,
+    boxShadow: tokens.shadows.lg,
+    blurred: blurred && resolvedBlurSigma > 0,
+    blurSigma: resolvedBlurSigma,
+    padding: padding,
+    child: child,
+  );
 }
 
 class _AccessoryLeadingCell extends StatelessWidget {
@@ -476,6 +536,7 @@ class _AccessoryLeadingCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final icon = item.activeIcon ?? item.icon;
+    final iconSize = _kLiquidTabIconSize * uiChromeScale(context);
     return UiPressable(
       onPressed: onPressed,
       semanticsLabel: item.label,
@@ -491,10 +552,11 @@ class _AccessoryLeadingCell extends StatelessWidget {
             child: IconTheme(
               data: IconThemeData(
                 color: tokens.colors.textPrimary,
-                size: _kLiquidTabIconSize,
+                size: iconSize,
+                applyTextScaling: false,
               ),
               child: SizedBox.square(
-                dimension: _kLiquidTabIconSize,
+                dimension: iconSize,
                 child: FittedBox(fit: BoxFit.contain, child: icon),
               ),
             ),
@@ -954,6 +1016,8 @@ class _TabCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
+    // Matches the reservation in [resolveBottomTabBarHeight].
+    final iconSize = _kLiquidTabIconSize * uiChromeScale(context);
 
     return UiPressable(
       onPressed: onTap,
@@ -982,13 +1046,14 @@ class _TabCell extends StatelessWidget {
                   children: [
                     if (icon != null)
                       SizedBox.square(
-                        dimension: _kLiquidTabIconSize,
+                        dimension: iconSize,
                         child: FittedBox(
                           fit: BoxFit.contain,
                           child: IconTheme(
                             data: IconThemeData(
                               color: color,
-                              size: _kLiquidTabIconSize,
+                              size: iconSize,
+                              applyTextScaling: false,
                             ),
                             child: icon,
                           ),

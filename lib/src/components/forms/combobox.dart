@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
@@ -82,6 +83,8 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   final GlobalKey _targetKey = GlobalKey();
   final LayerLink _link = LayerLink();
   final ScrollController _scrollController = ScrollController();
+  Timer? _searchTimer;
+  String _filterQuery = '';
   final TextEditingController _queryController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final Object _tapRegionGroup = Object();
@@ -107,7 +110,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   }
 
   List<int> get _visibleIndexes {
-    final query = _queryController.text.trim();
+    final query = _filterQuery.trim();
     if (query.isEmpty) {
       return List<int>.generate(widget.options.length, (i) => i);
     }
@@ -153,6 +156,7 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
 
   @override
   void dispose() {
+    _searchTimer?.cancel();
     _isDisposing = true;
     _hide(notify: false);
     _queryController.removeListener(_handleQueryChange);
@@ -164,6 +168,18 @@ class _UiComboboxState<T> extends State<UiCombobox<T>> {
   }
 
   void _handleQueryChange() {
+    _searchTimer?.cancel();
+    if (_queryController.text.isEmpty || !_searchFocusNode.hasFocus) {
+      _publishQuery();
+    } else {
+      _searchTimer = Timer(const Duration(milliseconds: 300), _publishQuery);
+    }
+  }
+
+  void _publishQuery() {
+    if (!mounted) return;
+    _filterQuery = _queryController.text;
+
     if (mounted) setState(() {});
     if (_entry == null) return;
     _overlaySetState?.call(() {});

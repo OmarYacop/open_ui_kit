@@ -8,6 +8,7 @@ import '../../foundation/motion/ui_motion_spec.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/theme/ui_text_scale.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import 'button.dart';
 
@@ -1565,8 +1566,12 @@ class _MechanicalButtonContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final iconSize = UiButtonMetrics.iconSize(size);
-    final iconExtent = math.max(iconSize, 16.0);
+    // Icon slots are chrome: the reserved extent and the glyph grow together
+    // up to [kUiChromeScaleMax], and the glyph opts out of the root
+    // `applyTextScaling` so it is not scaled twice.
+    final chromeScale = uiChromeScale(context);
+    final iconSize = UiButtonMetrics.iconSize(size) * chromeScale;
+    final iconExtent = math.max(iconSize, 16.0 * chromeScale);
     if (entry.loading) {
       return Center(
         child: SizedBox(width: iconExtent, height: iconExtent),
@@ -1602,7 +1607,11 @@ class _MechanicalButtonContent extends StatelessWidget {
             children: [
               if (hasLeading && canShowLeading) ...[
                 IconTheme.merge(
-                  data: IconThemeData(color: foreground, size: iconSize),
+                  data: IconThemeData(
+                    color: foreground,
+                    size: iconSize,
+                    applyTextScaling: false,
+                  ),
                   child: SizedBox(
                     width: iconExtent,
                     height: iconExtent,
@@ -1629,7 +1638,11 @@ class _MechanicalButtonContent extends StatelessWidget {
               if (hasTrailing && canShowTrailing) ...[
                 if (canShowLabel) SizedBox(width: gapSize),
                 IconTheme.merge(
-                  data: IconThemeData(color: foreground, size: iconSize),
+                  data: IconThemeData(
+                    color: foreground,
+                    size: iconSize,
+                    applyTextScaling: false,
+                  ),
                   child: SizedBox(
                     width: iconExtent,
                     height: iconExtent,

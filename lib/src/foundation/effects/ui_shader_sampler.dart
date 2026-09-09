@@ -32,8 +32,10 @@ class UiShaderBuilder extends StatefulWidget {
 
 class _UiShaderBuilderState extends State<UiShaderBuilder> {
   static final _programs = <String, ui.FragmentProgram>{};
+  static final _pendingPrograms = <String, Future<ui.FragmentProgram>>{};
 
   ui.FragmentShader? _shader;
+  final _contentKey = GlobalKey();
 
   @override
   void initState() {
@@ -49,8 +51,18 @@ class _UiShaderBuilderState extends State<UiShaderBuilder> {
 
   Future<void> _load(String assetKey) async {
     try {
-      final program = _programs[assetKey] ?? await _loadProgram(assetKey);
-      _programs[assetKey] = program;
+      var program = _programs[assetKey];
+      if (program == null) {
+        try {
+          program = await _pendingPrograms.putIfAbsent(
+            assetKey,
+            () => _loadProgram(assetKey),
+          );
+          _programs[assetKey] = program;
+        } finally {
+          _pendingPrograms.remove(assetKey);
+        }
+      }
       if (!mounted || assetKey != widget.assetKey) return;
       final shader = program.fragmentShader();
       setState(() {
@@ -58,6 +70,7 @@ class _UiShaderBuilderState extends State<UiShaderBuilder> {
         _shader = shader;
       });
     } catch (error, stackTrace) {
+      _programs.remove(assetKey);
       FlutterError.reportError(
         FlutterErrorDetails(exception: error, stack: stackTrace),
       );
@@ -85,9 +98,10 @@ class _UiShaderBuilderState extends State<UiShaderBuilder> {
   @override
   Widget build(BuildContext context) {
     final shader = _shader;
-    return shader == null
-        ? widget.child
-        : widget.builder(context, shader, widget.child);
+    // Loading inserts a shader wrapper around the live page. Retain its state
+    // while moving it into that wrapper (including focus, forms and scroll).
+    final child = KeyedSubtree(key: _contentKey, child: widget.child);
+    return shader == null ? child : widget.builder(context, shader, child);
   }
 }
 
@@ -103,14 +117,32 @@ class UiShaderSampler extends SingleChildRenderObjectWidget {
     super.key,
     required this.painter,
     required super.child,
+    this.sampleBounds,
+    this.paintChild = false,
+    this.childPaintBounds,
   });
 
   final UiShaderSamplerPainter painter;
+
+  /// Optional texture region in child-local logical coordinates. The painter
+  /// receives this region's size and a canvas whose origin is its top-left.
+  final Rect Function(Size size)? sampleBounds;
+
+  /// Paint the original child before the sampled overlay. Useful when only
+  /// a small region needs a shader, avoiding a full-page intermediate texture.
+  final bool paintChild;
+
+  /// Optional unfiltered region. Separating it from the shader overlay avoids
+  /// double compositing translucent pixels at the sampled edge.
+  final Rect Function(Size size)? childPaintBounds;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
     return _RenderUiShaderSampler(
       painter: painter,
+      sampleBounds: sampleBounds,
+      paintChild: paintChild,
+      childPaintBounds: childPaintBounds,
       devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
     );
   }
@@ -119,6 +151,9 @@ class UiShaderSampler extends SingleChildRenderObjectWidget {
   void updateRenderObject(BuildContext context, RenderObject renderObject) {
     (renderObject as _RenderUiShaderSampler)
       ..painter = painter
+      ..sampleBounds = sampleBounds
+      ..paintChild = paintChild
+      ..childPaintBounds = childPaintBounds
       ..devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
   }
 }
@@ -127,12 +162,36 @@ class _RenderUiShaderSampler extends RenderProxyBox {
   _RenderUiShaderSampler({
     required this._painter,
     required this._devicePixelRatio,
+    this._sampleBounds,
+    this._paintChild = false,
+    this._childPaintBounds,
   });
 
   UiShaderSamplerPainter _painter;
   set painter(UiShaderSamplerPainter value) {
     if (_painter == value) return;
     _painter = value;
+    markNeedsCompositedLayerUpdate();
+  }
+
+  Rect Function(Size)? _sampleBounds;
+  set sampleBounds(Rect Function(Size)? value) {
+    if (_sampleBounds == value) return;
+    _sampleBounds = value;
+    markNeedsCompositedLayerUpdate();
+  }
+
+  Rect Function(Size)? _childPaintBounds;
+  set childPaintBounds(Rect Function(Size)? value) {
+    if (_childPaintBounds == value) return;
+    _childPaintBounds = value;
+    markNeedsCompositedLayerUpdate();
+  }
+
+  bool _paintChild;
+  set paintChild(bool value) {
+    if (_paintChild == value) return;
+    _paintChild = value;
     markNeedsCompositedLayerUpdate();
   }
 
@@ -157,6 +216,9 @@ class _RenderUiShaderSampler extends RenderProxyBox {
     return layer
       ..painter = _painter
       ..logicalSize = size
+      ..sampleBounds = _sampleBounds?.call(size)
+      ..paintChild = _paintChild
+      ..childPaintBounds = _childPaintBounds?.call(size)
       ..devicePixelRatio = _devicePixelRatio;
   }
 
@@ -171,6 +233,27 @@ class _UiShaderSamplerLayer extends OffsetLayer {
   UiShaderSamplerPainter? _painter;
   Size _logicalSize = Size.zero;
   double _devicePixelRatio = 1;
+  Rect? _childPaintBounds;
+  set childPaintBounds(Rect? value) {
+    if (_childPaintBounds == value) return;
+    _childPaintBounds = value;
+    markNeedsAddToScene();
+  }
+
+  Rect? _sampleBounds;
+  bool _paintChild = false;
+
+  set sampleBounds(Rect? value) {
+    if (_sampleBounds == value) return;
+    _sampleBounds = value;
+    markNeedsAddToScene();
+  }
+
+  set paintChild(bool value) {
+    if (_paintChild == value) return;
+    _paintChild = value;
+    markNeedsAddToScene();
+  }
 
   set painter(UiShaderSamplerPainter value) {
     if (_painter == value) return;
@@ -194,30 +277,53 @@ class _UiShaderSamplerLayer extends OffsetLayer {
   void addToScene(ui.SceneBuilder builder) {
     if (_logicalSize.isEmpty || _painter == null) return;
 
+    if (_paintChild) {
+      final clip = _childPaintBounds;
+      if (clip != null) {
+        builder.pushClipRect(clip.shift(offset), clipBehavior: Clip.hardEdge);
+      }
+      super.addToScene(builder);
+      if (clip != null) builder.pop();
+    }
+    final bounds = (_sampleBounds ?? (Offset.zero & _logicalSize)).intersect(
+      Offset.zero & _logicalSize,
+    );
+    if (bounds.isEmpty) return;
     final childSceneBuilder = ui.SceneBuilder();
     final transform = Matrix4.diagonal3Values(
       _devicePixelRatio,
       _devicePixelRatio,
       1,
     );
+    transform.setTranslationRaw(
+      -bounds.left * _devicePixelRatio,
+      -bounds.top * _devicePixelRatio,
+      0,
+    );
     childSceneBuilder.pushTransform(transform.storage);
     addChildrenToScene(childSceneBuilder);
     childSceneBuilder.pop();
-    final childImage = childSceneBuilder.build().toImageSync(
-      (_logicalSize.width * _devicePixelRatio).ceil(),
-      (_logicalSize.height * _devicePixelRatio).ceil(),
-    );
+    final scene = childSceneBuilder.build();
+    final ui.Image childImage;
+    try {
+      childImage = scene.toImageSync(
+        (bounds.width * _devicePixelRatio).ceil(),
+        (bounds.height * _devicePixelRatio).ceil(),
+      );
+    } finally {
+      scene.dispose();
+    }
 
     final recorder = ui.PictureRecorder();
     try {
-      _painter!(childImage, _logicalSize, ui.Canvas(recorder));
+      _painter!(childImage, bounds.size, ui.Canvas(recorder));
     } finally {
       childImage.dispose();
     }
     final picture = recorder.endRecording();
     _lastPicture?.dispose();
     _lastPicture = picture;
-    builder.addPicture(offset, picture);
+    builder.addPicture(offset + bounds.topLeft, picture);
   }
 
   @override

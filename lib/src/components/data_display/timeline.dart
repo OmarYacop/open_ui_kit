@@ -6,10 +6,14 @@ import '../../foundation/primitives/ui_box.dart';
 import '../../foundation/primitives/ui_focus_ring.dart';
 import '../../foundation/primitives/ui_pressable.dart';
 import '../../foundation/primitives/ui_text.dart';
+import '../../foundation/theme/ui_text_scale.dart';
 import '../../foundation/theme/ui_theme_extensions.dart';
 import '../feedback/badge.dart';
 import '../forms/button.dart';
 import 'avatar.dart';
+
+/// Design size of the marker ring and the rail column that holds it.
+const double _kTimelineMarkerSize = 32;
 
 /// Semantic color and icon treatment for a timeline event marker.
 enum UiTimelineTone { neutral, success, warning, error, info }
@@ -351,7 +355,7 @@ class _TimelineEventView extends StatelessWidget {
                   ),
                 ),
               SizedBox(
-                width: 32,
+                width: _kTimelineMarkerSize * uiChromeScale(context),
                 child: Column(
                   children: [
                     _TimelineMarker(event: event),
@@ -420,16 +424,23 @@ class _TimelineMarker extends StatelessWidget {
 
     final tokens = UiThemeTokens.of(context);
     final colors = _markerColors(event.tone, tokens);
+    // The marker is chrome: box and glyph grow together up to
+    // [kUiChromeScaleMax] so the glyph never outgrows its ring.
+    final chromeScale = uiChromeScale(context);
     return ExcludeSemantics(
       child: UiBox(
-        width: 32,
-        height: 32,
+        width: _kTimelineMarkerSize * chromeScale,
+        height: _kTimelineMarkerSize * chromeScale,
         alignment: Alignment.center,
         background: colors.$2,
         border: Border.all(color: colors.$1.withValues(alpha: 0.35)),
         borderRadius: tokens.radius.pillAll,
         child: IconTheme.merge(
-          data: IconThemeData(size: 15, color: colors.$1),
+          data: IconThemeData(
+            size: 15 * chromeScale,
+            color: colors.$1,
+            applyTextScaling: false,
+          ),
           child: event.icon ?? Icon(_toneIcon(event.tone)),
         ),
       ),
@@ -792,7 +803,10 @@ class _LoadMore extends StatelessWidget {
             MediaQuery.textScalerOf(context).scale(1) > 1.3;
         return Padding(
           padding: EdgeInsetsDirectional.only(
-            start: (compact ? 0 : 72) + 32 + tokens.spacing.x3,
+            start:
+                (compact ? 0 : 72) +
+                _kTimelineMarkerSize * uiChromeScale(context) +
+                tokens.spacing.x3,
           ),
           child: Align(
             alignment: AlignmentDirectional.centerStart,

@@ -1,5 +1,8 @@
 import 'package:flutter/widgets.dart';
 
+import '../theme/ui_theme_extensions.dart';
+import 'ui_corner_clip.dart';
+
 /// Low-level surface primitive.
 ///
 /// Prefer this over ad-hoc [Container] usage inside Open UI Kit components: it
@@ -52,14 +55,17 @@ class UiBox extends StatelessWidget {
         (boxShadow != null && boxShadow!.isNotEmpty);
 
     if (hasDecoration) {
-      final decoration = BoxDecoration(
+      final radius = UiThemeTokens.radiusOf(context);
+      final decoration = radius.decoration(
         color: background,
         border: border,
         borderRadius: borderRadius,
         boxShadow: boxShadow,
       );
       if (clipBehavior != Clip.none && borderRadius != null) {
-        content = ClipRRect(
+        content = UiCornerClip(
+          continuous:
+              radius.isContinuous && (border == null || border!.isUniform),
           borderRadius: borderRadius!,
           clipBehavior: clipBehavior,
           child: content,

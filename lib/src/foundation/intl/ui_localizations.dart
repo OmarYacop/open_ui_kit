@@ -46,13 +46,40 @@ import 'package:flutter/widgets.dart';
 abstract class UiLocalizations {
   const UiLocalizations();
 
+  String get showAllDestinations => 'Show all pages';
+  String get collapseDestinations => 'Collapse pages';
+  String get customizeDestinations => 'Customize';
+  String get finishCustomizingDestinations => 'Done';
+  String get reorderDestinationsHint =>
+      'Drag to reorder, or tap two pages to swap';
+  String swapDestination(String label) => 'Swap with $label';
+  String moveDestination(String label) => 'Move to the position of $label';
+
   // Concrete defaults keep existing custom localization subclasses compatible.
+  String get previousDestinations => 'Previous destinations';
+  String get nextDestinations => 'Next destinations';
+  String destinationSet(int index, int count) =>
+      'Destination set $index of $count';
+
   String get searchOptions => 'Search options';
   String get noOptions => 'No matching options';
   String removeSelection(String label) => 'Remove $label';
   String selectionCount(int count) => '$count selected';
   String activeSelection(String label, int count) =>
       '$label. ${selectionCount(count)}';
+
+  String textSelectionAction(ContextMenuButtonType type) => switch (type) {
+    ContextMenuButtonType.cut => 'Cut',
+    ContextMenuButtonType.copy => 'Copy',
+    ContextMenuButtonType.paste => 'Paste',
+    ContextMenuButtonType.selectAll => 'Select all',
+    ContextMenuButtonType.delete => 'Delete',
+    ContextMenuButtonType.lookUp => 'Look up',
+    ContextMenuButtonType.searchWeb => 'Search web',
+    ContextMenuButtonType.share => 'Share',
+    ContextMenuButtonType.liveTextInput => 'Scan text',
+    ContextMenuButtonType.custom => 'Action',
+  };
 
   String get formErrors => 'Please check these fields';
 
@@ -336,6 +363,20 @@ class UiLocalizationsEn extends UiLocalizations {
 /// the non-English path and so README examples can show a ready-made
 /// RTL locale.
 class UiLocalizationsAr extends UiLocalizations {
+  @override
+  String get showAllDestinations => 'عرض كل الصفحات';
+  @override
+  String get collapseDestinations => 'طي الصفحات';
+  @override
+  String get customizeDestinations => 'تخصيص';
+  @override
+  String get finishCustomizingDestinations => 'تم';
+  @override
+  String get reorderDestinationsHint => 'اسحب للترتيب أو اضغط صفحتين للتبديل';
+  @override
+  String swapDestination(String label) => 'التبديل مع $label';
+  @override
+  String moveDestination(String label) => 'النقل إلى موضع $label';
   const UiLocalizationsAr();
 
   @override

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -19,15 +18,46 @@ import '../layout/ui_page_scaffold.dart';
 import '../layout/ui_scroll_edge_fade.dart';
 import '../layout/ui_system_bars.dart';
 import 'ui_navigation_back_button.dart';
-import 'ui_navigation_scope.dart';
+import 'ui_compact_navigation_metrics.dart';
 import 'ui_navigation_spec.dart';
 import 'ui_navigator_history.dart';
-import 'ui_route_entry.dart';
 
 // Match iOS large-title navigation: scrolling selects a discrete title state,
 // then a short time-based crossfade performs the handoff.
 const double _titleSnapThreshold = 0.6;
 const double _titleHandoffBlurSigma = 2.5;
+
+// Share the expanded anchor so titles and their actions move as one group.
+double _navigationLineHeight(BuildContext context, TextStyle style) =>
+    (MediaQuery.textScalerOf(context).scale(style.fontSize ?? 16) *
+            (style.height ?? 1.2))
+        .ceilToDouble();
+
+double _expandedTitleBlockHeight(BuildContext context, UiNavigationSpec spec) {
+  final tokens = UiThemeTokens.of(context);
+  final titleLine = _navigationLineHeight(context, tokens.typography.displayMd);
+  // Reserve the subtitle line even when it is absent. Bottom-aligning only
+  // the visible text made title-only pages sit lower than titled pages with
+  // a subtitle. A shared two-line budget gives every large title one anchor.
+  final textBlock =
+      titleLine +
+      tokens.spacing.x1 +
+      _navigationLineHeight(context, tokens.typography.bodySm);
+  final actionBottom =
+      spec.actionsFollowTitleCollapse && spec.actions.isNotEmpty
+      ? (titleLine + 44) / 2
+      : 0.0;
+  return math.max(textBlock, actionBottom);
+}
+
+double _expandedTitleTop(
+  BuildContext context,
+  UiNavigationSpec spec,
+  double height,
+) =>
+    height -
+    UiThemeTokens.of(context).spacing.x3 -
+    _expandedTitleBlockHeight(context, spec);
 
 /// Stable identity for [UiNavigationSpec.actions] used to key the trailing
 /// row's [AnimatedSwitcher].
@@ -59,8 +89,10 @@ String _actionsIdentity(List<Widget> actions) =>
 ///
 /// Height budgets:
 ///
-/// - Collapsed: [collapsedHeight] + ambient `MediaQuery.padding.top`.
-/// - Expanded: [expandedHeight] + ambient `MediaQuery.padding.top`.
+/// - Collapsed: at least [collapsedHeight] + ambient `MediaQuery.padding.top`.
+/// - Expanded: [expandedHeight] supplies the shared title-position budget.
+///   Title-only rows with title-following actions release unused subtitle space.
+/// Heights grow when scaled text or controls need more space.
 ///
 /// When [UiNavigationSpec.largeTitle] is `false`, the bar pins at the
 /// collapsed height only — useful for pages without overscrolling
@@ -95,6 +127,7 @@ class UiSliverNavigationBar extends StatelessWidget {
     this.floating = false,
     this.stretch = false,
     this.adaptToPersistentRail = true,
+    this.useOverlay = true,
     this.showTitleLegibilityShadow,
     this.bottom,
     this.bottomHeight = 0,
@@ -102,8 +135,9 @@ class UiSliverNavigationBar extends StatelessWidget {
 
   final UiNavigationSpec spec;
 
-  /// Content height when fully expanded (excludes the top safe-area
-  /// inset). Ignored when [UiNavigationSpec.largeTitle] is false.
+  /// Expanded title-position budget (excludes the top safe-area inset).
+  /// Title-only rows with title-following actions use less layout height while
+  /// preserving this title anchor. Ignored when large titles are disabled.
   final double expandedHeight;
 
   /// Content height when fully collapsed (excludes the top safe-area
@@ -119,6 +153,10 @@ class UiSliverNavigationBar extends StatelessWidget {
   /// collapse; unconstrained desktop layouts use a quiet page header.
   final bool adaptToPersistentRail;
 
+  /// Lift navigation above page content. Disable when an enclosing media
+  /// overlay owns visibility, hit testing, semantics and paint order.
+  final bool useOverlay;
+
   /// Whether compact and large titles receive a silhouette shadow.
   ///
   /// Defaults to `true` outside Apple platforms, where progressive blur is not
@@ -133,6 +171,14 @@ class UiSliverNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Register metadata before choosing compact or quiet desktop chrome.
+    // Every real page belongs in history, regardless of its header layout.
+    // Tab pages share one route, so only the active page may publish its
+    // title, and a page without a large title falls back to its compact one.
+    UiNavigatorHistoryScope.registerPageTitle(
+      context,
+      spec.title.trim().isNotEmpty ? spec.title : (spec.compactTitle ?? ''),
+    );
     final hasPersistentRail =
         adaptToPersistentRail &&
         UiNavigationChromeScope.hasPersistentRailOf(context);
@@ -168,11 +214,40 @@ class UiSliverNavigationBar extends StatelessWidget {
     // single row, with no large-title reveal on overscroll.
     final useLarge = effectiveSpec.largeTitle && effectiveSpec.back == null;
     final attachedBottomHeight = bottom == null ? 0.0 : bottomHeight;
+    final tokens = UiThemeTokens.of(context);
+    final compactContentHeight =
+        uiCompactNavigationRowHeight(context, minimumHeight: collapsedHeight) +
+        tokens.spacing.x2;
+    final expandedAnchorHeight = math.max(
+      math.max(expandedHeight, compactContentHeight),
+      _expandedTitleBlockHeight(context, effectiveSpec) +
+          tokens.spacing.x3 +
+          tokens.spacing.x2,
+    );
+    // Keep the title anchor shared with subtitle pages, but let a title-only
+    // action row release its unused subtitle space back to the body.
+    final titleLine = _navigationLineHeight(
+      context,
+      tokens.typography.displayMd,
+    );
+    final unusedSubtitleSpace =
+        effectiveSpec.subtitle == null &&
+            effectiveSpec.actionsFollowTitleCollapse &&
+            effectiveSpec.actions.isNotEmpty
+        ? _expandedTitleBlockHeight(context, effectiveSpec) -
+              math.max(titleLine, (titleLine + 44) / 2)
+        : 0.0;
+    // Navigation owns title-to-content spacing. A viewport-relative fade
+    // boundary must not add a larger spacer on devices with smaller safe areas.
+    final expandedContentHeight = math.max(
+      compactContentHeight,
+      expandedAnchorHeight - unusedSubtitleSpace,
+    );
     final maxH =
-        (useLarge ? expandedHeight : collapsedHeight) +
+        (useLarge ? expandedContentHeight : compactContentHeight) +
         topInset +
         attachedBottomHeight;
-    final minH = collapsedHeight + topInset + attachedBottomHeight;
+    final minH = compactContentHeight + topInset + attachedBottomHeight;
     final effectiveTitleLegibilityShadow =
         showTitleLegibilityShadow ??
         switch (defaultTargetPlatform) {
@@ -185,8 +260,10 @@ class UiSliverNavigationBar extends StatelessWidget {
       floating: floating,
       delegate: _UiNavHeaderDelegate(
         spec: effectiveSpec,
+        useOverlay: useOverlay,
         topInset: topInset,
         expandedHeight: maxH,
+        expandedAnchorHeight: expandedAnchorHeight + topInset,
         collapsedHeight: minH,
         showTitleLegibilityShadow: effectiveTitleLegibilityShadow,
         bottom: bottom,
@@ -295,8 +372,10 @@ class _RailPageHeader extends StatelessWidget {
 class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
   _UiNavHeaderDelegate({
     required this.spec,
+    required this.useOverlay,
     required this.topInset,
     required this.expandedHeight,
+    required this.expandedAnchorHeight,
     required this.collapsedHeight,
     required this.showTitleLegibilityShadow,
     required this.bottom,
@@ -304,8 +383,10 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
   });
 
   final UiNavigationSpec spec;
+  final bool useOverlay;
   final double topInset;
   final double expandedHeight;
+  final double expandedAnchorHeight;
   final double collapsedHeight;
   final bool showTitleLegibilityShadow;
   final Widget? bottom;
@@ -345,13 +426,14 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
         : 0.0;
     final useHero = spec.largeTitle && spec.back == null;
     Widget content = Stack(
+      clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
         Positioned(
           top: topInset,
           left: 0,
           right: 0,
-          height: minExtent - topInset - bottomHeight,
+          height: minExtent - topInset - bottomHeight - tokens.spacing.x2,
           child: _CompactRow(
             spec: spec,
             showTitle: spec.showCompactTitle,
@@ -374,7 +456,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
           _LargeTitle(
             spec: spec,
             visible: t < _titleSnapThreshold,
-            expandedHeight: maxExtent - bottomHeight,
+            expandedHeight: expandedAnchorHeight,
             scrollOffset: shrinkOffset,
             showTitleLegibilityShadow: showTitleLegibilityShadow,
           ),
@@ -383,7 +465,7 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
             spec.actions.isNotEmpty)
           _TitleTrackingActions(
             spec: spec,
-            expandedHeight: maxExtent - bottomHeight,
+            expandedHeight: expandedAnchorHeight,
             collapsedHeight: minExtent - bottomHeight,
             topInset: topInset,
             scrollOffset: shrinkOffset,
@@ -438,13 +520,16 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
       UiNavigationSurface.solid ||
       UiNavigationSurface.pageBackground => surfaceColor.withValues(alpha: 1),
     };
-    return UiLayeredOverlayPortal(
-      layer: UiOverlayLayer.navigationChrome,
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: UiSystemBarsStyle.inferFromBackground(overlaySample),
-        child: content,
-      ),
+    final annotated = AnnotatedRegion<SystemUiOverlayStyle>(
+      value: UiSystemBarsStyle.inferFromBackground(overlaySample),
+      child: content,
     );
+    return useOverlay
+        ? UiLayeredOverlayPortal(
+            layer: UiOverlayLayer.navigationChrome,
+            child: annotated,
+          )
+        : annotated;
   }
 
   Color _surfaceColor(
@@ -484,8 +569,10 @@ class _UiNavHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _UiNavHeaderDelegate old) {
     return old.spec != spec ||
+        old.useOverlay != useOverlay ||
         old.topInset != topInset ||
         old.expandedHeight != expandedHeight ||
+        old.expandedAnchorHeight != expandedAnchorHeight ||
         old.collapsedHeight != collapsedHeight ||
         old.showTitleLegibilityShadow != showTitleLegibilityShadow ||
         old.bottom != bottom ||
@@ -513,55 +600,16 @@ class _CompactRow extends StatelessWidget {
     final brightness = tokens.brightness;
     final resolvedLogo = spec.brand?.resolveLogo(brightness);
     final showMiddle = showTitle || resolvedLogo != null;
-    final runtime = UiNavigationControllerScope.maybeOf(context);
-    final navHistory = UiNavigatorHistoryScope.maybeOf(context);
-    final modalRoute = ModalRoute.of(context);
-    if (navHistory != null && modalRoute != null) {
-      navHistory.registerTitle(modalRoute, spec.title);
-    }
-    final runtimeHistory =
-        runtime?.controller.historyItems() ??
-        navHistory?.historyItems() ??
-        const <UiNavigationBackHistoryItem>[];
     final configuredHistory = spec.back?.history ?? const [];
     final resolvedHistory = configuredHistory.isNotEmpty
         ? configuredHistory
-        : runtimeHistory;
+        : UiNavigationBackButton.historyOf(context);
     final strings = UiLocalizations.of(context);
     final resolvedBackLabel =
         spec.back?.label ??
         (resolvedHistory.isNotEmpty
             ? resolvedHistory.first.title
             : strings.back);
-    final seededHistory =
-        (spec.back?.label != null &&
-            resolvedHistory.every((item) => item.title != spec.back!.label))
-        ? <UiNavigationBackHistoryItem>[
-            UiNavigationBackHistoryItem(title: spec.back!.label!),
-            ...resolvedHistory,
-          ]
-        : resolvedHistory;
-
-    void onHistorySelected(UiNavigationBackHistoryItem item) {
-      final custom = spec.back?.onHistorySelected;
-      if (custom != null) {
-        custom(item);
-        return;
-      }
-      final controller = runtime?.controller;
-      if (controller != null && item.value is UiRouteEntry) {
-        controller.popTo(item.value as UiRouteEntry);
-        return;
-      }
-      if (item.value is UiNavigationBackPopTarget) {
-        final popCount = (item.value as UiNavigationBackPopTarget).count;
-        final navigator = Navigator.maybeOf(context);
-        if (navigator == null) return;
-        unawaited(_popNavigatorTimes(navigator, popCount));
-        return;
-      }
-      spec.back?.onPressed();
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -576,19 +624,13 @@ class _CompactRow extends StatelessWidget {
         // Chevron-only (the default): a fixed, comfortable tap width — no
         // label means nothing to reserve room for, so the title and
         // actions get that space back instead.
+        final backExtent = 44.0;
         final backMaxWidth = showBackLabel
             ? math.max(
-                44.0,
+                backExtent,
                 contentWidth >= 600 ? roomyBackMaxWidth : compactBackMaxWidth,
               )
-            : 44.0;
-        final trailingWidth =
-            spec.actions.isEmpty || spec.actionsFollowTitleCollapse
-            ? 0.0
-            : 44.0 * spec.actions.length +
-                  tokens.spacing.x2 * (spec.actions.length - 1);
-        final middleSideReserve =
-            math.max(backMaxWidth, trailingWidth) + tokens.spacing.x2;
+            : backExtent;
         final leading = spec.back != null
             ? AnimatedSwitcher(
                 duration: tokens.motion.standard,
@@ -603,8 +645,8 @@ class _CompactRow extends StatelessWidget {
                     label: resolvedBackLabel,
                     showLabel: showBackLabel,
                     onPressed: spec.back!.onPressed,
-                    history: seededHistory,
-                    onHistorySelected: onHistorySelected,
+                    history: resolvedHistory,
+                    onHistorySelected: spec.back?.onHistorySelected,
                   ),
                 ),
               )
@@ -617,17 +659,15 @@ class _CompactRow extends StatelessWidget {
                 switchInCurve: tokens.motion.standardCurve,
                 switchOutCurve: tokens.motion.standardCurve,
                 transitionBuilder: _chromeTransition,
-                child: UiLegibilityShadow(
+                child: Row(
                   key: ValueKey('actions:${_actionsIdentity(spec.actions)}'),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < spec.actions.length; i++) ...[
-                        if (i > 0) SizedBox(width: tokens.spacing.x2),
-                        spec.actions[i],
-                      ],
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < spec.actions.length; i++) ...[
+                      if (i > 0) SizedBox(width: tokens.spacing.x2),
+                      spec.actions[i],
                     ],
-                  ),
+                  ],
                 ),
               );
         final middle = showMiddle
@@ -688,7 +728,7 @@ class _CompactRow extends StatelessWidget {
                                         key: const Key(
                                           'ui_navigation_compact_title',
                                         ),
-                                        variant: UiTextVariant.heading,
+                                        variant: UiTextVariant.subheading,
                                         style: TextStyle(color: c.textPrimary),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -709,32 +749,14 @@ class _CompactRow extends StatelessWidget {
 
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: tokens.spacing.x3),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned.fill(
-                child: Row(
-                  children: [
-                    if (leading != null)
-                      Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: leading,
-                      ),
-                    const Spacer(),
-                    if (trailing != null)
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: trailing,
-                      ),
-                  ],
-                ),
-              ),
-              Positioned.fill(
-                left: middleSideReserve,
-                right: middleSideReserve,
-                child: Center(child: middle),
-              ),
-            ],
+          child: NavigationToolbar(
+            leading: leading == null
+                ? null
+                : Center(widthFactor: 1, child: leading),
+            middle: middle,
+            trailing: trailing,
+            centerMiddle: true,
+            middleSpacing: tokens.spacing.x2,
           ),
         );
       },
@@ -747,13 +769,6 @@ class _CompactRow extends StatelessWidget {
       beginOffset: const Offset(0.08, 0),
       child: child,
     );
-  }
-}
-
-Future<void> _popNavigatorTimes(NavigatorState navigator, int count) async {
-  for (var i = 0; i < count; i++) {
-    final didPop = await navigator.maybePop();
-    if (!didPop) return;
   }
 }
 
@@ -772,23 +787,19 @@ class _TitleTrackingActions extends StatelessWidget {
   final double topInset;
   final double scrollOffset;
 
-  double _lineHeightFor(TextStyle style) =>
-      (style.fontSize ?? 16) * (style.height ?? 1.2);
-
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
-    final largeLine = _lineHeightFor(tokens.typography.displayMd);
-    final subtitleLine = _lineHeightFor(tokens.typography.bodySm);
-    final expandedBlockHeight =
-        largeLine +
-        (spec.subtitle == null ? 0 : tokens.spacing.x1 + subtitleLine);
-    final expandedTitleTop =
-        expandedHeight - tokens.spacing.x1 - expandedBlockHeight;
-    const actionExtent = 44.0;
+    final largeLine = _navigationLineHeight(
+      context,
+      tokens.typography.displayMd,
+    );
+    final expandedTitleTop = _expandedTitleTop(context, spec, expandedHeight);
+    final actionExtent = 44.0;
     final expandedActionTop = expandedTitleTop + (largeLine - actionExtent) / 2;
     final compactActionTop =
-        topInset + (collapsedHeight - topInset - actionExtent) / 2;
+        topInset +
+        (collapsedHeight - topInset - tokens.spacing.x2 - actionExtent) / 2;
     final top = math.max(compactActionTop, expandedActionTop - scrollOffset);
 
     return PositionedDirectional(
@@ -796,17 +807,14 @@ class _TitleTrackingActions extends StatelessWidget {
       end: tokens.spacing.x3,
       top: top,
       height: actionExtent,
-      child: UiLegibilityShadow(
-        key: const Key('ui_navigation_tracking_actions_shadow'),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < spec.actions.length; i++) ...[
-              if (i > 0) SizedBox(width: tokens.spacing.x2),
-              spec.actions[i],
-            ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < spec.actions.length; i++) ...[
+            if (i > 0) SizedBox(width: tokens.spacing.x2),
+            spec.actions[i],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -828,28 +836,13 @@ class _LargeTitle extends StatelessWidget {
   final double scrollOffset;
   final bool showTitleLegibilityShadow;
 
-  double _lineHeightFor(TextStyle s) => (s.fontSize ?? 16) * (s.height ?? 1.2);
-
   @override
   Widget build(BuildContext context) {
     final tokens = UiThemeTokens.of(context);
     final c = tokens.colors;
     final titleStyle = tokens.typography.displayMd;
 
-    final largeLine = _lineHeightFor(tokens.typography.displayMd);
-    final subtitleLine = _lineHeightFor(tokens.typography.bodySm);
-    final hasTopWidgets =
-        spec.back != null || spec.leading != null || spec.actions.isNotEmpty;
-    final hasSubtitle = spec.subtitle != null;
-    final expandedBlockHeight =
-        largeLine + (hasSubtitle ? tokens.spacing.x1 + subtitleLine : 0);
-
-    // Expanded anchor: fit the whole title block (title + subtitle)
-    // inside the header and avoid clipping. When there's no top-row
-    // widgets we lift it further to reduce dead space.
-    final baseExpandedY =
-        expandedHeight - tokens.spacing.x1 - expandedBlockHeight;
-    final expandedY = baseExpandedY - (hasTopWidgets ? 0 : tokens.spacing.x1);
+    final expandedY = _expandedTitleTop(context, spec, expandedHeight);
 
     final trailingReserved = spec.actions.isEmpty
         ? tokens.spacing.x4
